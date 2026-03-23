@@ -94,14 +94,14 @@ export default function ProductCard({ product }: Props) {
         </div>
       </Link>
 
-      {/* Add to cart button - PROMINENT */}
-      <div className="px-4 pb-4 pt-1">
+      {/* Add to cart button */}
+      <div className="px-4 pb-3 pt-1">
         <button
           onClick={handleAdd}
-          className={`w-full py-3 rounded-xl text-sm font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center gap-2 ${
+          className={`w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
             added
               ? 'bg-green-500 text-white'
-              : 'bg-[#055667] text-white hover:bg-[#044556] active:scale-[0.98] shadow-sm hover:shadow-md'
+              : 'bg-[#055667] text-white hover:bg-[#044556] active:scale-[0.98]'
           }`}
         >
           {added ? (
