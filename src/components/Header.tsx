@@ -24,6 +24,19 @@ export default function Header() {
 
   return (
     <>
+      {/* Topbar */}
+      <div className="bg-[#055667] text-white text-[11px] font-medium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-4 sm:gap-6 h-8 overflow-hidden">
+          <span className="hidden sm:inline">Spedizione gratuita da €69</span>
+          <span className="hidden lg:inline">·</span>
+          <span>Consegna 24/48H</span>
+          <span className="hidden lg:inline">·</span>
+          <span className="hidden md:inline">Imballi anti-danno</span>
+          <span className="hidden lg:inline">·</span>
+          <span className="hidden lg:inline">Accumuli punti POP</span>
+        </div>
+      </div>
+
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
