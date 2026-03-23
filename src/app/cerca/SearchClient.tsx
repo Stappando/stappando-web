@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import SearchModal from '@/components/SearchModal';
 import { useRouter } from 'next/navigation';
 import { type WCProduct, type WCCategory, decodeHtml, formatPrice } from '@/lib/api';
@@ -37,6 +37,14 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const suggestRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-fetch when navigating from modal
+  useEffect(() => {
+    if (initialQuery && initialQuery !== activeCategory) {
+      setActiveCategory(initialQuery);
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProducts = useCallback(async (search: string, onSale = false, pMin?: number, pMax?: number, order?: string) => {
     setLoading(true);
