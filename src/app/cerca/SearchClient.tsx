@@ -217,9 +217,8 @@ function MacroDropdown({ mc, activeCategory, onSelect }: { mc: { label: string; 
   }
 
   return (
-    <div className="relative shrink-0" onMouseLeave={() => setOpen(false)}>
+    <div className="relative shrink-0">
       <button
-        onMouseEnter={() => setOpen(true)}
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}
       >
@@ -227,13 +226,16 @@ function MacroDropdown({ mc, activeCategory, onSelect }: { mc: { label: string; 
         <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-30 py-1 min-w-[150px]">
-          <button onClick={() => { onSelect(mc.label); setOpen(false); }} className={`block w-full text-left px-3 py-2 text-xs font-semibold hover:bg-gray-50 ${activeCategory === mc.label ? 'text-[#055667]' : 'text-gray-700'}`}>Tutti {mc.label}</button>
-          <div className="h-px bg-gray-100 mx-2" />
-          {mc.subs.map(sub => (
-            <button key={sub} onClick={() => { onSelect(sub); setOpen(false); }} className={`block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${activeCategory === sub ? 'font-bold text-[#055667]' : 'text-gray-600'}`}>{sub}</button>
-          ))}
-        </div>
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-30 py-1 min-w-[160px]">
+            <button onClick={() => { onSelect(mc.label); setOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-gray-50 ${activeCategory === mc.label ? 'text-[#055667]' : 'text-gray-700'}`}>Tutti {mc.label}</button>
+            <div className="h-px bg-gray-100 mx-3" />
+            {mc.subs.map(sub => (
+              <button key={sub} onClick={() => { onSelect(sub); setOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-xs hover:bg-gray-50 ${activeCategory === sub ? 'font-bold text-[#055667]' : 'text-gray-600'}`}>{sub}</button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
