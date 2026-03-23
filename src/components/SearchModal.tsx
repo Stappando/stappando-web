@@ -74,21 +74,41 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
         {/* Pills */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Tipologia</h3>
-            <div className="flex flex-wrap gap-1.5">{TIPOLOGIA.map(pill)}</div>
+          {/* Tipologia — sfondo leggero teal */}
+          <div className="bg-[#055667]/5 rounded-xl p-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#055667] mb-2">Tipologia</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {TIPOLOGIA.map(f => (
+                <button key={f} onClick={() => go(f)} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-[#055667]/20 text-[#055667] hover:bg-[#055667] hover:text-white transition-all">{f}</button>
+              ))}
+            </div>
           </div>
-          <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Spumanti & Bollicine</h3>
-            <div className="flex flex-wrap gap-1.5">{SPUMANTI.map(pill)}</div>
+          {/* Bollicine — sfondo gold */}
+          <div className="bg-[#b8973f]/5 rounded-xl p-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#b8973f] mb-2">Bollicine</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {SPUMANTI.map(f => (
+                <button key={f} onClick={() => go(f)} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-[#b8973f]/20 text-[#b8973f] hover:bg-[#b8973f] hover:text-white transition-all">{f}</button>
+              ))}
+            </div>
           </div>
+          {/* Regione */}
           <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Regione</h3>
-            <div className="flex flex-wrap gap-1.5">{REGIONI.map(pill)}</div>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Per regione</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {REGIONI.map(f => (
+                <button key={f} onClick={() => go(f)} className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 border border-gray-200 text-gray-700 hover:bg-[#055667] hover:text-white hover:border-[#055667] transition-all">{f}</button>
+              ))}
+            </div>
           </div>
-          <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Più cercati</h3>
-            <div className="flex flex-wrap gap-1.5">{VITIGNI.map(pill)}</div>
+          {/* Più cercati — sfondo scuro */}
+          <div className="bg-gray-900 rounded-xl p-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/60 mb-2">Più cercati</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {VITIGNI.map(f => (
+                <button key={f} onClick={() => go(f)} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 border border-white/20 text-white hover:bg-white hover:text-gray-900 transition-all">{f}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

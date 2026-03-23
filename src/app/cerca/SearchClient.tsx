@@ -72,7 +72,13 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
       if (pMin && pMin > 0) apiUrl.searchParams.set('min_price', String(pMin));
       if (pMax && pMax < 500) apiUrl.searchParams.set('max_price', String(pMax));
       const res = await fetch(apiUrl.toString());
-      if (res.ok) setProducts(await res.json());
+      if (res.ok) {
+        const data: WCProduct[] = await res.json();
+        // Circuito (tag 21993) sempre primi
+        const circuito = data.filter(p => p.tags?.some(t => t.id === 21993));
+        const rest = data.filter(p => !p.tags?.some(t => t.id === 21993));
+        setProducts([...circuito, ...rest]);
+      }
     } catch { /* */ }
     finally { setLoading(false); }
   }, [orderBy]);
