@@ -169,16 +169,13 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
           {/* Price */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prezzo</h3>
-              <span className="text-[11px] text-gray-500">{minPrice}€ — {maxPrice === 500 ? '500+' : maxPrice + '€'}</span>
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prezzo max</h3>
+              <span className="text-[11px] font-semibold text-[#055667]">fino a {maxPrice === 500 ? '500+' : maxPrice}€</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-gray-400">0€</span>
-              <div className="flex-1 space-y-1.5">
-                <input type="range" min={0} max={500} step={5} value={minPrice} onChange={(e) => handlePriceChange('min', Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-                <input type="range" min={0} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#b8973f]" />
-              </div>
-              <span className="text-[10px] text-gray-400">500€</span>
+            <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+            <div className="flex justify-between mt-1">
+              <span className="text-[9px] text-gray-400">5€</span>
+              <span className="text-[9px] text-gray-400">500€</span>
             </div>
           </div>
 
