@@ -96,21 +96,40 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(tokenData.message || 'Credenziali non valide');
           }
 
-          // Fetch customer data from WC
-          const customersUrl = `${baseUrl}${wc.endpoint}/customers?email=${encodeURIComponent(tokenData.user_email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
-          const custRes = await fetch(customersUrl);
-          const customers: WCCustomer[] = await custRes.json();
+          // JWT response has data nested
+          const email = tokenData.data?.email || tokenData.user_email || username;
+          const userId = tokenData.data?.id || tokenData.user_id || 0;
+          const nicename = tokenData.data?.nicename || tokenData.user_nicename || username;
+          const token = tokenData.data?.token || tokenData.token;
+          const firstName = tokenData.data?.firstName || '';
+          const lastName = tokenData.data?.lastName || '';
 
-          const customer = customers[0];
+          // Try to fetch customer data from WC
+          let custFirstName = firstName;
+          let custLastName = lastName;
+          let custId = userId;
+          try {
+            const customersUrl = `${baseUrl}${wc.endpoint}/customers?email=${encodeURIComponent(email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+            const custRes = await fetch(customersUrl);
+            if (custRes.ok) {
+              const customers: WCCustomer[] = await custRes.json();
+              if (customers[0]) {
+                custFirstName = customers[0].first_name || custFirstName;
+                custLastName = customers[0].last_name || custLastName;
+                custId = customers[0].id || custId;
+              }
+            }
+          } catch { /* ok, use JWT data */ }
+
           const user: User = {
-            id: customer?.id || tokenData.user_id || 0,
-            email: tokenData.user_email,
-            firstName: customer?.first_name || '',
-            lastName: customer?.last_name || '',
-            username: tokenData.user_nicename || username,
+            id: custId,
+            email,
+            firstName: custFirstName,
+            lastName: custLastName,
+            username: nicename,
           };
 
-          set({ user, token: tokenData.token, isLoading: false, error: null });
+          set({ user, token, isLoading: false, error: null });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Errore durante il login';
           set({ isLoading: false, error: message });
