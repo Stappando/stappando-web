@@ -63,7 +63,7 @@ export default function Header() {
             {/* Desktop nav */}
             <nav className="hidden lg:flex items-center gap-6 ml-8">
               <Link href="/" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Home</Link>
-              <Link href="/cerca" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Catalogo</Link>
+              <Link href="/cerca" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Shop</Link>
               <Link href="/blog" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Blog</Link>
               <Link href="/chi-siamo" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Chi siamo</Link>
               <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#b8973f] hover:text-[#055667] transition-colors">Degustazioni</a>
@@ -163,7 +163,7 @@ export default function Header() {
             <nav className="flex-1 overflow-y-auto py-2">
               {[
                 { href: '/', label: 'Home', icon: '🏠' },
-                { href: '/cerca', label: 'Catalogo', icon: '🍷' },
+                { href: '/cerca', label: 'Shop', icon: '🍷' },
                 { href: '/blog', label: 'Blog', icon: '📰' },
                 { href: '/chi-siamo', label: 'Chi siamo', icon: '👥' },
                 { href: '/contatti', label: 'Contatti', icon: '📧' },
