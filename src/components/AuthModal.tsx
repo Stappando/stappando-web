@@ -52,6 +52,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
     } else if (state.error) {
       // If login fails, offer registration
+      setPassword('');
       setLocalError('Credenziali non valide. Sei nuovo? Registrati qui sotto.');
       setStep('register');
     }
