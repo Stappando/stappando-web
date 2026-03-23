@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import VendiConNoiModal from './VendiConNoiModal';
+import AuthModal from './AuthModal';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [vendiOpen, setVendiOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +123,7 @@ export default function Footer() {
               <li><Link href="/contatti" className="text-sm text-white/70 hover:text-white transition-colors">Contatti</Link></li>
               <li><Link href="/blog" className="text-sm text-white/70 hover:text-white transition-colors">Blog</Link></li>
               <li><Link href="/punti-pop" className="text-sm text-white/70 hover:text-white transition-colors">Raccolta Punti POP</Link></li>
-              <li><a href="https://stappando.it/vendor-register/" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white transition-colors">Vendi su Stappando</a></li>
+              <li><button onClick={() => setVendiOpen(true)} className="text-sm text-white/70 hover:text-white transition-colors">Vendi su Stappando</button></li>
             </ul>
           </div>
 
@@ -138,8 +142,8 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-[#b8973f]">Legale</h4>
             <ul className="space-y-2.5">
-              <li><a href="https://stappando.it/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="https://stappando.it/termini-e-condizioni/" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white transition-colors">Termini e condizioni</a></li>
+              <li><Link href="/privacy" className="text-sm text-white/70 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/termini" className="text-sm text-white/70 hover:text-white transition-colors">Termini e condizioni</Link></li>
             </ul>
             {/* Payment icons */}
             <div className="mt-6">
@@ -188,6 +192,8 @@ export default function Footer() {
           </div>
         </div>
       </div>
+      <VendiConNoiModal isOpen={vendiOpen} onClose={() => setVendiOpen(false)} onOpenAuth={() => setAuthOpen(true)} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </footer>
   );
 }
