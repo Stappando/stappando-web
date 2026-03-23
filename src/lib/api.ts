@@ -181,6 +181,27 @@ async function getPosts(page: number = 1): Promise<WPPost[]> {
   return response.json();
 }
 
+export interface WPCategory {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+async function getWPCategories(): Promise<WPCategory[]> {
+  const url = `${baseUrl}/wp-json/wp/v2/categories?per_page=50&hide_empty=true`;
+  const response = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
+  if (!response.ok) return [];
+  return response.json();
+}
+
+async function getPostsByCategory(categoryId: number, page: number = 1): Promise<WPPost[]> {
+  const url = `${baseUrl}/wp-json/wp/v2/posts?per_page=12&page=${page}&categories=${categoryId}&_embed`;
+  const response = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
+  if (!response.ok) return [];
+  return response.json();
+}
+
 async function getPost(slug: string): Promise<WPPost | null> {
   const url = `${baseUrl}/wp-json/wp/v2/posts?slug=${slug}&_embed`;
   const response = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
@@ -255,6 +276,8 @@ export const api = {
   subscribeNewsletter,
   getPosts,
   getPost,
+  getWPCategories,
+  getPostsByCategory,
 
   createOrder: async (orderData: unknown) => {
     return request('/orders', { method: 'POST', body: orderData });
