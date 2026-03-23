@@ -48,8 +48,10 @@ export interface WCOrder {
   currency: string;
   line_items: {
     id: number;
+    product_id: number;
     name: string;
     quantity: number;
+    price: string;
     total: string;
     image: { src: string };
   }[];
