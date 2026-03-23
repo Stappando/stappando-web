@@ -6,14 +6,13 @@ import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 
 const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
-  { label: 'Vini Rossi' },
-  { label: 'Vini Bianchi' },
-  { label: 'Rosati' },
-  { label: 'Spumanti', subs: ['Prosecco', 'Franciacorta', 'Trento DOC', 'Alta Langa', 'Metodo Classico'] },
-  { label: 'Champagne' },
-  { label: 'Distillati' },
-  { label: 'Birre' },
+  { label: 'Vini', subs: ['Vini Rossi', 'Vini Bianchi', 'Vini Rosati', 'Vini Liquorosi'] },
+  { label: 'Bollicine', subs: ['Prosecco', 'Franciacorta', 'Champagne', 'Spumanti', 'Trento DOC'] },
+  { label: 'Distillati', subs: ['Gin', 'Whisky', 'Rum', 'Grappe', 'Vodka', 'Tequila', 'Cognac', 'Brandy'] },
+  { label: 'Liquori', subs: ['Amari', 'Limoncello', 'Genziana', 'Ratafià', 'Bitter'] },
+  { label: 'Birre', subs: ['Birre Bionde', 'Birre Rosse'] },
   { label: 'Aperitivi' },
+  { label: 'Cocktail' },
 ];
 const ORDINA_OPTIONS = [
   { label: 'Più popolari', value: 'popularity' },
