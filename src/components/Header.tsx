@@ -267,11 +267,12 @@ export default function Header() {
               <Link href="/" className="block">
                 <Image src="/logo.png" alt="Stappando" width={150} height={38} className={`w-auto transition-all duration-200 ${scrolled ? 'h-6 sm:h-7' : 'h-7 sm:h-8'}`} priority />
               </Link>
-              {/* Rating sotto logo — solo desktop */}
-              <div className="hidden lg:flex items-center gap-1 mt-0.5">
+              {/* Rating sotto logo — trust signal primario */}
+              <div className="flex items-center gap-1 mt-0.5">
                 <span className="text-[10px] text-[#d9c39a] leading-none">★★★★★</span>
                 <span className="text-[10px] font-medium text-[#005667] leading-none">4.6/5</span>
-                <span className="text-[10px] text-[#999] leading-none">· 1000+ recensioni</span>
+                <span className="sm:hidden text-[10px] text-[#999] leading-none">· 1K+ recensioni</span>
+                <span className="hidden sm:inline text-[10px] text-[#999] leading-none">· 1000+ recensioni</span>
               </div>
             </div>
 
