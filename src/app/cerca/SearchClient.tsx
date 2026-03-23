@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SearchModal from '@/components/SearchModal';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
@@ -64,14 +64,11 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
     });
   }, []);
 
-  // Sync from URL navigation (modal search) — only on first mount
-  const mountedRef = useRef(false);
+  // Sync from URL navigation (modal search)
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      if (initialQuery) setActiveCategory(initialQuery);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (initialQuery) setActiveCategory(initialQuery);
+    else if (initialOnSale) setActiveCategory('offerte');
+  }, [initialQuery, initialOnSale]);
 
   // Client-side filtering — instant
   const filtered = useMemo(() => {
