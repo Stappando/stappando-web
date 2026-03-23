@@ -17,25 +17,25 @@ export const metadata: Metadata = {
 const paymentMethods = [
   {
     name: 'PayPal',
-    icon: '💳',
+    icon: 'paypal',
     description: 'Paga tranquillamente con il tuo account PayPal direttamente sul sito. Veloce, sicuro e senza condividere i dati della tua carta.',
     extra: null,
   },
   {
     name: 'Carta di Credito',
-    icon: '💎',
+    icon: 'card',
     description: 'I tuoi dati sono al sicuro: utilizziamo 3 livelli di sicurezza crittografata per proteggere ogni transazione. Accettiamo Visa, Mastercard e le principali carte.',
     extra: null,
   },
   {
     name: 'Bonifico Bancario',
-    icon: '🏦',
+    icon: 'bank',
     description: 'Effettua il pagamento tramite bonifico bancario. Non appena sarà contabilizzato il pagamento, faremo partire la tua spedizione.',
     extra: null,
   },
   {
     name: 'Contrassegno',
-    icon: '📦',
+    icon: 'cash',
     description: 'Paga alla consegna direttamente al nostro corriere. Facile e comodo, ideale per chi preferisce pagare al momento della ricezione.',
     extra: 'Supplemento di 3,66\u20AC sull\u2019ordine. Si prega di preparare l\u2019importo esatto.',
   },
@@ -70,7 +70,12 @@ export default function PagamentiPage() {
                 key={method.name}
                 className="bg-white rounded-2xl p-6 shadow-sm border border-brand-border hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-3 block">{method.icon}</span>
+                <span className="mb-3 block">
+                  {method.icon === 'paypal' && <svg className="w-7 h-7 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>}
+                  {method.icon === 'card' && <svg className="w-7 h-7 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>}
+                  {method.icon === 'bank' && <svg className="w-7 h-7 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>}
+                  {method.icon === 'cash' && <svg className="w-7 h-7 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" /></svg>}
+                </span>
                 <h3 className="text-xl font-semibold text-brand-primary mb-3">{method.name}</h3>
                 <p className="text-brand-text text-sm leading-relaxed">{method.description}</p>
                 {method.extra && (
@@ -86,7 +91,7 @@ export default function PagamentiPage() {
         {/* Sicurezza */}
         <section className="bg-white rounded-2xl p-8 shadow-sm border border-brand-border">
           <div className="flex items-start gap-4">
-            <span className="text-4xl">🔒</span>
+            <svg className="w-8 h-8 text-[#055667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
             <div>
               <h2 className="text-2xl font-bold text-brand-primary mb-3">Sicurezza Garantita</h2>
               <p className="text-brand-text leading-relaxed mb-4">

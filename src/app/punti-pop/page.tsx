@@ -98,28 +98,33 @@ export default function PuntiPopPage() {
           <div className="grid sm:grid-cols-2 gap-6">
             {[
               {
-                icon: '🎁',
+                icon: 'gift',
                 title: 'Iscrizione Gratuita',
                 desc: 'Basta creare un account su Stappando per partecipare al programma.',
               },
               {
-                icon: '♾️',
+                icon: 'infinity',
                 title: 'Punti Senza Scadenza',
                 desc: 'I tuoi punti non scadono mai. Deciditi tu quando utilizzarli.',
               },
               {
-                icon: '🏷️',
+                icon: 'tag',
                 title: 'Cumulabili con Sconti',
                 desc: 'Gli sconti derivanti dai Punti POP sono cumulabili con altri codici sconto.',
               },
               {
-                icon: '🛒',
+                icon: 'cart',
                 title: 'Validi su Tutto',
                 desc: 'Puoi applicare lo sconto su tutti i prodotti, inclusi quelli già in promozione.',
               },
             ].map((item) => (
               <div key={item.title} className="flex items-start gap-4">
-                <span className="text-2xl shrink-0">{item.icon}</span>
+                <span className="shrink-0">
+                  {item.icon === 'gift' && <svg className="w-6 h-6 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>}
+                  {item.icon === 'infinity' && <svg className="w-6 h-6 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>}
+                  {item.icon === 'tag' && <svg className="w-6 h-6 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 6h.008v.008H6V6z" /></svg>}
+                  {item.icon === 'cart' && <svg className="w-6 h-6 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121 0 2.09-.773 2.34-1.872l1.403-6.172c.296-1.304-.678-2.558-2.01-2.558H6.106l-.383-1.437A1.125 1.125 0 004.636 3H2.25" /></svg>}
+                </span>
                 <div>
                   <h3 className="font-semibold text-brand-text mb-1">{item.title}</h3>
                   <p className="text-brand-muted text-sm leading-relaxed">{item.desc}</p>
