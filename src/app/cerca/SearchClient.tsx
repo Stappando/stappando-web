@@ -7,7 +7,16 @@ import { type WCProduct, type WCCategory, decodeHtml, formatPrice } from '@/lib/
 import ProductCard from '@/components/ProductCard';
 // Image and Link kept for potential future use
 
-const SPUMANTI_SUB = ['Prosecco', 'Franciacorta', 'Trento DOC', 'Alta Langa', 'Metodo Classico'];
+const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
+  { label: 'Vini Rossi' },
+  { label: 'Vini Bianchi' },
+  { label: 'Rosati' },
+  { label: 'Spumanti', subs: ['Prosecco', 'Franciacorta', 'Trento DOC', 'Alta Langa', 'Metodo Classico'] },
+  { label: 'Champagne' },
+  { label: 'Distillati' },
+  { label: 'Birre' },
+  { label: 'Aperitivi' },
+];
 const ORDINA_OPTIONS = [
   { label: 'Più popolari', value: 'popularity' },
   { label: 'Novità', value: 'date' },
@@ -113,7 +122,7 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchProducts(activeCategory === 'offerte' ? '' : activeCategory, activeCategory === 'offerte', type === 'min' ? val : minPrice, type === 'max' ? val : maxPrice);
-    }, 500);
+    }, 200);
   };
 
   const handleOrder = (val: string) => {
@@ -151,17 +160,8 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
       </div>
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
-      {/* ROW 2: Categories — compact scrollable */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-3 pb-0.5">
-        {pill('Tutti', activeCategory === '', () => handleCategory(''))}
-        {categories.filter(c => c.slug !== 'uncategorized').map(cat =>
-          pill(decodeHtml(cat.name), activeCategory === cat.name, () => handleCategory(cat.name))
-        )}
-        {SPUMANTI_SUB.map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
-        {['Champagne', 'Distillati', 'Birre', 'Aperitivi'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
-        {['DOCG', 'DOC', 'IGT'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
-        {pill('Offerte', activeCategory === 'offerte', () => handleCategory('offerte'), 'red')}
-      </div>
+      {/* ROW 2: Macrocategorie con dropdown */}
+      <CategoriesBar categories={categories} activeCategory={activeCategory} onSelect={handleCategory} />
 
       {/* Count */}
       <p className="text-[10px] text-gray-400 mb-2">{products.length} prodotti</p>
@@ -184,6 +184,49 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
           <p className="text-sm text-gray-500 mt-1">Prova con altri filtri</p>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Categories Bar with dropdowns ── */
+function CategoriesBar({ categories, activeCategory, onSelect }: { categories: WCCategory[]; activeCategory: string; onSelect: (c: string) => void }) {
+  const [openDrop, setOpenDrop] = useState<string | null>(null);
+
+  return (
+    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-3 pb-0.5 relative">
+      <button onClick={() => onSelect('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === '' ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>Tutti</button>
+
+      {MACRO_CATEGORIES.map(mc => (
+        <div key={mc.label} className="relative shrink-0">
+          {mc.subs ? (
+            <>
+              <button
+                onClick={() => setOpenDrop(openDrop === mc.label ? null : mc.label)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  activeCategory === mc.label || mc.subs.includes(activeCategory) ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'
+                }`}
+              >
+                {mc.label}
+                <svg className={`w-3 h-3 transition-transform ${openDrop === mc.label ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {openDrop === mc.label && (
+                <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-30 py-1 min-w-[140px]">
+                  <button onClick={() => { onSelect(mc.label); setOpenDrop(null); }} className="block w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">Tutti {mc.label}</button>
+                  {mc.subs.map(sub => (
+                    <button key={sub} onClick={() => { onSelect(sub); setOpenDrop(null); }} className={`block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${activeCategory === sub ? 'font-bold text-[#055667]' : 'text-gray-600'}`}>{sub}</button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <button onClick={() => onSelect(mc.label)} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${activeCategory === mc.label ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>
+              {mc.label}
+            </button>
+          )}
+        </div>
+      ))}
+
+      <button onClick={() => onSelect('offerte')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === 'offerte' ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>Offerte</button>
     </div>
   );
 }
