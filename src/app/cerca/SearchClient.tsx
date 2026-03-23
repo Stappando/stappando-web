@@ -131,12 +131,15 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* ROW 1: Search button + Price + Sort — all inline */}
+      {/* ROW 1: Search input + Cerca button + Price + Sort */}
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={() => setSearchModalOpen(true)} className="flex items-center gap-2 h-9 px-3 rounded-lg bg-white border border-gray-200 text-xs text-gray-500 hover:border-[#055667] transition-colors flex-1 sm:flex-none sm:w-48">
-          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          {activeCategory && activeCategory !== 'offerte' ? activeCategory : 'Cerca vini...'}
-        </button>
+        <div className="flex items-center flex-1 sm:flex-none sm:w-64 h-9 bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="flex items-center flex-1 px-3 gap-2">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <span className="text-xs text-gray-500 truncate">{activeCategory && activeCategory !== 'offerte' ? activeCategory : 'Cerca vini...'}</span>
+          </div>
+          <button onClick={() => setSearchModalOpen(true)} className="h-full px-3 bg-[#055667] text-white text-xs font-bold hover:bg-[#044556] transition-colors shrink-0">Cerca</button>
+        </div>
         <div className="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 h-9">
           <span className="text-[10px] text-gray-500 shrink-0">max</span>
           <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
