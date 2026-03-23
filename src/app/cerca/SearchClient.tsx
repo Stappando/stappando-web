@@ -76,19 +76,19 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const filtered = useMemo(() => {
     let result = [...allProducts];
 
-    // Category/search filter — match parole intere per evitare accavallamenti
+    // Category/search filter
     if (activeCategory && activeCategory !== 'offerte') {
       const q = activeCategory.toLowerCase();
-      const words = q.split(' ');
       result = result.filter(p => {
-        const text = [
-          p.name,
-          p.categories?.map(c => c.name).join(' '),
-          p.attributes?.map(a => a.options.join(' ')).join(' '),
-          p.short_description || '',
-        ].join(' ').toLowerCase();
-        // Tutte le parole della query devono essere presenti
-        return words.every(w => text.includes(w));
+        // Prima cerca match esatto nella categoria
+        const catMatch = p.categories?.some(c => c.name.toLowerCase() === q);
+        if (catMatch) return true;
+        // Poi cerca nel nome prodotto come frase esatta
+        if (p.name.toLowerCase().includes(q)) return true;
+        // Poi negli attributi
+        const attrMatch = p.attributes?.some(a => a.options.some(o => o.toLowerCase().includes(q)));
+        if (attrMatch) return true;
+        return false;
       });
     }
 
