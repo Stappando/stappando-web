@@ -83,42 +83,28 @@ export default function ProductCard({ product }: Props) {
               </span>
             )}
           </div>
-          {vendorName && (
-            <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Venduto e spedito da {vendorName}
-            </p>
-          )}
+          <div className="flex items-center gap-1 mt-1">
+            <svg className="w-3 h-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.9 17.9 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25m0 0V4.5m0 0H8.25m6 0v3.75m0-3.75h3" />
+            </svg>
+            <span className="text-[10px] text-gray-400 truncate">{vendorName ? `Venduto e spedito da ${vendorName}` : 'Venduto da Stappando'}</span>
+          </div>
         </div>
       </Link>
 
-      {/* Add to cart button */}
+      {/* Add to cart */}
       <div className="px-4 pb-3 pt-1">
         <button
           onClick={handleAdd}
-          className={`w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
-            added
-              ? 'bg-green-500 text-white'
-              : 'bg-[#055667] text-white hover:bg-[#044556] active:scale-[0.98]'
+          className={`w-full py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            added ? 'bg-green-500 text-white' : 'bg-[#055667] text-white hover:bg-[#044556] active:scale-[0.98]'
           }`}
         >
           {added ? (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-              Aggiunto!
-            </>
+            <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>Aggiunto!</>
           ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              Aggiungi al carrello
-            </>
-          ) }
+            <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>Aggiungi al carrello</>
+          )}
         </button>
       </div>
     </div>
