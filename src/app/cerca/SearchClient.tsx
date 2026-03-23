@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
+import { type WCProduct, type WCCategory, decodeHtml, formatPrice } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
+import Image from 'next/image';
+import Link from 'next/link';
 
 const CATEGORIE_EXTRA = ['Champagne', 'Distillati', 'Birre', 'Aperitivi', 'Cocktail'];
 
@@ -23,7 +25,10 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [suggestions, setSuggestions] = useState<WCProduct[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchProducts = useCallback(async (search: string, onSale = false, pMin?: number, pMax?: number) => {
     setLoading(true);
@@ -65,10 +70,32 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = query.trim();
+    setShowSuggestions(false);
     if (q) {
       setActiveCategory(q);
       fetchProducts(q, false, minPrice, maxPrice);
       router.push(`/cerca?q=${encodeURIComponent(q)}`, { scroll: false });
+    }
+  };
+
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    if (suggestRef.current) clearTimeout(suggestRef.current);
+    if (val.trim().length >= 2) {
+      suggestRef.current = setTimeout(async () => {
+        try {
+          const url = `https://stappando.it/wp-json/wc/v3/products?consumer_key=ck_e28bb3c3e86e007bad35911cffb20258a1343b53&consumer_secret=cs_9494a1fed3d4ed450ff53df9166078abb2388e44&search=${encodeURIComponent(val)}&per_page=5&status=publish`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data: WCProduct[] = await res.json();
+            setSuggestions(data);
+            setShowSuggestions(data.length > 0);
+          }
+        } catch { /* */ }
+      }, 300);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
   };
 
@@ -89,7 +116,7 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
       <h1 className="text-2xl font-extrabold text-gray-900 mb-4">Shop</h1>
 
       {/* Search bar */}
-      <form onSubmit={handleSearch} className="mb-5">
+      <form onSubmit={handleSearch} className="mb-5 relative">
         <div className="relative">
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -97,7 +124,9 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="Cerca per nome, cantina, vitigno, regione..."
             className="w-full h-12 pl-12 pr-24 rounded-xl bg-white border border-gray-200 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20"
           />
@@ -105,6 +134,22 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
             Cerca
           </button>
         </div>
+        {/* Suggestions dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-20 overflow-hidden">
+            {suggestions.map(s => (
+              <Link key={s.id} href={`/prodotto/${s.slug}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors" onClick={() => setShowSuggestions(false)}>
+                <div className="relative w-8 h-8 rounded bg-gray-50 shrink-0 overflow-hidden">
+                  {s.images[0]?.src && <Image src={s.images[0].src} alt="" width={32} height={32} className="object-contain" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800 truncate">{decodeHtml(s.name)}</p>
+                </div>
+                <span className="text-sm font-bold text-[#055667] shrink-0">{formatPrice(s.price)} €</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </form>
 
       {/* Category pills — sempre visibili */}

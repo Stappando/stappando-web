@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
+import ConsigliatiMini from './ConsigliatiMini';
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal } = useCartStore();
@@ -135,6 +136,14 @@ export default function CartDrawer() {
             </div>
           )}
         </div>
+
+        {/* Consigliati */}
+        {items.length > 0 && (
+          <div className="border-t border-gray-100 p-4">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Potrebbe piacerti</p>
+            <ConsigliatiMini />
+          </div>
+        )}
 
         {/* Footer */}
         {items.length > 0 && (
