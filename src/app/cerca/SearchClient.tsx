@@ -76,15 +76,19 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const filtered = useMemo(() => {
     let result = [...allProducts];
 
-    // Category/search filter
+    // Category/search filter — match parole intere per evitare accavallamenti
     if (activeCategory && activeCategory !== 'offerte') {
       const q = activeCategory.toLowerCase();
+      const words = q.split(' ');
       result = result.filter(p => {
-        const name = p.name.toLowerCase();
-        const cats = p.categories?.map(c => c.name.toLowerCase()).join(' ') || '';
-        const attrs = p.attributes?.map(a => a.options.join(' ').toLowerCase()).join(' ') || '';
-        const desc = (p.short_description || '').toLowerCase();
-        return name.includes(q) || cats.includes(q) || attrs.includes(q) || desc.includes(q);
+        const text = [
+          p.name,
+          p.categories?.map(c => c.name).join(' '),
+          p.attributes?.map(a => a.options.join(' ')).join(' '),
+          p.short_description || '',
+        ].join(' ').toLowerCase();
+        // Tutte le parole della query devono essere presenti
+        return words.every(w => text.includes(w));
       });
     }
 
