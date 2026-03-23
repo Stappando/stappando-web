@@ -34,10 +34,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return () => window.removeEventListener('keydown', h);
   }, [isOpen, onClose]);
 
+  const [loading, setLoading] = useState(false);
+
   const go = (term: string) => {
-    onClose();
+    setLoading(true);
     setQuery('');
     router.push(`/cerca?q=${encodeURIComponent(term)}`);
+    setTimeout(() => { onClose(); setLoading(false); }, 300);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,6 +74,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#055667] text-white rounded-md text-xs font-bold hover:bg-[#044556] transition-colors">Cerca</button>
           </form>
         </div>
+
+        {/* Loading overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-6 h-6 border-2 border-[#055667]/20 border-t-[#055667] rounded-full animate-spin" />
+              <span className="text-xs text-gray-500">Caricamento...</span>
+            </div>
+          </div>
+        )}
 
         {/* Pills */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

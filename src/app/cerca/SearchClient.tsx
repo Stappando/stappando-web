@@ -174,8 +174,9 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
 
       {/* Results */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
           <div className="w-8 h-8 border-2 border-[#055667]/20 border-t-[#055667] rounded-full animate-spin" />
+          <p className="text-xs text-gray-400">Caricamento prodotti...</p>
         </div>
       ) : products.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
