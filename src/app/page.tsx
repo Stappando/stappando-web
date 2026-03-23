@@ -119,18 +119,15 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {trendingCategories.map((cat) => (
-              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                {cat.image?.src ? (
-                  <Image src={cat.image.src} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" />
-                ) : (
-                  <div className="w-full h-full bg-[#055667] flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-2.5">
-                  <p className="text-xs font-bold text-white leading-tight">{cat.name}</p>
+              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="group">
+                <div className="aspect-square rounded-xl overflow-hidden bg-gray-100">
+                  {cat.image?.src ? (
+                    <Image src={cat.image.src} alt={cat.name} width={300} height={300} className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="w-full h-full bg-[#055667]" />
+                  )}
                 </div>
+                <p className="text-xs font-semibold text-gray-800 mt-1.5 leading-tight line-clamp-1">{cat.name}</p>
               </Link>
             ))}
           </div>
