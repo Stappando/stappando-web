@@ -21,9 +21,6 @@ const ORDINA_OPTIONS = [
   { label: 'Prezzo ↓', value: 'price-desc' },
 ];
 
-const API_BASE = 'https://stappando.it/wp-json/wc/v3/products';
-const API_AUTH = 'consumer_key=ck_e28bb3c3e86e007bad35911cffb20258a1343b53&consumer_secret=cs_9494a1fed3d4ed450ff53df9166078abb2388e44';
-
 interface Props {
   initialProducts: WCProduct[];
   initialQuery: string;
@@ -31,38 +28,12 @@ interface Props {
   categories: WCCategory[];
 }
 
-// Fetch all products in batches for client cache
-async function fetchAllProducts(): Promise<WCProduct[]> {
-  const all: WCProduct[] = [];
-  const pages = [1, 2, 3, 4, 5]; // 5 pages x 100 = 500 products max
-  const results = await Promise.all(
-    pages.map(p =>
-      fetch(`${API_BASE}?${API_AUTH}&per_page=100&status=publish&page=${p}`)
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => [])
-    )
-  );
-  results.forEach(r => all.push(...r));
-  return all;
-}
-
 export default function SearchClient({ initialProducts, initialQuery, initialOnSale, categories }: Props) {
-  const [allProducts, setAllProducts] = useState<WCProduct[]>(initialProducts);
-  const [loaded, setLoaded] = useState(false);
+  const [allProducts] = useState<WCProduct[]>(initialProducts);
   const [activeCategory, setActiveCategory] = useState<string>(initialQuery || (initialOnSale ? 'offerte' : ''));
   const [maxPrice, setMaxPrice] = useState(500);
   const [orderBy, setOrderBy] = useState('popularity');
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-
-  // Load all products on mount for instant filtering
-  useEffect(() => {
-    fetchAllProducts().then(prods => {
-      if (prods.length > 0) {
-        setAllProducts(prods);
-        setLoaded(true);
-      }
-    });
-  }, []);
 
   // Sync from URL navigation (modal search)
   useEffect(() => {
@@ -145,20 +116,16 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
         {/* Offerte */}
         <button onClick={() => handleCategory('offerte')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === 'offerte' ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>Offerte</button>
 
-        {/* Divider */}
-        <div className="w-px h-6 bg-gray-200 shrink-0 hidden sm:block" />
-
-        {/* Prezzo */}
+        {/* Divider + Ordina + Prezzo */}
+        <div className="w-px h-5 bg-gray-200 shrink-0" />
+        <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-7 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#055667] shrink-0">
+          {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] text-gray-500">max</span>
           <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-16 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
           <span className="text-[10px] font-semibold text-[#055667] w-7">{maxPrice}€</span>
         </div>
-
-        {/* Ordina */}
-        <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667] shrink-0">
-          {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
       </div>
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
@@ -168,13 +135,6 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
         <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
         <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
       </div>
-
-      {/* Loading indicator for initial fetch */}
-      {!loaded && (
-        <div className="text-center py-2 mb-2">
-          <span className="text-[10px] text-gray-400">Caricamento catalogo completo...</span>
-        </div>
-      )}
 
       {/* Results — instant */}
       {filtered.length > 0 ? (

@@ -17,17 +17,15 @@ export async function generateMetadata({ searchParams }: Props) {
 export default async function SearchPage({ searchParams }: Props) {
   const { q, on_sale } = await searchParams;
 
-  // Fetch initial products — non-blocking for speed
-  let initialProducts: WCProduct[] = [];
-  try {
-    if (q) {
-      initialProducts = await api.searchProducts(q, { per_page: 40 });
-    } else if (on_sale === 'true') {
-      initialProducts = await api.getProducts({ on_sale: 'true', per_page: 40, orderby: 'popularity' });
-    } else {
-      initialProducts = await api.getProducts({ per_page: 40, orderby: 'popularity' });
-    }
-  } catch { initialProducts = []; }
+  // Fetch ALL products server-side in parallel for instant client filtering
+  const allPages = await Promise.all([
+    api.getProducts({ per_page: 100, page: 1, orderby: 'popularity' }).catch(() => []),
+    api.getProducts({ per_page: 100, page: 2, orderby: 'popularity' }).catch(() => []),
+    api.getProducts({ per_page: 100, page: 3, orderby: 'popularity' }).catch(() => []),
+    api.getProducts({ per_page: 100, page: 4, orderby: 'popularity' }).catch(() => []),
+    api.getProducts({ per_page: 100, page: 5, orderby: 'popularity' }).catch(() => []),
+  ]);
+  const initialProducts: WCProduct[] = allPages.flat();
 
   const categories = await api.getCategories({ parent: 5347, per_page: 50 }).catch(() => []);
 
