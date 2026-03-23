@@ -146,7 +146,7 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
-            <p>&copy; {new Date().getFullYear()} Stappando Srl Semplificata — P.IVA 02547520744. Tutti i diritti riservati.</p>
+            <p>&copy; {new Date().getFullYear()} Stappando Srl Semplificata — P.IVA 15855161003. Tutti i diritti riservati.</p>
             <p className="font-medium text-white/60">🔞 Vietata la vendita ai minori di 18 anni</p>
           </div>
         </div>

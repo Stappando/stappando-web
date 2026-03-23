@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import SearchModal from '@/components/SearchModal';
+import VendiConNoiModal from '@/components/VendiConNoiModal';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [vendiModalOpen, setVendiModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.getItemCount());
@@ -50,6 +52,12 @@ export default function Header() {
               <Link href="/blog" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Blog</Link>
               <Link href="/chi-siamo" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Chi siamo</Link>
               <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#b8973f] hover:text-[#055667] transition-colors">Degustazioni</a>
+              <button
+                onClick={() => setVendiModalOpen(true)}
+                className="text-sm font-semibold px-4 py-1.5 rounded-full bg-[#b8973f] text-white hover:bg-[#a6862f] transition-colors shadow-sm"
+              >
+                Vendi con noi
+              </button>
             </nav>
 
             {/* Desktop search */}
@@ -121,6 +129,7 @@ export default function Header() {
       </header>
 
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
+      <VendiConNoiModal isOpen={vendiModalOpen} onClose={() => setVendiModalOpen(false)} />
 
       {/* Mobile menu */}
       {menuOpen && (
@@ -158,7 +167,16 @@ export default function Header() {
                 </Link>
               ))}
             </nav>
-            <div className="p-4 border-t border-gray-100">
+            <div className="p-4 border-t border-gray-100 space-y-3">
+              <button
+                onClick={() => { setMenuOpen(false); setVendiModalOpen(true); }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#b8973f] text-white font-semibold text-sm hover:bg-[#a6862f] transition-colors shadow-sm"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72" />
+                </svg>
+                Vendi con noi
+              </button>
               <p className="text-xs text-gray-400 text-center">🔞 Vietata la vendita ai minori di 18 anni</p>
             </div>
           </div>
