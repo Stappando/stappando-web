@@ -206,7 +206,7 @@ export default function Header() {
       {/* ── Top Bar ── */}
       <div className="bg-[#005667]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-center h-8">
-          <p className="text-[11px] sm:text-xs font-medium tracking-wide text-[#d9c39a]">
+          <p className="text-[11px] sm:text-xs font-medium tracking-wide text-white">
             Selezionati da sommelier&ensp;·&ensp;Consegna in 24–48h&ensp;·&ensp;Spedizione gratuita da 69€&ensp;·&ensp;Reso gratuito
           </p>
         </div>
