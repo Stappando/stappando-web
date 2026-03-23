@@ -1,4 +1,4 @@
-import { api, type WCProduct } from '@/lib/api';
+import { api, type WCProduct, type WCCategory } from '@/lib/api';
 import SearchClient from './SearchClient';
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 export async function generateMetadata({ searchParams }: Props) {
   const { q } = await searchParams;
   return {
-    title: q ? `Risultati per "${q}" — Stappando` : 'Cerca vini — Stappando',
+    title: q ? `${q} — Shop Stappando` : 'Shop — Stappando',
   };
 }
 
@@ -17,10 +17,14 @@ export default async function SearchPage({ searchParams }: Props) {
 
   let initialProducts: WCProduct[] = [];
   if (q) {
-    initialProducts = await api.searchProducts(q).catch(() => []);
+    initialProducts = await api.searchProducts(q, { per_page: 40 }).catch(() => []);
   } else if (on_sale === 'true') {
     initialProducts = await api.getProducts({ on_sale: 'true', per_page: 40, orderby: 'popularity' }).catch(() => []);
+  } else {
+    initialProducts = await api.getProducts({ per_page: 40, orderby: 'popularity' }).catch(() => []);
   }
 
-  return <SearchClient initialProducts={initialProducts} initialQuery={q || ''} initialOnSale={on_sale === 'true'} />;
+  const categories = await api.getCategories({ parent: 5347, per_page: 50 }).catch(() => []);
+
+  return <SearchClient initialProducts={initialProducts} initialQuery={q || ''} initialOnSale={on_sale === 'true'} categories={categories} />;
 }

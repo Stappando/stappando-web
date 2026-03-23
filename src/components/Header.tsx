@@ -67,12 +67,6 @@ export default function Header() {
               <Link href="/blog" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Blog</Link>
               <Link href="/chi-siamo" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Chi siamo</Link>
               <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#b8973f] hover:text-[#055667] transition-colors">Degustazioni</a>
-              <button
-                onClick={() => setVendiModalOpen(true)}
-                className="text-sm font-semibold px-4 py-1.5 rounded-full bg-[#b8973f] text-white hover:bg-[#a6862f] transition-colors shadow-sm"
-              >
-                Vendi con noi
-              </button>
             </nav>
 
             {/* Desktop search */}
@@ -135,6 +129,14 @@ export default function Header() {
                     {itemCount > 99 ? '99+' : itemCount}
                   </span>
                 )}
+              </button>
+
+              {/* Vendi con noi */}
+              <button
+                onClick={() => setVendiModalOpen(true)}
+                className="hidden sm:flex text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#b8973f] text-white hover:bg-[#a6862f] transition-colors"
+              >
+                Vendi con noi
               </button>
             </div>
           </div>
