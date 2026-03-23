@@ -19,8 +19,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) {
+    await login(email, password);
+    // Check if login succeeded by checking store state
+    const state = useAuthStore.getState();
+    if (state.token) {
       onClose();
       resetForm();
     }
@@ -28,8 +30,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await register(email, password, firstName, lastName);
-    if (success) {
+    await register(email, password, firstName, lastName);
+    const state = useAuthStore.getState();
+    if (state.token) {
       onClose();
       resetForm();
     }
