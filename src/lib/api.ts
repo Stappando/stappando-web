@@ -175,7 +175,7 @@ async function subscribeNewsletter(email: string): Promise<{ success: boolean; m
 /* ── Blog ───────────────────────────────────────────────── */
 
 async function getPosts(page: number = 1): Promise<WPPost[]> {
-  const url = `${baseUrl}/wp-json/wp/v2/posts?per_page=10&page=${page}&_embed`;
+  const url = `${baseUrl}/wp-json/wp/v2/posts?per_page=12&page=${page}&_embed`;
   const response = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
   if (!response.ok) return [];
   return response.json();

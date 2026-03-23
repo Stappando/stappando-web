@@ -31,7 +31,7 @@ export default async function BlogPage({ searchParams }: Props) {
 
   const posts = allPosts;
   const filteredCategories = categories.filter(c => c.slug !== 'uncategorized' && c.count > 0);
-  const hasMore = posts.length >= 10;
+  const hasMore = posts.length >= 12;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
