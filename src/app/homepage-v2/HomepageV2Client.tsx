@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
@@ -120,6 +120,114 @@ function Countdown() {
   );
 }
 
+/* ══════════════════════════════════════════
+   STICKY HEADER
+   CRO: Search prominente, nav per occasione,
+   carrello con badge, zero rumore.
+   ══════════════════════════════════════════ */
+const NAV_ITEMS = [
+  { label: 'Per occasione', href: '/homepage-v2/search' },
+  { label: 'Best seller', href: '/homepage-v2/search?sort=bestseller' },
+  { label: 'Regali', href: '/homepage-v2/search?q=regalo' },
+  { label: 'Offerte', href: '/homepage-v2/search?filter=sale' },
+  { label: 'Cantine', href: '/homepage-v2/search?filter=cantina' },
+];
+
+function StickyHeader({ cartCount }: { cartCount: number }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100/80">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center gap-3 h-14 sm:h-16">
+
+          {/* Mobile hamburger */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden -ml-1 p-1.5 text-gray-600 hover:text-gray-900" aria-label="Menu">
+            {mobileOpen ? (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+            )}
+          </button>
+
+          {/* Logo */}
+          <Link href="/homepage-v2" className="shrink-0">
+            <img src="/logo.png" alt="Stappando" className="h-7 sm:h-9 w-auto" />
+          </Link>
+
+          {/* Nav — desktop only */}
+          <nav className="hidden lg:flex items-center gap-1 ml-6">
+            {NAV_ITEMS.map(item => (
+              <Link key={item.label} href={item.href}
+                className="px-3 py-1.5 text-[13px] font-medium text-gray-600 hover:text-[#055667] hover:bg-gray-50 rounded-lg transition-colors whitespace-nowrap">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Search — most prominent element */}
+          <form
+            className="flex-1 max-w-lg ml-auto mr-3"
+            onSubmit={e => { e.preventDefault(); const v = (e.currentTarget.querySelector('input') as HTMLInputElement)?.value; if (v) window.location.href = `/homepage-v2/search?q=${encodeURIComponent(v)}`; }}
+          >
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input
+                type="text"
+                placeholder="Cerca vino, occasione o regione…"
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                  searchFocused
+                    ? 'bg-white border-[#055667] ring-2 ring-[#055667]/15 shadow-sm border'
+                    : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                } focus:outline-none`}
+              />
+            </div>
+          </form>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Account — desktop only */}
+            <Link href="/account" className="hidden sm:flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-[#055667] hover:bg-gray-50 transition-colors" aria-label="Account">
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+            </Link>
+
+            {/* Cart — always visible, badge with count */}
+            <Link href="/checkout" className="relative flex items-center justify-center w-9 h-9 rounded-lg text-gray-600 hover:text-[#055667] hover:bg-gray-50 transition-colors" aria-label="Carrello">
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#055667] text-white text-[10px] font-bold rounded-full px-1 leading-none">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile nav panel */}
+      {mobileOpen && (
+        <div className="lg:hidden border-t border-gray-100 bg-white">
+          <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
+            {NAV_ITEMS.map(item => (
+              <Link key={item.label} href={item.href} onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-[#055667] hover:bg-gray-50 rounded-lg transition-colors">
+                {item.label}
+              </Link>
+            ))}
+            <Link href="/account" onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-[#055667] hover:bg-gray-50 rounded-lg transition-colors border-t border-gray-50 mt-2 pt-3">
+              Il mio account
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
 /* ── Main Homepage ─────────────────────── */
 export default function HomepageV2Client() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -148,54 +256,25 @@ export default function HomepageV2Client() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ── Announcement Bar ─────────────── */}
-      <div className="bg-[#055667] text-white text-center py-2 text-xs sm:text-sm font-medium tracking-wide">
-        Spedizione gratuita da €69 • Consegna veloce in tutta Italia
+      {/* ══ TOP BAR ═══════════════════════════
+          Funzione: ridurre incertezza, comunicare valore immediato.
+          1 riga, non invasiva, alto contrasto ma premium.
+          ════════════════════════════════════════ */}
+      <div className="bg-[#0a0a0a] text-white/90">
+        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-center">
+          <p className="text-[11px] sm:text-xs font-medium tracking-wide">
+            Selezionati da sommelier&ensp;•&ensp;Consegna in 24–48h&ensp;•&ensp;Reso gratuito entro 14 giorni
+          </p>
+        </div>
       </div>
 
-      {/* ── Header ───────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-          {/* Logo */}
-          <Link href="/homepage-v2" className="shrink-0">
-            <img src="/logo.png" alt="Stappando" className="h-8 sm:h-10 w-auto" />
-          </Link>
-
-          {/* Search */}
-          <form className="flex-1 max-w-xl mx-auto" onSubmit={e => { e.preventDefault(); const v = (e.currentTarget.querySelector('input') as HTMLInputElement)?.value; if (v) window.location.href = `/homepage-v2/search?q=${encodeURIComponent(v)}`; }}>
-            <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <input
-                type="text"
-                placeholder="Cerca vini, cantine, vitigni..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#055667] focus:ring-1 focus:ring-[#055667]/20 transition-all"
-              />
-            </div>
-          </form>
-
-          {/* Nav — desktop */}
-          <nav className="hidden lg:flex items-center gap-5">
-            {['Rossi', 'Bianchi', 'Bollicine', 'Offerte', 'Regali'].map(item => (
-              <Link key={item} href={`/cerca?cat=${item.toLowerCase()}`} className="text-sm font-medium text-gray-600 hover:text-[#055667] transition-colors whitespace-nowrap">
-                {item}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Icons */}
-          <div className="flex items-center gap-3">
-            <Link href="/account" className="text-gray-500 hover:text-[#055667] transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-            </Link>
-            <button className="text-gray-500 hover:text-[#055667] transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-            </button>
-            <Link href="/cerca" className="relative text-gray-500 hover:text-[#055667] transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* ══ HEADER ════════════════════════════
+          Struttura: Logo | Nav | Search | Actions
+          Search = elemento più prominente.
+          Nav = per occasione, non per categoria tecnica.
+          Mobile = hamburger + search + carrello.
+          ════════════════════════════════════════ */}
+      <StickyHeader cartCount={useCartStore(s => s.items.reduce((sum, i) => sum + i.quantity, 0))} />
 
       {/* ── Hero ─────────────────────────── */}
       <section className="relative bg-gradient-to-br from-[#f8f5f0] to-[#ebe5db] overflow-hidden">
