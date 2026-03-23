@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import SearchModal from '@/components/SearchModal';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
@@ -64,12 +64,14 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
     });
   }, []);
 
-  // Sync from URL navigation (modal search)
+  // Sync from URL navigation (modal search) — only on first mount
+  const mountedRef = useRef(false);
   useEffect(() => {
-    if (initialQuery && initialQuery !== activeCategory) {
-      setActiveCategory(initialQuery);
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      if (initialQuery) setActiveCategory(initialQuery);
     }
-  }, [initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side filtering — instant
   const filtered = useMemo(() => {
@@ -78,17 +80,23 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
     // Category/search filter
     if (activeCategory && activeCategory !== 'offerte') {
       const q = activeCategory.toLowerCase();
-      result = result.filter(p => {
-        // Prima cerca match esatto nella categoria
-        const catMatch = p.categories?.some(c => c.name.toLowerCase() === q);
-        if (catMatch) return true;
-        // Poi cerca nel nome prodotto come frase esatta
-        if (p.name.toLowerCase().includes(q)) return true;
-        // Poi negli attributi
-        const attrMatch = p.attributes?.some(a => a.options.some(o => o.toLowerCase().includes(q)));
-        if (attrMatch) return true;
-        return false;
-      });
+      // Determina se è una pill categoria (click) o ricerca libera (modal)
+      const allCatNames = MACRO_CATEGORIES.flatMap(mc => [mc.label, ...(mc.subs || [])]).map(s => s.toLowerCase());
+      const isCategoryPill = allCatNames.includes(q);
+
+      if (isCategoryPill) {
+        // SOLO categoria esatta — no nome, no descrizione
+        result = result.filter(p => p.categories?.some(c => c.name.toLowerCase() === q));
+      } else {
+        // Ricerca libera — cerca ovunque
+        result = result.filter(p => {
+          const name = p.name.toLowerCase();
+          const cats = p.categories?.map(c => c.name.toLowerCase()).join(' ') || '';
+          const attrs = p.attributes?.map(a => a.options.join(' ').toLowerCase()).join(' ') || '';
+          const desc = (p.short_description || '').toLowerCase();
+          return name.includes(q) || cats.includes(q) || attrs.includes(q) || desc.includes(q);
+        });
+      }
     }
 
     // On sale
