@@ -260,10 +260,10 @@ export default function HomepageV2Client() {
           Funzione: ridurre incertezza, comunicare valore immediato.
           1 riga, non invasiva, alto contrasto ma premium.
           ════════════════════════════════════════ */}
-      <div className="bg-[#0a0a0a] text-white/90">
+      <div className="bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-center">
-          <p className="text-[11px] sm:text-xs font-medium tracking-wide">
-            Selezionati da sommelier&ensp;•&ensp;Consegna in 24–48h&ensp;•&ensp;Reso gratuito entro 14 giorni
+          <p className="text-[11px] sm:text-xs font-medium tracking-wide text-[#c9a96e]">
+            Selezionati da sommelier&ensp;•&ensp;Consegna in 24–48h&ensp;•&ensp;Spedizione gratuita da 69€&ensp;•&ensp;Reso gratuito
           </p>
         </div>
       </div>
