@@ -70,15 +70,16 @@ export default function Header() {
             </nav>
 
             {/* Desktop search */}
-            <button
+            <div
               onClick={() => setSearchModalOpen(true)}
-              className="hidden lg:flex items-center flex-1 max-w-md mx-6 h-10 pl-10 pr-4 rounded-full bg-gray-50 border border-gray-200 text-sm text-gray-400 hover:border-[#055667]/40 transition-colors cursor-pointer relative"
+              className="hidden lg:flex items-center flex-1 max-w-md mx-6 h-10 pl-10 pr-2 rounded-full bg-gray-50 border border-gray-200 text-sm text-gray-400 hover:border-[#055667]/40 transition-colors cursor-pointer relative"
             >
               <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Cerca vini, cantine...
-            </button>
+              <span className="flex-1">Cerca vini, cantine...</span>
+              <span className="px-3 py-1 rounded-full bg-[#055667] text-white text-xs font-bold">Cerca</span>
+            </div>
 
             {/* Right icons */}
             <div className="flex items-center gap-1 sm:gap-2">
