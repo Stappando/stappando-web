@@ -143,20 +143,19 @@ export default async function HomePage() {
             <svg className="w-5 h-5 text-[#055667]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             <h2 className="text-xl font-extrabold text-gray-900">Di tendenza</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
             {trendingCategories.map((cat) => (
-              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-gray-100">
-                {cat.image?.src ? (
-                  <Image src={cat.image.src} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
-                ) : (
-                  <div className="w-full h-full bg-[#055667] flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-3">
-                  <p className="text-sm font-bold text-white">{cat.name}</p>
+              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="group flex flex-col items-center shrink-0">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-[#055667] overflow-hidden bg-gray-50 group-hover:border-[#b8973f] transition-colors">
+                  {cat.image?.src ? (
+                    <Image src={cat.image.src} alt={cat.name} width={112} height={112} className="object-cover w-full h-full group-hover:scale-105 transition-transform" />
+                  ) : (
+                    <div className="w-full h-full bg-[#055667] flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                  )}
                 </div>
+                <span className="text-xs font-semibold text-gray-800 text-center mt-2 leading-tight line-clamp-2 w-24 sm:w-28">{cat.name}</span>
               </Link>
             ))}
           </div>
