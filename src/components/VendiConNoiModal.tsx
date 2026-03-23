@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface VendiConNoiModalProps {
@@ -11,15 +11,17 @@ interface VendiConNoiModalProps {
 
 const benefits = [
   { icon: '👁️', title: 'Visibilità', desc: 'Migliaia di appassionati pronti a scoprire i tuoi vini' },
-  { icon: '🚚', title: 'Logistica', desc: 'Spedizioni con corrieri specializzati nel trasporto vini' },
-  { icon: '💳', title: 'Pagamenti', desc: 'Incassi sicuri e puntuali, commissioni trasparenti' },
-  { icon: '🤝', title: 'Supporto', desc: 'Team dedicato per configurazione e crescita vendite' },
+  { icon: '🚚', title: 'Logistica', desc: 'Corrieri specializzati nel trasporto vini' },
+  { icon: '💳', title: 'Pagamenti', desc: 'Incassi sicuri, commissioni trasparenti' },
+  { icon: '🤝', title: 'Supporto', desc: 'Team dedicato per la tua crescita' },
 ];
 
 export default function VendiConNoiModal({ isOpen, onClose, onOpenAuth }: VendiConNoiModalProps) {
+  const [showForm, setShowForm] = useState(false);
+
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
+    else { document.body.style.overflow = ''; setShowForm(false); }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
@@ -37,42 +39,55 @@ export default function VendiConNoiModal({ isOpen, onClose, onOpenAuth }: VendiC
 
         <div className="p-6 sm:p-8">
           {/* Logo */}
-          <div className="flex justify-center mb-5">
-            <Image src="/logo.png" alt="Stappando" width={140} height={35} className="h-8 w-auto" />
+          <div className="flex justify-center mb-4">
+            <Image src="/logo.png" alt="Stappando" width={120} height={30} className="h-7 w-auto" />
           </div>
 
-          <h2 className="text-xl font-bold text-[#055667] text-center mb-1">Vendi i tuoi vini su Stappando</h2>
-          <p className="text-center text-sm text-gray-500 mb-6">Zero costi di attivazione, massima visibilità</p>
+          {!showForm ? (
+            <>
+              <h2 className="text-lg font-bold text-[#055667] text-center mb-1">Vendi i tuoi vini su Stappando</h2>
+              <p className="text-center text-xs text-gray-500 mb-5">Zero costi di attivazione</p>
 
-          {/* Benefits - compact */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {benefits.map(b => (
-              <div key={b.title} className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50">
-                <span className="text-lg">{b.icon}</span>
-                <div>
-                  <p className="text-xs font-bold text-gray-800">{b.title}</p>
-                  <p className="text-[10px] text-gray-500 leading-relaxed">{b.desc}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-2.5 mb-5">
+                {benefits.map(b => (
+                  <div key={b.title} className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-50">
+                    <span className="text-base">{b.icon}</span>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-800">{b.title}</p>
+                      <p className="text-[9px] text-gray-500 leading-relaxed">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* CTA */}
-          <a
-            href="https://stappando.it/vendor-register/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full py-3 bg-[#b8973f] text-white font-bold text-sm text-center rounded-xl hover:bg-[#a07f30] transition-colors"
-          >
-            Registrati come Venditore
-          </a>
+              <button
+                onClick={() => setShowForm(true)}
+                className="block w-full py-3 bg-[#b8973f] text-white font-bold text-sm text-center rounded-xl hover:bg-[#a07f30] transition-colors"
+              >
+                Registrati come Venditore
+              </button>
 
-          <button
-            onClick={() => { onClose(); onOpenAuth?.(); }}
-            className="block w-full mt-3 text-center text-sm text-gray-500 hover:text-[#055667] transition-colors"
-          >
-            Già venditore? <span className="underline font-medium">Accedi</span>
-          </button>
+              <button
+                onClick={() => { onClose(); onOpenAuth?.(); }}
+                className="block w-full mt-3 text-center text-xs text-gray-500 hover:text-[#055667] transition-colors"
+              >
+                Già venditore? <span className="underline font-medium">Accedi</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setShowForm(false)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#055667] mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                Indietro
+              </button>
+              <h2 className="text-lg font-bold text-[#055667] text-center mb-4">Registrazione Venditore</h2>
+              <iframe
+                src="https://stappando.it/vendor-register/"
+                className="w-full h-[50vh] rounded-xl border border-gray-200"
+                title="Registrazione Venditore"
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
