@@ -71,9 +71,9 @@ export default function Footer() {
 
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-10">
           {/* Logo + description */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="col-span-2">
             <Image src="/logo-white.png" alt="Stappando" width={160} height={40} className="mb-4 brightness-0 invert" />
             <p className="text-sm text-white/60 leading-relaxed">
               Enocultura italiana. Vini d&apos;eccellenza direttamente dalle cantine a casa tua.
