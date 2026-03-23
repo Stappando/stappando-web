@@ -218,6 +218,31 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ═══ SCARICA L'APP ═══ */}
+      <section className="mt-12 mx-4 sm:mx-6 lg:mx-auto lg:max-w-7xl">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 sm:p-10 lg:p-12 flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex-1 text-center sm:text-left">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Stappando nel tuo telefono</h2>
+            <p className="text-white/70 text-sm sm:text-base mb-6">Ordina i migliori vini italiani ovunque tu sia. Scarica l&apos;app gratuita.</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
+              <a href="https://apps.apple.com/it/app/stappando/id1553885938" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:shadow-lg transition-all hover:scale-105">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                App Store
+              </a>
+              <a href="https://play.google.com/store/apps/details?id=it.stappando.enocultura" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:shadow-lg transition-all hover:scale-105">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302a1 1 0 010 1.38l-2.302 2.302L15.396 13l2.302-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302L5.864 2.658z"/></svg>
+                Google Play
+              </a>
+            </div>
+          </div>
+          <div className="shrink-0 hidden lg:block">
+            <div className="w-32 h-56 bg-gray-700 rounded-3xl border-4 border-gray-600 flex items-center justify-center">
+              <Image src="/logo.png" alt="Stappando App" width={80} height={20} className="opacity-80" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ BLOG CTA ═══ */}
       <section className="mt-10 mx-4 sm:mx-6 lg:mx-auto lg:max-w-7xl">
         <Link href="/blog" className="block bg-[#055667] rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow">

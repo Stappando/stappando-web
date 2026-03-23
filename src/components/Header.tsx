@@ -49,6 +49,7 @@ export default function Header() {
               <Link href="/cerca" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Catalogo</Link>
               <Link href="/blog" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Blog</Link>
               <Link href="/chi-siamo" className="text-sm font-medium text-gray-700 hover:text-[#055667] transition-colors">Chi siamo</Link>
+              <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#b8973f] hover:text-[#055667] transition-colors">Degustazioni</a>
             </nav>
 
             {/* Desktop search */}
@@ -141,6 +142,7 @@ export default function Header() {
                 { href: '/blog', label: 'Blog', icon: '📰' },
                 { href: '/chi-siamo', label: 'Chi siamo', icon: '👥' },
                 { href: '/contatti', label: 'Contatti', icon: '📧' },
+                { href: 'https://app.vineis.eu', label: 'Degustazioni', icon: '🥂' },
                 { href: '/spedizioni', label: 'Spedizioni', icon: '🚚' },
                 { href: '/pagamenti', label: 'Pagamenti', icon: '💳' },
                 { href: '/account', label: mounted && isAuthenticated ? `Ciao ${user?.firstName || ''}` : 'Accedi / Registrati', icon: '👤' },
