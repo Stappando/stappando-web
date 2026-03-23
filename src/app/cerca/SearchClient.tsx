@@ -14,6 +14,7 @@ const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
   { label: 'Aperitivi' },
   { label: 'Cocktail' },
 ];
+const ALL_CAT_NAMES = MACRO_CATEGORIES.flatMap(mc => [mc.label, ...(mc.subs || [])]).map(s => s.toLowerCase());
 const ORDINA_OPTIONS = [
   { label: 'Più popolari', value: 'popularity' },
   { label: 'Novità', value: 'date' },
@@ -22,110 +23,97 @@ const ORDINA_OPTIONS = [
 ];
 
 interface Props {
-  initialProducts: WCProduct[];
   initialQuery: string;
   initialOnSale: boolean;
   categories: WCCategory[];
 }
 
-export default function SearchClient({ initialProducts, initialQuery, initialOnSale, categories }: Props) {
-  const [allProducts] = useState<WCProduct[]>(initialProducts);
+// Global cache — loaded once
+let _cachedProducts: WCProduct[] | null = null;
+
+export default function SearchClient({ initialQuery, initialOnSale, categories }: Props) {
+  const [allProducts, setAllProducts] = useState<WCProduct[]>(_cachedProducts || []);
+  const [ready, setReady] = useState(!!_cachedProducts);
   const [activeCategory, setActiveCategory] = useState<string>(initialQuery || (initialOnSale ? 'offerte' : ''));
   const [maxPrice, setMaxPrice] = useState(500);
   const [orderBy, setOrderBy] = useState('popularity');
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
-  // Sync from URL navigation (modal search)
+  // Load products.json — static file, CDN cached, ~1MB, loads in <500ms
+  useEffect(() => {
+    if (_cachedProducts) { setReady(true); return; }
+    fetch('/products.json')
+      .then(r => r.json())
+      .then((data: WCProduct[]) => {
+        _cachedProducts = data;
+        setAllProducts(data);
+        setReady(true);
+      })
+      .catch(() => setReady(true));
+  }, []);
+
+  // Sync from URL
   useEffect(() => {
     if (initialQuery) setActiveCategory(initialQuery);
     else if (initialOnSale) setActiveCategory('offerte');
   }, [initialQuery, initialOnSale]);
 
-  // Client-side filtering — instant
+  // INSTANT filtering — no API calls
   const filtered = useMemo(() => {
+    if (!ready) return [];
     let result = [...allProducts];
 
-    // Category/search filter
     if (activeCategory && activeCategory !== 'offerte') {
       const q = activeCategory.toLowerCase();
-      // Determina se è una pill categoria (click) o ricerca libera (modal)
-      const allCatNames = MACRO_CATEGORIES.flatMap(mc => [mc.label, ...(mc.subs || [])]).map(s => s.toLowerCase());
-      const isCategoryPill = allCatNames.includes(q);
-
-      if (isCategoryPill) {
-        // SOLO categoria esatta — no nome, no descrizione
+      const isCatPill = ALL_CAT_NAMES.includes(q);
+      if (isCatPill) {
         result = result.filter(p => p.categories?.some(c => c.name.toLowerCase() === q));
       } else {
-        // Ricerca libera — cerca ovunque
         result = result.filter(p => {
-          const name = p.name.toLowerCase();
-          const cats = p.categories?.map(c => c.name.toLowerCase()).join(' ') || '';
-          const attrs = p.attributes?.map(a => a.options.join(' ').toLowerCase()).join(' ') || '';
-          const desc = (p.short_description || '').toLowerCase();
-          return name.includes(q) || cats.includes(q) || attrs.includes(q) || desc.includes(q);
+          const text = [p.name, p.categories?.map(c => c.name).join(' '), p.attributes?.map(a => a.options.join(' ')).join(' ')].join(' ').toLowerCase();
+          return text.includes(q);
         });
       }
     }
+    if (activeCategory === 'offerte') result = result.filter(p => p.on_sale);
+    if (maxPrice < 500) result = result.filter(p => parseFloat(p.price) <= maxPrice);
 
-    // On sale
-    if (activeCategory === 'offerte') {
-      result = result.filter(p => p.on_sale);
-    }
-
-    // Price
-    if (maxPrice < 500) {
-      result = result.filter(p => parseFloat(p.price) <= maxPrice);
-    }
-
-    // Circuito always first
-    const circuito = result.filter(p => p.tags?.some(t => t.id === 21993));
+    // Circuito first
+    const circ = result.filter(p => p.tags?.some(t => t.id === 21993));
     const rest = result.filter(p => !p.tags?.some(t => t.id === 21993));
-
-    // Sort
     if (orderBy === 'price-asc') rest.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
     else if (orderBy === 'price-desc') rest.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
     else if (orderBy === 'date') rest.sort((a, b) => b.id - a.id);
+    return [...circ, ...rest];
+  }, [allProducts, activeCategory, maxPrice, orderBy, ready]);
 
-    return [...circuito, ...rest];
-  }, [allProducts, activeCategory, maxPrice, orderBy]);
-
-  const handleCategory = (cat: string) => {
-    setActiveCategory(cat);
-  };
-
-  const pill = (label: string, active: boolean, onClick: () => void, variant: 'default' | 'red' = 'default') => (
-    <button key={label} onClick={onClick} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
-      active
-        ? variant === 'red' ? 'bg-red-500 text-white' : 'bg-[#055667] text-white'
-        : variant === 'red' ? 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'
-    }`}>{label}</button>
-  );
+  const handleCategory = (cat: string) => setActiveCategory(cat);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      {/* TOOLBAR: Search + Categories + Price + Sort — tutto una riga */}
-      <div className="flex items-center gap-2 mb-3 overflow-visible flex-wrap">
-        {/* Tutti */}
+      {/* Toolbar — categorie + ordina + prezzo, tutto inline */}
+      <div className="flex items-center gap-1.5 overflow-visible flex-wrap mb-3">
         <button onClick={() => handleCategory('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === '' ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>Tutti</button>
 
-        {/* Macro categorie inline con dropdown */}
         {MACRO_CATEGORIES.map(mc => (
           <MacroDropdown key={mc.label} mc={mc} activeCategory={activeCategory} onSelect={handleCategory} />
         ))}
 
-        {/* Offerte */}
         <button onClick={() => handleCategory('offerte')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === 'offerte' ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>Offerte</button>
 
-        {/* Divider + Ordina + Prezzo */}
         <div className="w-px h-5 bg-gray-200 shrink-0" />
+
         <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-7 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#055667] shrink-0">
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] text-gray-500">max</span>
           <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-16 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
           <span className="text-[10px] font-semibold text-[#055667] w-7">{maxPrice}€</span>
         </div>
+
+        <span className="text-[10px] text-gray-400 shrink-0">{filtered.length} prodotti</span>
       </div>
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
@@ -136,12 +124,15 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
         <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
       </div>
 
-      {/* Results — instant */}
-      {filtered.length > 0 ? (
+      {/* Results */}
+      {!ready ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-2">
+          <div className="w-6 h-6 border-2 border-[#055667]/20 border-t-[#055667] rounded-full animate-spin" />
+          <p className="text-xs text-gray-400">Caricamento...</p>
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {filtered.map(product => <ProductCard key={product.id} product={product} />)}
         </div>
       ) : (
         <div className="text-center py-16">
@@ -154,24 +145,18 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   );
 }
 
-/* ── Macro dropdown pill ── */
+/* ── Macro dropdown ── */
 function MacroDropdown({ mc, activeCategory, onSelect }: { mc: { label: string; subs?: string[] }; activeCategory: string; onSelect: (c: string) => void }) {
   const [open, setOpen] = useState(false);
   const isActive = activeCategory === mc.label || mc.subs?.includes(activeCategory);
 
   if (!mc.subs) {
-    return (
-      <button onClick={() => onSelect(mc.label)} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>
-        {mc.label}
-      </button>
-    );
+    return <button onClick={() => onSelect(mc.label)} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>{mc.label}</button>;
   }
 
   return (
     <div className="relative shrink-0" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}
-      >
+      <button className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>
         {mc.label}
         <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
       </button>
