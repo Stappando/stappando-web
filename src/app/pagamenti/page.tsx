@@ -37,7 +37,7 @@ const paymentMethods = [
     name: 'Contrassegno',
     icon: '📦',
     description: 'Paga alla consegna direttamente al nostro corriere. Facile e comodo, ideale per chi preferisce pagare al momento della ricezione.',
-    extra: 'Supplemento di 5,00\u20AC sull\u2019ordine. Si prega di preparare l\u2019importo esatto.',
+    extra: 'Supplemento di 3,66\u20AC sull\u2019ordine. Si prega di preparare l\u2019importo esatto.',
   },
 ];
 
@@ -119,7 +119,7 @@ export default function PagamentiPage() {
               },
               {
                 q: 'Il contrassegno ha un costo aggiuntivo?',
-                a: 'Sì, il pagamento in contrassegno prevede un supplemento di 5,00\u20AC sull\'ordine. Si prega di preparare l\'importo esatto al momento della consegna.',
+                a: 'Sì, il pagamento in contrassegno prevede un supplemento di 3,66\u20AC sull\'ordine. Si prega di preparare l\'importo esatto al momento della consegna.',
               },
               {
                 q: 'I miei dati sono al sicuro?',
