@@ -7,11 +7,13 @@ import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import SearchModal from '@/components/SearchModal';
 import VendiConNoiModal from '@/components/VendiConNoiModal';
+import AuthModal from '@/components/AuthModal';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [vendiModalOpen, setVendiModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.getItemCount());
@@ -92,21 +94,19 @@ export default function Header() {
               </Link>
 
               {/* Account */}
-              <Link
-                href="/account"
-                className="p-2 text-gray-700 hover:text-[#055667] transition-colors"
-                aria-label="Account"
-              >
-                {mounted && isAuthenticated ? (
+              {mounted && isAuthenticated ? (
+                <Link href="/account" className="p-2 text-gray-700 hover:text-[#055667] transition-colors" aria-label="Account">
                   <div className="w-7 h-7 rounded-full bg-[#055667] text-white text-xs font-bold flex items-center justify-center">
                     {user?.firstName?.[0]?.toUpperCase() || 'U'}
                   </div>
-                ) : (
+                </Link>
+              ) : (
+                <button onClick={() => setAuthModalOpen(true)} className="p-2 text-gray-700 hover:text-[#055667] transition-colors" aria-label="Accedi">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                )}
-              </Link>
+                </button>
+              )}
 
               {/* Cart */}
               <button
@@ -130,6 +130,7 @@ export default function Header() {
 
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
       <VendiConNoiModal isOpen={vendiModalOpen} onClose={() => setVendiModalOpen(false)} />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Mobile menu */}
       {menuOpen && (
@@ -154,7 +155,6 @@ export default function Header() {
                 { href: 'https://app.vineis.eu', label: 'Degustazioni', icon: '🥂' },
                 { href: '/spedizioni', label: 'Spedizioni', icon: '🚚' },
                 { href: '/pagamenti', label: 'Pagamenti', icon: '💳' },
-                { href: '/account', label: mounted && isAuthenticated ? `Ciao ${user?.firstName || ''}` : 'Accedi / Registrati', icon: '👤' },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -166,6 +166,13 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
+              <button
+                onClick={() => { setMenuOpen(false); mounted && isAuthenticated ? window.location.href = '/account' : setAuthModalOpen(true); }}
+                className="flex items-center gap-3 px-6 py-3.5 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#055667] transition-colors w-full text-left"
+              >
+                <span>👤</span>
+                {mounted && isAuthenticated ? `Ciao ${user?.firstName || ''}` : 'Accedi / Registrati'}
+              </button>
             </nav>
             <div className="p-4 border-t border-gray-100 space-y-3">
               <button
