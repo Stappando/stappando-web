@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import SearchModal from '@/components/SearchModal';
 import { useRouter } from 'next/navigation';
 import { type WCProduct, type WCCategory, decodeHtml, formatPrice } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
-import Image from 'next/image';
-import Link from 'next/link';
+// Image and Link kept for potential future use
 
 const SPUMANTI_SUB = ['Prosecco', 'Franciacorta', 'Trento DOC', 'Alta Langa', 'Metodo Classico'];
 const ORDINA_OPTIONS = [
@@ -34,6 +34,7 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   const [orderBy, setOrderBy] = useState('popularity');
   const [suggestions, setSuggestions] = useState<WCProduct[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const suggestRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -122,37 +123,25 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* ROW 1: Search + Sort inline */}
-      <div className="flex gap-2 mb-3 relative">
-        <form onSubmit={handleSearch} className="flex-1 relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input type="search" value={query} onChange={(e) => handleQueryChange(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} placeholder="Cerca vini..." className="w-full h-9 pl-9 pr-3 rounded-lg bg-white border border-gray-200 text-xs focus:outline-none focus:border-[#055667]" />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-20 overflow-hidden">
-              {suggestions.map(s => (
-                <Link key={s.id} href={`/prodotto/${s.slug}`} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors" onClick={() => setShowSuggestions(false)}>
-                  <div className="relative w-7 h-7 rounded bg-gray-50 shrink-0 overflow-hidden">{s.images[0]?.src && <Image src={s.images[0].src} alt="" width={28} height={28} className="object-contain" />}</div>
-                  <p className="text-xs text-gray-800 truncate flex-1">{decodeHtml(s.name)}</p>
-                  <span className="text-xs font-bold text-[#055667] shrink-0">{formatPrice(s.price)}€</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </form>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 h-9">
-            <span className="text-[10px] text-gray-500">max</span>
-            <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-            <span className="text-[10px] font-semibold text-[#055667] w-8">{maxPrice}€</span>
-          </div>
-          <select value={orderBy} onChange={(e) => handleOrder(e.target.value)} className="h-9 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667]">
-            {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+      {/* ROW 1: Search button + Price + Sort — all inline */}
+      <div className="flex items-center gap-2 mb-3">
+        <button onClick={() => setSearchModalOpen(true)} className="flex items-center gap-2 h-9 px-3 rounded-lg bg-white border border-gray-200 text-xs text-gray-500 hover:border-[#055667] transition-colors flex-1 sm:flex-none sm:w-48">
+          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          {activeCategory && activeCategory !== 'offerte' ? activeCategory : 'Cerca vini...'}
+        </button>
+        <div className="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 h-9">
+          <span className="text-[10px] text-gray-500 shrink-0">max</span>
+          <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+          <span className="text-[10px] font-semibold text-[#055667] w-8 shrink-0">{maxPrice}€</span>
         </div>
+        <select value={orderBy} onChange={(e) => handleOrder(e.target.value)} className="h-9 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667] shrink-0">
+          {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
+      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
-      {/* ROW 2: Category pills — single scrollable row */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4 pb-1">
+      {/* ROW 2: Categories — compact scrollable */}
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-3 pb-0.5">
         {pill('Tutti', activeCategory === '', () => handleCategory(''))}
         {categories.filter(c => c.slug !== 'uncategorized').map(cat =>
           pill(decodeHtml(cat.name), activeCategory === cat.name, () => handleCategory(cat.name))
@@ -161,13 +150,6 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
         {['Champagne', 'Distillati', 'Birre', 'Aperitivi'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
         {['DOCG', 'DOC', 'IGT'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
         {pill('Offerte', activeCategory === 'offerte', () => handleCategory('offerte'), 'red')}
-      </div>
-
-      {/* Mobile price (hidden on desktop) */}
-      <div className="sm:hidden flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 mb-3">
-        <span className="text-[10px] text-gray-500">Prezzo max</span>
-        <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-        <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
       </div>
 
       {/* Count */}
