@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
-import { type WCProduct, getProduttore, formatPrice, getDiscount } from '@/lib/api';
+import { type WCProduct, getProduttore, formatPrice, getDiscount, decodeHtml } from '@/lib/api';
 
 interface Props {
   product: WCProduct;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   const addItem = useCartStore((s) => s.addItem);
+  const [added, setAdded] = useState(false);
   const discount = getDiscount(product);
   const produttore = getProduttore(product);
   const vendorName = product._vendorName || product.store?.name;
@@ -26,70 +28,99 @@ export default function ProductCard({ product }: Props) {
       vendorId: product._vendorId || String(product.store?.id || 'default'),
       vendorName: product._vendorName || product.store?.name || 'Stappando',
     });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
   };
 
   return (
-    <div className="group bg-white rounded-2xl border border-brand-border overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-      <Link href={`/prodotto/${product.slug}`} className="flex flex-col h-full">
+    <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-gray-200 transition-all duration-300 flex flex-col h-full">
+      <Link href={`/prodotto/${product.slug}`} className="flex flex-col flex-1">
         {/* Image */}
-        <div className="relative aspect-square bg-brand-bg overflow-hidden">
+        <div className="relative aspect-square bg-gradient-to-b from-gray-50 to-white overflow-hidden">
           {product.images[0]?.src ? (
             <Image
               src={product.images[0].src}
-              alt={product.name}
+              alt={decodeHtml(product.name)}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              className="object-contain p-3 group-hover:scale-110 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-brand-muted">
+            <div className="w-full h-full flex items-center justify-center text-gray-300">
               <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
           )}
           {discount > 0 && (
-            <div className="absolute top-2 left-2 w-10 h-10 rounded-full bg-brand-error flex items-center justify-center">
+            <div className="absolute top-3 left-3 w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
               <span className="text-white text-xs font-bold">-{discount}%</span>
             </div>
           )}
+          {/* Quick add overlay on hover */}
+          <div className="absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="h-16 bg-gradient-to-t from-black/10 to-transparent" />
+          </div>
         </div>
 
         {/* Info */}
-        <div className="flex-1 p-3 flex flex-col">
+        <div className="flex-1 px-4 pt-3 pb-2 flex flex-col">
           {produttore && (
-            <span className="text-[10px] font-semibold text-brand-accent uppercase tracking-wide mb-0.5">
+            <span className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider mb-1">
               {produttore}
             </span>
           )}
-          <h3 className="text-sm font-semibold text-brand-text line-clamp-2 mb-1 leading-tight">
-            {product.name}
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 leading-snug">
+            {decodeHtml(product.name)}
           </h3>
-          <div className="flex items-baseline gap-2 mt-auto mb-1">
-            <span className="text-base font-bold text-brand-primary">
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-lg font-bold text-[#055667]">
               {formatPrice(product.price)} &euro;
             </span>
             {product.on_sale && product.regular_price && (
-              <span className="text-xs text-brand-muted line-through">
+              <span className="text-xs text-gray-400 line-through">
                 {formatPrice(product.regular_price)} &euro;
               </span>
             )}
           </div>
           {vendorName && (
-            <p className="text-[10px] text-brand-muted truncate">
-              Venduto da {vendorName}
+            <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Venduto e spedito da {vendorName}
             </p>
           )}
         </div>
       </Link>
 
-      {/* Add to cart */}
-      <button
-        onClick={handleAdd}
-        className="w-full py-2.5 border-t border-brand-border text-xs font-semibold uppercase tracking-wider text-brand-primary hover:bg-brand-primary hover:text-white transition-colors duration-200"
-      >
-        Aggiungi al carrello
-      </button>
+      {/* Add to cart button - PROMINENT */}
+      <div className="px-4 pb-4 pt-1">
+        <button
+          onClick={handleAdd}
+          className={`w-full py-3 rounded-xl text-sm font-bold uppercase tracking-wide transition-all duration-200 flex items-center justify-center gap-2 ${
+            added
+              ? 'bg-green-500 text-white'
+              : 'bg-[#055667] text-white hover:bg-[#044556] active:scale-[0.98] shadow-sm hover:shadow-md'
+          }`}
+        >
+          {added ? (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+              Aggiunto!
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              Aggiungi al carrello
+            </>
+          ) }
+        </button>
+      </div>
     </div>
   );
 }
