@@ -122,85 +122,56 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-2xl font-extrabold text-gray-900 mb-4">Shop</h1>
-
-      {/* Search bar */}
-      <form onSubmit={handleSearch} className="mb-5 relative">
-        <div className="relative">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input type="search" value={query} onChange={(e) => handleQueryChange(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} placeholder="Cerca per nome, cantina, vitigno, regione..." className="w-full h-12 pl-12 pr-24 rounded-xl bg-white border border-gray-200 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20" />
-          <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 px-5 py-2 bg-[#055667] text-white rounded-lg text-xs font-bold hover:bg-[#044556] transition-colors">Cerca</button>
-        </div>
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-20 overflow-hidden">
-            {suggestions.map(s => (
-              <Link key={s.id} href={`/prodotto/${s.slug}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors" onClick={() => setShowSuggestions(false)}>
-                <div className="relative w-8 h-8 rounded bg-gray-50 shrink-0 overflow-hidden">
-                  {s.images[0]?.src && <Image src={s.images[0].src} alt="" width={32} height={32} className="object-contain" />}
-                </div>
-                <p className="text-sm text-gray-800 truncate flex-1">{decodeHtml(s.name)}</p>
-                <span className="text-sm font-bold text-[#055667] shrink-0">{formatPrice(s.price)} €</span>
-              </Link>
-            ))}
+      {/* ROW 1: Search + Sort inline */}
+      <div className="flex gap-2 mb-3 relative">
+        <form onSubmit={handleSearch} className="flex-1 relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input type="search" value={query} onChange={(e) => handleQueryChange(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} placeholder="Cerca vini..." className="w-full h-9 pl-9 pr-3 rounded-lg bg-white border border-gray-200 text-xs focus:outline-none focus:border-[#055667]" />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-20 overflow-hidden">
+              {suggestions.map(s => (
+                <Link key={s.id} href={`/prodotto/${s.slug}`} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors" onClick={() => setShowSuggestions(false)}>
+                  <div className="relative w-7 h-7 rounded bg-gray-50 shrink-0 overflow-hidden">{s.images[0]?.src && <Image src={s.images[0].src} alt="" width={28} height={28} className="object-contain" />}</div>
+                  <p className="text-xs text-gray-800 truncate flex-1">{decodeHtml(s.name)}</p>
+                  <span className="text-xs font-bold text-[#055667] shrink-0">{formatPrice(s.price)}€</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </form>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 h-9">
+            <span className="text-[10px] text-gray-500">max</span>
+            <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+            <span className="text-[10px] font-semibold text-[#055667] w-8">{maxPrice}€</span>
           </div>
-        )}
-      </form>
+          <select value={orderBy} onChange={(e) => handleOrder(e.target.value)} className="h-9 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667]">
+            {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
 
-      {/* Category pills */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
+      {/* ROW 2: Category pills — single scrollable row */}
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4 pb-1">
         {pill('Tutti', activeCategory === '', () => handleCategory(''))}
         {categories.filter(c => c.slug !== 'uncategorized').map(cat =>
           pill(decodeHtml(cat.name), activeCategory === cat.name, () => handleCategory(cat.name))
         )}
-      </div>
-
-      {/* Spumanti subcategories */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
         {SPUMANTI_SUB.map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
-        {['Champagne', 'Distillati', 'Birre', 'Aperitivi', 'Cocktail'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
+        {['Champagne', 'Distillati', 'Birre', 'Aperitivi'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
+        {['DOCG', 'DOC', 'IGT'].map(s => pill(s, activeCategory === s, () => handleCategory(s)))}
         {pill('Offerte', activeCategory === 'offerte', () => handleCategory('offerte'), 'red')}
       </div>
 
-      {/* Filters + Sort row */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-5">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-          {/* Price */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prezzo max</h3>
-              <span className="text-[11px] font-semibold text-[#055667]">fino a {maxPrice === 500 ? '500+' : maxPrice}€</span>
-            </div>
-            <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-            <div className="flex justify-between mt-1">
-              <span className="text-[9px] text-gray-400">5€</span>
-              <span className="text-[9px] text-gray-400">500€</span>
-            </div>
-          </div>
-
-          {/* Denominazione */}
-          <div>
-            <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Denominazione</h3>
-            <div className="flex gap-1.5">
-              {['DOCG', 'DOC', 'IGT', 'IGP'].map(d => (
-                <button key={d} onClick={() => handleCategory(d)} className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${activeCategory === d ? 'bg-[#055667] text-white' : 'bg-gray-50 border border-gray-200 text-gray-600 hover:border-[#055667]'}`}>{d}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Ordina per */}
-          <div>
-            <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ordina per</h3>
-            <select value={orderBy} onChange={(e) => handleOrder(e.target.value)} className="h-8 px-3 rounded-lg border border-gray-200 text-xs text-gray-700 bg-white focus:outline-none focus:border-[#055667]">
-              {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-        </div>
+      {/* Mobile price (hidden on desktop) */}
+      <div className="sm:hidden flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 mb-3">
+        <span className="text-[10px] text-gray-500">Prezzo max</span>
+        <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+        <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
       </div>
 
       {/* Count */}
-      <p className="text-xs text-gray-400 mb-3">{products.length} prodotti</p>
+      <p className="text-[10px] text-gray-400 mb-2">{products.length} prodotti</p>
 
       {/* Results */}
       {loading ? (
