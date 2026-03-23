@@ -136,7 +136,7 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       {/* TOOLBAR: Search + Categories + Price + Sort — tutto una riga */}
-      <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar pb-0.5">
+      <div className="flex items-center gap-2 mb-3 overflow-visible flex-wrap">
         {/* Cerca */}
         <button onClick={() => setSearchModalOpen(true)} className="flex items-center gap-1.5 h-8 px-3 bg-[#055667] text-white rounded-lg text-xs font-bold hover:bg-[#044556] transition-colors shrink-0">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
