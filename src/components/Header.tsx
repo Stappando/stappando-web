@@ -25,15 +25,11 @@ export default function Header() {
   return (
     <>
       {/* Topbar */}
-      <div className="bg-[#055667] text-white text-[11px] font-medium">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-4 sm:gap-6 h-8 overflow-hidden">
-          <span className="hidden sm:inline">Spedizione gratuita da €69</span>
-          <span className="hidden lg:inline">·</span>
-          <span>Consegna 24/48H</span>
-          <span className="hidden lg:inline">·</span>
-          <span className="hidden md:inline">Imballi anti-danno</span>
-          <span className="hidden lg:inline">·</span>
-          <span className="hidden lg:inline">Accumuli punti POP</span>
+      <div className="bg-[#005667]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center h-8">
+          <p className="text-[11px] sm:text-xs font-medium tracking-wide text-[#d9c39a]">
+            Selezionati da sommelier&ensp;·&ensp;Consegna in 24–48h&ensp;·&ensp;Spedizione gratuita da 69€&ensp;·&ensp;Reso gratuito
+          </p>
         </div>
       </div>
 
