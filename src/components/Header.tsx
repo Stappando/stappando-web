@@ -129,7 +129,7 @@ export default function Header() {
       </header>
 
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
-      <VendiConNoiModal isOpen={vendiModalOpen} onClose={() => setVendiModalOpen(false)} />
+      <VendiConNoiModal isOpen={vendiModalOpen} onClose={() => setVendiModalOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} />
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Mobile menu */}
