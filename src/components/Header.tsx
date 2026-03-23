@@ -41,26 +41,26 @@ function SearchExpanded({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute inset-x-0 top-full bg-white border-b border-gray-200 shadow-lg z-50">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-3">
+    <div className="absolute inset-x-0 top-full bg-white/98 backdrop-blur-md border-b border-[#005667]/10 shadow-xl z-50">
+      <div className="max-w-3xl mx-auto px-4 md:px-8 py-4">
         <form onSubmit={handleSubmit} className="relative">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#005667]/50 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <input
             ref={inputRef}
             type="text"
             placeholder="Cerca vino, occasione o abbinamento…"
-            className="w-full pl-12 pr-24 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#005667] focus:ring-2 focus:ring-[#005667]/10 transition-all"
+            className="w-full pl-12 pr-28 py-3.5 bg-white border-2 border-[#005667]/15 rounded-2xl text-sm focus:outline-none focus:border-[#005667]/40 focus:shadow-[0_0_0_4px_rgba(0,86,103,0.06)] transition-all"
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <button type="submit" className="px-4 py-1.5 bg-[#005667] text-white rounded-lg text-xs font-semibold hover:bg-[#004555] transition-colors">Cerca</button>
-            <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <button type="submit" className="px-5 py-2 bg-[#005667] text-white rounded-xl text-xs font-bold hover:bg-[#004555] transition-colors shadow-sm">Cerca</button>
+            <button type="button" onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
         </form>
       </div>
-      {/* Backdrop click */}
-      <div className="fixed inset-0 -z-10" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="fixed inset-0 -z-10 bg-black/5" onClick={onClose} />
     </div>
   );
 }
@@ -207,7 +207,7 @@ export default function Header() {
       <div className="bg-[#005667]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-center h-8">
           <p className="text-[11px] sm:text-xs font-medium tracking-wide text-white">
-            Selezionati da sommelier&ensp;·&ensp;Consegna in 24–48h&ensp;·&ensp;Spedizione gratuita da 69€&ensp;·&ensp;Reso gratuito
+            <span className="hidden sm:inline">Selezionati da sommelier&ensp;·&ensp;</span>Consegna in 24–48h&ensp;·&ensp;Spedizione gratuita da 69€<span className="hidden sm:inline">&ensp;·&ensp;Reso gratuito</span>
           </p>
         </div>
       </div>
