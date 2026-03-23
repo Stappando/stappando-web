@@ -70,9 +70,13 @@ export default function ProductCard({ product }: Props) {
             <span className="text-[9px] font-bold text-[#b8973f] uppercase tracking-widest mb-1">★ Consigliato</span>
           )}
           {produttore && (
-            <span className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${isCircuito ? 'text-[#b8973f]' : 'text-[#b8973f]'}`}>
+            <a
+              href={`/cerca?q=${encodeURIComponent(produttore)}`}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/cerca?q=${encodeURIComponent(produttore)}`; }}
+              className="text-[11px] font-bold uppercase tracking-wider mb-1 text-[#b8973f] hover:underline"
+            >
               {produttore}
-            </span>
+            </a>
           )}
           <h3 className={`text-sm font-semibold line-clamp-2 mb-2 leading-snug ${isCircuito ? 'text-white' : 'text-gray-900'}`}>
             {decodeHtml(product.name)}
