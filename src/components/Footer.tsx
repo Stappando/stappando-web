@@ -28,10 +28,11 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#055667] text-white">
-      {/* Newsletter */}
+      {/* Newsletter + Wine Experience */}
       <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="max-w-xl mx-auto text-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
             <h3 className="text-lg font-bold mb-2">Iscriviti alla newsletter</h3>
             <p className="text-sm text-white/70 mb-4">Ricevi offerte esclusive e novità dal mondo del vino</p>
             <form onSubmit={handleNewsletter} className="flex gap-2">
@@ -53,6 +54,17 @@ export default function Footer() {
             </form>
             {status === 'success' && <p className="mt-2 text-sm text-green-300">Iscrizione completata!</p>}
             {status === 'error' && <p className="mt-2 text-sm text-red-300">Errore. Riprova.</p>}
+          </div>
+
+          {/* Wine Experience */}
+          <div className="text-center flex flex-col items-center justify-center">
+            <h3 className="text-lg font-bold mb-2">Wine Experience</h3>
+            <p className="text-sm text-white/70 mb-4">Prenota fantastiche degustazioni ed esperienze enogastronomiche</p>
+            <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 h-11 px-6 rounded-lg bg-[#b8973f] text-white font-semibold text-sm hover:bg-[#a07f30] transition-colors">
+              Scopri le esperienze
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </a>
+          </div>
           </div>
         </div>
       </div>
