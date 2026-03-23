@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SearchModal from '@/components/SearchModal';
-import { useRouter } from 'next/navigation';
-import { type WCProduct, type WCCategory, decodeHtml, formatPrice } from '@/lib/api';
+import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
-// Image and Link kept for potential future use
 
 const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
   { label: 'Vini Rossi' },
@@ -20,10 +18,12 @@ const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
 const ORDINA_OPTIONS = [
   { label: 'Più popolari', value: 'popularity' },
   { label: 'Novità', value: 'date' },
-  { label: 'Prezzo: basso → alto', value: 'price-asc' },
-  { label: 'Prezzo: alto → basso', value: 'price-desc' },
-  { label: 'Valutazione', value: 'rating' },
+  { label: 'Prezzo ↑', value: 'price-asc' },
+  { label: 'Prezzo ↓', value: 'price-desc' },
 ];
+
+const API_BASE = 'https://stappando.it/wp-json/wc/v3/products';
+const API_AUTH = 'consumer_key=ck_e28bb3c3e86e007bad35911cffb20258a1343b53&consumer_secret=cs_9494a1fed3d4ed450ff53df9166078abb2388e44';
 
 interface Props {
   initialProducts: WCProduct[];
@@ -32,124 +32,102 @@ interface Props {
   categories: WCCategory[];
 }
 
+// Fetch all products in batches for client cache
+async function fetchAllProducts(): Promise<WCProduct[]> {
+  const all: WCProduct[] = [];
+  const pages = [1, 2, 3, 4, 5]; // 5 pages x 100 = 500 products max
+  const results = await Promise.all(
+    pages.map(p =>
+      fetch(`${API_BASE}?${API_AUTH}&per_page=100&status=publish&page=${p}`)
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => [])
+    )
+  );
+  results.forEach(r => all.push(...r));
+  return all;
+}
+
 export default function SearchClient({ initialProducts, initialQuery, initialOnSale, categories }: Props) {
-  const router = useRouter();
-  const [query, setQuery] = useState(initialQuery);
-  const [products, setProducts] = useState(initialProducts);
-  const [loading, setLoading] = useState(false);
+  const [allProducts, setAllProducts] = useState<WCProduct[]>(initialProducts);
+  const [loaded, setLoaded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>(initialQuery || (initialOnSale ? 'offerte' : ''));
-  const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500);
   const [orderBy, setOrderBy] = useState('popularity');
-  const [suggestions, setSuggestions] = useState<WCProduct[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const suggestRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-fetch when navigating from modal
+  // Load all products on mount for instant filtering
+  useEffect(() => {
+    fetchAllProducts().then(prods => {
+      if (prods.length > 0) {
+        setAllProducts(prods);
+        setLoaded(true);
+      }
+    });
+  }, []);
+
+  // Sync from URL navigation (modal search)
   useEffect(() => {
     if (initialQuery && initialQuery !== activeCategory) {
       setActiveCategory(initialQuery);
-      setQuery(initialQuery);
     }
   }, [initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchProducts = useCallback(async (search: string, onSale = false, pMin?: number, pMax?: number, order?: string) => {
-    setLoading(true);
-    try {
-      const apiUrl = new URL('https://stappando.it/wp-json/wc/v3/products');
-      apiUrl.searchParams.set('consumer_key', 'ck_e28bb3c3e86e007bad35911cffb20258a1343b53');
-      apiUrl.searchParams.set('consumer_secret', 'cs_9494a1fed3d4ed450ff53df9166078abb2388e44');
-      apiUrl.searchParams.set('per_page', '40');
-      apiUrl.searchParams.set('status', 'publish');
-      const ob = order || orderBy;
-      if (ob === 'price-asc') { apiUrl.searchParams.set('orderby', 'price'); apiUrl.searchParams.set('order', 'asc'); }
-      else if (ob === 'price-desc') { apiUrl.searchParams.set('orderby', 'price'); apiUrl.searchParams.set('order', 'desc'); }
-      else { apiUrl.searchParams.set('orderby', ob); }
-      if (search) apiUrl.searchParams.set('search', search);
-      if (onSale) apiUrl.searchParams.set('on_sale', 'true');
-      if (pMin && pMin > 0) apiUrl.searchParams.set('min_price', String(pMin));
-      if (pMax && pMax < 500) apiUrl.searchParams.set('max_price', String(pMax));
-      const res = await fetch(apiUrl.toString());
-      if (res.ok) {
-        const data: WCProduct[] = await res.json();
-        // Circuito (tag 21993) sempre primi
-        const circuito = data.filter(p => p.tags?.some(t => t.id === 21993));
-        const rest = data.filter(p => !p.tags?.some(t => t.id === 21993));
-        setProducts([...circuito, ...rest]);
-      }
-    } catch { /* */ }
-    finally { setLoading(false); }
-  }, [orderBy]);
+  // Client-side filtering — instant
+  const filtered = useMemo(() => {
+    let result = [...allProducts];
+
+    // Category/search filter
+    if (activeCategory && activeCategory !== 'offerte') {
+      const q = activeCategory.toLowerCase();
+      result = result.filter(p => {
+        const name = p.name.toLowerCase();
+        const cats = p.categories?.map(c => c.name.toLowerCase()).join(' ') || '';
+        const attrs = p.attributes?.map(a => a.options.join(' ').toLowerCase()).join(' ') || '';
+        const desc = (p.short_description || '').toLowerCase();
+        return name.includes(q) || cats.includes(q) || attrs.includes(q) || desc.includes(q);
+      });
+    }
+
+    // On sale
+    if (activeCategory === 'offerte') {
+      result = result.filter(p => p.on_sale);
+    }
+
+    // Price
+    if (maxPrice < 500) {
+      result = result.filter(p => parseFloat(p.price) <= maxPrice);
+    }
+
+    // Circuito always first
+    const circuito = result.filter(p => p.tags?.some(t => t.id === 21993));
+    const rest = result.filter(p => !p.tags?.some(t => t.id === 21993));
+
+    // Sort
+    if (orderBy === 'price-asc') rest.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+    else if (orderBy === 'price-desc') rest.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    else if (orderBy === 'date') rest.sort((a, b) => b.id - a.id);
+
+    return [...circuito, ...rest];
+  }, [allProducts, activeCategory, maxPrice, orderBy]);
 
   const handleCategory = (cat: string) => {
     setActiveCategory(cat);
-    setQuery(cat === 'offerte' ? '' : cat);
-    if (cat === 'offerte') {
-      fetchProducts('', true, minPrice, maxPrice);
-      router.push('/cerca?on_sale=true', { scroll: false });
-    } else if (cat === '') {
-      fetchProducts('', false, minPrice, maxPrice);
-      router.push('/cerca', { scroll: false });
-    } else {
-      fetchProducts(cat, false, minPrice, maxPrice);
-      router.push(`/cerca?q=${encodeURIComponent(cat)}`, { scroll: false });
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    setShowSuggestions(false);
-    if (q) {
-      setActiveCategory(q);
-      fetchProducts(q, false, minPrice, maxPrice);
-      router.push(`/cerca?q=${encodeURIComponent(q)}`, { scroll: false });
-    }
-  };
-
-  const handleQueryChange = (val: string) => {
-    setQuery(val);
-    if (suggestRef.current) clearTimeout(suggestRef.current);
-    if (val.trim().length >= 2) {
-      suggestRef.current = setTimeout(async () => {
-        try {
-          const url = `https://stappando.it/wp-json/wc/v3/products?consumer_key=ck_e28bb3c3e86e007bad35911cffb20258a1343b53&consumer_secret=cs_9494a1fed3d4ed450ff53df9166078abb2388e44&search=${encodeURIComponent(val)}&per_page=5&status=publish`;
-          const res = await fetch(url);
-          if (res.ok) { const data: WCProduct[] = await res.json(); setSuggestions(data); setShowSuggestions(data.length > 0); }
-        } catch { /* */ }
-      }, 300);
-    } else { setSuggestions([]); setShowSuggestions(false); }
-  };
-
-  const handlePriceChange = (type: 'min' | 'max', val: number) => {
-    if (type === 'min') setMinPrice(val); else setMaxPrice(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchProducts(activeCategory === 'offerte' ? '' : activeCategory, activeCategory === 'offerte', type === 'min' ? val : minPrice, type === 'max' ? val : maxPrice);
-    }, 200);
-  };
-
-  const handleOrder = (val: string) => {
-    setOrderBy(val);
-    fetchProducts(activeCategory === 'offerte' ? '' : activeCategory, activeCategory === 'offerte', minPrice, maxPrice, val);
   };
 
   const pill = (label: string, active: boolean, onClick: () => void, variant: 'default' | 'red' = 'default') => (
-    <button key={label} onClick={onClick} className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+    <button key={label} onClick={onClick} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
       active
         ? variant === 'red' ? 'bg-red-500 text-white' : 'bg-[#055667] text-white'
-        : variant === 'red' ? 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667] hover:text-[#055667]'
+        : variant === 'red' ? 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'
     }`}>{label}</button>
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* ROW 1: Search input + Cerca button + Price + Sort */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* ROW 1: Search + Price + Sort — inline */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="flex items-center flex-1 sm:flex-none sm:w-64 h-9 bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="flex items-center flex-1 px-3 gap-2">
+        <div className="flex items-center flex-1 sm:flex-none sm:w-56 h-9 bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="flex items-center flex-1 px-3 gap-2 cursor-pointer" onClick={() => setSearchModalOpen(true)}>
             <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <span className="text-xs text-gray-500 truncate">{activeCategory && activeCategory !== 'offerte' ? activeCategory : 'Cerca vini...'}</span>
           </div>
@@ -157,38 +135,45 @@ export default function SearchClient({ initialProducts, initialQuery, initialOnS
         </div>
         <div className="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 h-9">
           <span className="text-[10px] text-gray-500 shrink-0">max</span>
-          <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => handlePriceChange('max', Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+          <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
           <span className="text-[10px] font-semibold text-[#055667] w-8 shrink-0">{maxPrice}€</span>
         </div>
-        <select value={orderBy} onChange={(e) => handleOrder(e.target.value)} className="h-9 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667] shrink-0">
+        <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-9 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-700 bg-white focus:outline-none focus:border-[#055667] shrink-0">
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        <span className="text-[10px] text-gray-400 shrink-0 hidden lg:block">{filtered.length} prodotti</span>
       </div>
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
-      {/* ROW 2: Macrocategorie con dropdown */}
+      {/* ROW 2: Categories with dropdown */}
       <CategoriesBar categories={categories} activeCategory={activeCategory} onSelect={handleCategory} />
 
-      {/* Count */}
-      <p className="text-[10px] text-gray-400 mb-2">{products.length} prodotti</p>
+      {/* Mobile price */}
+      <div className="sm:hidden flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 mb-3">
+        <span className="text-[10px] text-gray-500">max</span>
+        <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
+        <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
+      </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <div className="w-8 h-8 border-2 border-[#055667]/20 border-t-[#055667] rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Caricamento prodotti...</p>
+      {/* Loading indicator for initial fetch */}
+      {!loaded && (
+        <div className="text-center py-2 mb-2">
+          <span className="text-[10px] text-gray-400">Caricamento catalogo completo...</span>
         </div>
-      ) : products.length > 0 ? (
+      )}
+
+      {/* Results — instant */}
+      {filtered.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {products.map((product) => (
+          {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-20">
-          <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <p className="text-base font-semibold text-gray-700">Nessun prodotto trovato</p>
-          <p className="text-sm text-gray-500 mt-1">Prova con altri filtri</p>
+        <div className="text-center py-16">
+          <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <p className="text-sm font-semibold text-gray-700">Nessun prodotto trovato</p>
+          <p className="text-xs text-gray-500 mt-1">Prova con altri filtri</p>
         </div>
       )}
     </div>
@@ -200,7 +185,7 @@ function CategoriesBar({ categories, activeCategory, onSelect }: { categories: W
   const [openDrop, setOpenDrop] = useState<string | null>(null);
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-3 pb-0.5 relative">
+    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-3 pb-0.5">
       <button onClick={() => onSelect('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${activeCategory === '' ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>Tutti</button>
 
       {MACRO_CATEGORIES.map(mc => (
