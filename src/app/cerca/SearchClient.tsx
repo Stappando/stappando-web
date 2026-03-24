@@ -25,16 +25,22 @@ const ORDINA_OPTIONS = [
 interface Props {
   initialQuery: string;
   initialOnSale: boolean;
+  initialTag: string;
+  initialVendor: string;
   categories: WCCategory[];
 }
 
 // Global cache — loaded once
 let _cachedProducts: WCProduct[] | null = null;
 
-export default function SearchClient({ initialQuery, initialOnSale, categories }: Props) {
+export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, categories }: Props) {
   const [allProducts, setAllProducts] = useState<WCProduct[]>(_cachedProducts || []);
   const [ready, setReady] = useState(!!_cachedProducts);
-  const [activeCategory, setActiveCategory] = useState<string>(initialQuery || (initialOnSale ? 'offerte' : ''));
+  const [activeCategory, setActiveCategory] = useState<string>(
+    initialQuery || (initialOnSale ? 'offerte' : ''),
+  );
+  const [activeTag, setActiveTag] = useState(initialTag);
+  const [activeVendor, setActiveVendor] = useState(initialVendor);
   const [maxPrice, setMaxPrice] = useState(500);
   const [orderBy, setOrderBy] = useState('popularity');
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -56,12 +62,41 @@ export default function SearchClient({ initialQuery, initialOnSale, categories }
   useEffect(() => {
     if (initialQuery) setActiveCategory(initialQuery);
     else if (initialOnSale) setActiveCategory('offerte');
-  }, [initialQuery, initialOnSale]);
+    setActiveTag(initialTag);
+    setActiveVendor(initialVendor);
+  }, [initialQuery, initialOnSale, initialTag, initialVendor]);
 
   // INSTANT filtering — no API calls
   const filtered = useMemo(() => {
     if (!ready) return [];
     let result = [...allProducts];
+
+    // Filter by tag slug (occasione, best-seller, regali)
+    if (activeTag) {
+      const tagSlug = activeTag.toLowerCase();
+      result = result.filter(p =>
+        p.tags?.some(t => t.slug === tagSlug || t.name.toLowerCase() === tagSlug),
+      );
+    }
+
+    // Filter by vendor name
+    if (activeVendor) {
+      const v = activeVendor.toLowerCase();
+      result = result.filter(p => {
+        // Check meta_data for vendor, or attributes for "Produttore"
+        const vendorMeta = p.meta_data?.find((m: { key: string; value: string }) =>
+          m.key === '_vendorName' || m.key === 'vendor_name',
+        );
+        if (vendorMeta && String(vendorMeta.value).toLowerCase().includes(v)) return true;
+        // Check attributes
+        const produttore = p.attributes?.find(a =>
+          a.name.toLowerCase() === 'produttore' || a.name.toLowerCase() === 'cantina',
+        );
+        if (produttore && produttore.options.some(o => o.toLowerCase().includes(v))) return true;
+        // Fallback: search in name
+        return p.name.toLowerCase().includes(v);
+      });
+    }
 
     if (activeCategory && activeCategory !== 'offerte') {
       const q = activeCategory.toLowerCase();
@@ -85,7 +120,7 @@ export default function SearchClient({ initialQuery, initialOnSale, categories }
     else if (orderBy === 'price-desc') rest.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
     else if (orderBy === 'date') rest.sort((a, b) => b.id - a.id);
     return [...circ, ...rest];
-  }, [allProducts, activeCategory, maxPrice, orderBy, ready]);
+  }, [allProducts, activeCategory, activeTag, activeVendor, maxPrice, orderBy, ready]);
 
   const handleCategory = (cat: string) => setActiveCategory(cat);
 

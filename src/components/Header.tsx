@@ -12,11 +12,11 @@ import AuthModal from '@/components/AuthModal';
    NAV — 5 voci esatte, nessun link esterno
    ══════════════════════════════════════════════════════════ */
 const NAV = [
-  { label: 'Per occasione', href: '/cerca?cat=occasione' },
-  { label: 'Best seller',   href: '/cerca?sort=bestseller' },
-  { label: 'Regali',        href: '/cerca?cat=regali' },
-  { label: 'Offerte',       href: '/cerca?filter=sale' },
-  { label: 'Cantine',       href: '/cerca?filter=cantina' },
+  { label: 'Per occasione', href: '/cerca?tag=occasione' },
+  { label: 'Best seller',   href: '/cerca?tag=best-seller' },
+  { label: 'Regali',        href: '/cerca?tag=regali' },
+  { label: 'Offerte',       href: '/cerca?on_sale=true' },
+  { label: 'Cantine',       href: '/cantine' },
 ] as const;
 
 /* ══════════════════════════════════════════════════════════

@@ -5,16 +5,17 @@ import SearchClient from './SearchClient';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: Promise<{ q?: string; on_sale?: string }>;
+  searchParams: Promise<{ q?: string; on_sale?: string; tag?: string; vendor?: string }>;
 }
 
 export async function generateMetadata({ searchParams }: Props) {
-  const { q } = await searchParams;
-  return { title: q ? `${q} — Shop Stappando` : 'Shop — Stappando' };
+  const { q, tag, vendor } = await searchParams;
+  const label = tag || vendor || q;
+  return { title: label ? `${label} — Shop Stappando` : 'Shop — Stappando' };
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const { q, on_sale } = await searchParams;
+  const { q, on_sale, tag, vendor } = await searchParams;
 
   // Only fetch categories server-side (lightweight)
   const wc = getWCSecrets();
@@ -25,5 +26,13 @@ export default async function SearchPage({ searchParams }: Props) {
     if (res.ok) categories = await res.json();
   } catch { /* */ }
 
-  return <SearchClient initialQuery={q || ''} initialOnSale={on_sale === 'true'} categories={categories} />;
+  return (
+    <SearchClient
+      initialQuery={q || ''}
+      initialOnSale={on_sale === 'true'}
+      initialTag={tag || ''}
+      initialVendor={vendor || ''}
+      categories={categories}
+    />
+  );
 }

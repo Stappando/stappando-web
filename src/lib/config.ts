@@ -23,5 +23,5 @@ export const API_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it',
   freeShippingThreshold: 69,
   defaultShippingCost: 6.5,
-  tags: { circuito: 21993, confezioniDa6: 21807, bestSeller: 21806 },
+  tags: { circuito: 21993, confezioniDa6: 21807, bestSeller: 21806, occasione: 21995, regali: 21996 },
 } as const;
