@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { api, type WCProduct, type WCCategory, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
+import { type WCProduct, type WCCategory, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
+import { getCachedProducts, getCachedCategories, getCachedLatestPost } from '@/lib/cached';
 import ProductCarousel from '@/components/ProductCarousel';
 import PlusBar from '@/components/PlusBar';
 
@@ -22,12 +23,12 @@ function filterGridCategories(cats: WCCategory[]): WCCategory[] {
 
 export default async function HomePage() {
   const [promoProducts, bestSellers, cats, subCats, latestPost, circuito] = await Promise.all([
-    api.getProducts({ per_page: 10, on_sale: 'true', orderby: 'popularity' }).catch(() => [] as WCProduct[]),
-    api.getProducts({ per_page: 10, orderby: 'popularity' }).catch(() => [] as WCProduct[]),
-    api.getCategories({ per_page: 50, hide_empty: 1, parent: 0 }).catch(() => [] as WCCategory[]),
-    api.getCategories({ per_page: 50, hide_empty: 1, parent: 5347 }).catch(() => [] as WCCategory[]),
-    api.getLatestPost(),
-    api.getProducts({ per_page: 2, include: '69890,69817' }).catch(() => [] as WCProduct[]),
+    getCachedProducts({ per_page: 10, on_sale: 'true', orderby: 'popularity' }).catch(() => [] as WCProduct[]),
+    getCachedProducts({ per_page: 10, orderby: 'popularity' }).catch(() => [] as WCProduct[]),
+    getCachedCategories({ per_page: 50, hide_empty: 1, parent: 0 }).catch(() => [] as WCCategory[]),
+    getCachedCategories({ per_page: 50, hide_empty: 1, parent: 5347 }).catch(() => [] as WCCategory[]),
+    getCachedLatestPost(),
+    getCachedProducts({ per_page: 2, include: '69890,69817' }).catch(() => [] as WCProduct[]),
   ]);
 
   const allCategories = [...(subCats.length > 0 ? subCats : []), ...cats.filter((c) => c.slug !== 'vini' && c.slug !== 'uncategorized' && c.slug !== 'altri-prodotti')];

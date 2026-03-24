@@ -1,6 +1,6 @@
-import { API_CONFIG } from './config';
+import { API_CONFIG, getWCSecrets } from './config';
 
-const { baseUrl, wc } = API_CONFIG;
+const { baseUrl } = API_CONFIG;
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -53,7 +53,8 @@ interface VendorApiResponse {
 /* ── Helpers ────────────────────────────────────────────── */
 
 function buildUrl(path: string, params?: Record<string, string | number>): string {
-  const url = new URL(`${wc.endpoint}${path}`, baseUrl);
+  const wc = getWCSecrets();
+  const url = new URL(`/wp-json/wc/v3${path}`, wc.baseUrl);
   url.searchParams.set('consumer_key', wc.consumerKey);
   url.searchParams.set('consumer_secret', wc.consumerSecret);
   if (params) {
@@ -221,7 +222,6 @@ export const api = {
   },
 
   getProduct: async (idOrSlug: number | string) => {
-    // Try by slug first for SEO-friendly URLs
     if (typeof idOrSlug === 'string' && isNaN(Number(idOrSlug))) {
       const products = await request<WCProduct[]>('/products', {
         params: { slug: idOrSlug, status: 'publish' },

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { api, decodeHtml } from '@/lib/api';
+import { decodeHtml } from '@/lib/api';
+import { getCachedWPCategories, getCachedPosts, getCachedPostsByCategory } from '@/lib/cached';
 
 interface Props {
   searchParams: Promise<{ page?: string; cat?: string }>;
@@ -18,18 +19,18 @@ export default async function BlogPage({ searchParams }: Props) {
   const { page: pageStr, cat } = await searchParams;
   const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
 
-  const [categories, allPosts] = await Promise.all([
-    api.getWPCategories(),
-    cat
-      ? (async () => {
-          const cats = await api.getWPCategories();
-          const found = cats.find(c => c.slug === cat);
-          return found ? api.getPostsByCategory(found.id, page) : api.getPosts(page);
-        })()
-      : api.getPosts(page),
-  ]);
+  // Fetch categories first (cached, fast), then use result to fetch posts
+  const categories = await getCachedWPCategories();
 
-  const posts = allPosts;
+  let posts;
+  if (cat) {
+    const found = categories.find(c => c.slug === cat);
+    posts = found
+      ? await getCachedPostsByCategory(found.id, page)
+      : await getCachedPosts(page);
+  } else {
+    posts = await getCachedPosts(page);
+  }
   const filteredCategories = categories.filter(c => c.slug !== 'uncategorized' && c.count > 0);
   const hasMore = posts.length >= 12;
 

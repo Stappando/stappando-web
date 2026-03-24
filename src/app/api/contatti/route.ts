@@ -1,33 +1,36 @@
 import { NextResponse } from 'next/server';
+import { API_CONFIG } from '@/lib/config';
+import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
 
 export async function POST(request: Request) {
   try {
-    const { nome, email, telefono, oggetto, messaggio } = await request.json();
-
-    if (!nome || !email || !oggetto || !messaggio) {
-      return NextResponse.json(
-        { success: false, message: 'Compila tutti i campi obbligatori' },
-        { status: 400 }
-      );
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ success: false, message: 'Body JSON non valido' }, { status: 400 });
     }
 
-    // Send email via WooCommerce/WordPress REST API or SMTP
-    // For now, we use a simple fetch to the WP site contact endpoint
-    const emailBody = [
-      `Nome: ${nome}`,
-      `Email: ${email}`,
-      telefono ? `Telefono: ${telefono}` : '',
-      `Oggetto: ${oggetto}`,
-      '',
-      `Messaggio:`,
-      messaggio,
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const nome = sanitize(body.nome || body.name, 200);
+    const email = sanitize(body.email, 254);
+    const telefono = sanitize(body.telefono || body.phone, 30);
+    const oggetto = sanitize(body.oggetto || body.subject, 300);
+    const messaggio = sanitize(body.messaggio || body.message, 5000);
+
+    if (!isNonEmptyString(nome)) {
+      return NextResponse.json({ success: false, message: 'Nome obbligatorio' }, { status: 400 });
+    }
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ success: false, message: 'Email non valida' }, { status: 400 });
+    }
+    if (!isNonEmptyString(oggetto)) {
+      return NextResponse.json({ success: false, message: 'Oggetto obbligatorio' }, { status: 400 });
+    }
+    if (!isNonEmptyString(messaggio)) {
+      return NextResponse.json({ success: false, message: 'Messaggio obbligatorio' }, { status: 400 });
+    }
 
     // Send via WordPress REST API
     const wpRes = await fetch(
-      `${process.env.NEXT_PUBLIC_WC_URL || 'https://stappando.it'}/wp-json/stappando/v1/contact`,
+      `${API_CONFIG.baseUrl}/wp-json/stappando/v1/contact`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,22 +42,18 @@ export async function POST(request: Request) {
           message: messaggio,
           to: 'assistenza@stappando.it',
         }),
-      }
+      },
     );
 
     if (wpRes.ok) {
       return NextResponse.json({ success: true, message: 'Messaggio inviato con successo' });
     }
 
-    // Fallback: log the message and return success
-    // In production, integrate with an email service like SendGrid, Resend, etc.
-    console.log('Contact form submission:', { nome, email, telefono, oggetto, messaggio: emailBody });
+    // Fallback: log and return success
+    console.log('Contact form submission:', { nome, email, oggetto });
     return NextResponse.json({ success: true, message: 'Messaggio inviato con successo' });
   } catch (error) {
     console.error('Contact form error:', error);
-    return NextResponse.json(
-      { success: false, message: 'Errore del server' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Errore del server' }, { status: 500 });
   }
 }

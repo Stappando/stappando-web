@@ -1,7 +1,15 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { unstable_cache } from 'next/cache';
 import { api, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
 import AddToCartButton from '@/components/AddToCartButton';
+
+/** Single product — revalidate every 5 min */
+const getCachedProduct = unstable_cache(
+  async (slug: string) => api.getProduct(slug),
+  ['wc-product'],
+  { revalidate: 300, tags: ['products'] },
+);
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -9,7 +17,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const product = await api.getProduct(slug);
+  const product = await getCachedProduct(slug);
   if (!product) return { title: 'Prodotto non trovato' };
   return {
     title: `${decodeHtml(product.name)} — Stappando`,
@@ -19,7 +27,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = await api.getProduct(slug);
+  const product = await getCachedProduct(slug);
   if (!product) notFound();
 
   const discount = getDiscount(product);

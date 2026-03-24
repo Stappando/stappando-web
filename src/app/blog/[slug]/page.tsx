@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { api, decodeHtml } from '@/lib/api';
+import { decodeHtml } from '@/lib/api';
+import { getCachedPost } from '@/lib/cached';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -9,7 +10,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const post = await api.getPost(slug);
+  const post = await getCachedPost(slug);
   if (!post) return { title: 'Articolo non trovato' };
   return {
     title: `${decodeHtml(post.title.rendered)} — Stappando Blog`,
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = await api.getPost(slug);
+  const post = await getCachedPost(slug);
   if (!post) notFound();
 
   const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { api, decodeHtml } from '@/lib/api';
+import { decodeHtml } from '@/lib/api';
+import { getCachedCategory, getCachedProducts } from '@/lib/cached';
 import ProductGrid from '@/components/ProductGrid';
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const category = await api.getCategory(slug);
+  const category = await getCachedCategory(slug);
   if (!category) return { title: 'Categoria non trovata' };
   return {
     title: `${decodeHtml(category.name)} — Stappando`,
@@ -23,10 +24,11 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const { page: pageStr } = await searchParams;
   const page = parseInt(pageStr || '1', 10);
 
-  const category = await api.getCategory(slug);
+  // getCachedCategory is deduped by unstable_cache (same slug = cache hit from generateMetadata)
+  const category = await getCachedCategory(slug);
   if (!category) notFound();
 
-  const products = await api.getProducts({
+  const products = await getCachedProducts({
     category: category.id,
     page,
     per_page: 20,
