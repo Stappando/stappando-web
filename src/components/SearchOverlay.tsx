@@ -7,6 +7,7 @@ import { formatPrice, decodeHtml } from '@/lib/api';
 
 /* ── Types ─────────────────────────────────────────────── */
 
+/** Full result from /api/search (with images, region, badge) */
 interface SearchResult {
   id: number;
   slug: string;
@@ -20,6 +21,24 @@ interface SearchResult {
   on_sale: boolean;
   is_circuito: boolean;
   circuito_badge: string;
+}
+
+/** Lightweight index entry from /api/search/index */
+interface IndexEntry {
+  i: number;   // id
+  s: string;   // slug
+  n: string;   // name (lowercased)
+  N: string;   // name (original)
+  p: string;   // price
+  r: string;   // regular_price
+  l: string;   // sale_price
+  o: boolean;  // on_sale
+  v: string;   // vendor
+  g: string;   // region
+  t: string[]; // tag slugs
+  c: boolean;  // is_circuito
+  b: string;   // circuito_badge
+  m: string;   // image thumbnail
 }
 
 interface Props {
@@ -38,6 +57,100 @@ const SUGGESTIONS = [
   'Cena speciale',
 ];
 
+/* ── Global index cache (shared across overlay openings) ── */
+
+let _indexCache: IndexEntry[] | null = null;
+let _indexLoading = false;
+let _indexPromise: Promise<IndexEntry[]> | null = null;
+
+function loadIndex(): Promise<IndexEntry[]> {
+  if (_indexCache) return Promise.resolve(_indexCache);
+  if (_indexPromise) return _indexPromise;
+
+  _indexLoading = true;
+  _indexPromise = fetch('/api/search/index')
+    .then(r => r.ok ? r.json() : [])
+    .then((data: IndexEntry[]) => {
+      _indexCache = data;
+      _indexLoading = false;
+      return data;
+    })
+    .catch(() => {
+      _indexLoading = false;
+      _indexPromise = null;
+      return [] as IndexEntry[];
+    });
+
+  return _indexPromise;
+}
+
+/** Search the local index — instant, no network */
+function searchIndex(index: IndexEntry[], query: string, limit: number): SearchResult[] {
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return [];
+
+  const terms = q.split(/\s+/);
+
+  // Special: "sotto Xé" price filter
+  const priceMatch = q.match(/sotto\s+(\d+)/);
+  const maxPrice = priceMatch ? parseFloat(priceMatch[1]) : Infinity;
+
+  const scored: { entry: IndexEntry; score: number }[] = [];
+
+  for (const entry of index) {
+    let score = 0;
+
+    // Price filter
+    const price = parseFloat(entry.p);
+    if (maxPrice < Infinity && price > maxPrice) continue;
+    if (maxPrice < Infinity && price <= maxPrice) score += 2;
+
+    // Match terms against name, vendor, region, tags
+    const searchable = `${entry.n} ${entry.v.toLowerCase()} ${entry.g.toLowerCase()} ${entry.t.join(' ')}`;
+
+    let allMatch = true;
+    for (const term of terms) {
+      if (term === 'sotto' || /^\d+[€]?$/.test(term)) continue; // skip price terms
+      if (searchable.includes(term)) {
+        score += 3;
+        // Bonus for name match
+        if (entry.n.includes(term)) score += 2;
+        // Bonus for starts-with
+        if (entry.n.startsWith(term)) score += 3;
+      } else {
+        allMatch = false;
+        break;
+      }
+    }
+
+    if (!allMatch && maxPrice === Infinity) continue;
+    if (score === 0) continue;
+
+    // Circuito always boosted
+    if (entry.c) score += 10;
+
+    scored.push({ entry, score });
+  }
+
+  // Sort by score desc, take top N
+  scored.sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, limit).map(({ entry }) => ({
+    id: entry.i,
+    slug: entry.s,
+    name: entry.N,
+    price: entry.p,
+    regular_price: entry.r,
+    sale_price: entry.l,
+    image: entry.m || null,
+    vendor: entry.v,
+    region: entry.g,
+    on_sale: entry.o,
+    is_circuito: entry.c,
+    circuito_badge: entry.b,
+  }));
+}
+
 /* ── Component ─────────────────────────────────────────── */
 
 export default function SearchOverlay({ onClose, isMobile = false }: Props) {
@@ -46,11 +159,17 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [indexReady, setIndexReady] = useState(!!_indexCache);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Autofocus
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Load index in background on mount
+  useEffect(() => {
+    loadIndex().then(() => setIndexReady(true));
+  }, []);
 
   // ESC to close (desktop)
   useEffect(() => {
@@ -60,40 +179,47 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, isMobile]);
 
-  // Pre-cache common terms in background on mount
-  useEffect(() => {
-    const PRECACHE_TERMS = ['rosso', 'bianco', 'prosecco', 'barolo', 'champagne', 'regalo'];
-    PRECACHE_TERMS.forEach(term => {
-      fetch(`/api/search?q=${encodeURIComponent(term)}&limit=5`).catch(() => {});
-    });
-  }, []);
-
-  // Debounced search
+  /**
+   * Hybrid search:
+   * 1. Instant: filter local index (0ms)
+   * 2. Background: call API for fresh data, silently merge
+   */
   const doSearch = useCallback(async (q: string) => {
-    if (q.length < 2) {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
       setResults([]);
       setSearched(false);
       setLoading(false);
       return;
     }
 
-    // Abort previous request
+    // Step 1: Instant local results
+    if (_indexCache) {
+      const localResults = searchIndex(_indexCache, trimmed, 5);
+      setResults(localResults);
+      setLoading(false);
+      setSearched(true);
+    }
+
+    // Step 2: Background API call for fresh/accurate results
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Loading already shown from handleInput — don't set again
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`, {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=5`, {
         signal: controller.signal,
       });
       if (res.ok) {
-        const data = await res.json();
-        setResults(data);
+        const apiResults: SearchResult[] = await res.json();
+        if (apiResults.length > 0) {
+          // Silently update with fresher API data
+          setResults(apiResults);
+        }
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setResults([]);
+        // Keep local results if API fails
       }
     } finally {
       setLoading(false);
@@ -103,10 +229,12 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
 
   const handleInput = useCallback((value: string) => {
     setQuery(value);
-    // Show skeleton immediately when 2+ chars typed
-    if (value.trim().length >= 2) {
+
+    // Show skeleton only if index not ready yet and 2+ chars
+    if (value.trim().length >= 2 && !_indexCache) {
       setLoading(true);
     }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => doSearch(value), 150);
   }, [doSearch]);
