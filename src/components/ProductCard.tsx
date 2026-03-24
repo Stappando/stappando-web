@@ -103,11 +103,11 @@ export default function ProductCard({ product }: Props) {
           <div className="flex items-baseline gap-1.5 flex-wrap mt-auto">
             {product.on_sale && product.regular_price ? (
               <>
-                <span className={`text-xs line-through ${circuito ? 'text-white/40' : 'text-gray-400'}`}>
+                <span className={`text-sm line-through ${circuito ? 'text-white/40' : 'text-gray-400'}`}>
                   {formatPrice(product.regular_price)} &euro;
                 </span>
                 {discount > 0 && (
-                  <span className="bg-[#c0392b] text-white text-[9px] font-semibold px-[5px] py-[2px] rounded">
+                  <span className="bg-[#c0392b] text-white text-sm font-semibold px-1.5 py-0.5 rounded">
                     -{discount}%
                   </span>
                 )}
