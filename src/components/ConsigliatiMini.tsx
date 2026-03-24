@@ -10,9 +10,10 @@ export default function ConsigliatiMini() {
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
-    fetch(`https://stappando.it/wp-json/wc/v3/products?consumer_key=ck_e28bb3c3e86e007bad35911cffb20258a1343b53&consumer_secret=cs_9494a1fed3d4ed450ff53df9166078abb2388e44&include=69890,69817&per_page=2&status=publish`)
+    // Fetch via our server-side proxy — NEVER expose WC credentials to client
+    fetch('/api/products/recommended')
       .then(r => r.json())
-      .then(setProducts)
+      .then((data) => { if (Array.isArray(data)) setProducts(data); })
       .catch(() => {});
   }, []);
 
