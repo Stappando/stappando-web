@@ -1,9 +1,18 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import CartDrawer from '@/components/CartDrawer';
-import CookieBanner from '@/components/CookieBanner';
+
+/* Lazy-load non-critical client components — code-split from main bundle */
+const CartDrawer = dynamic(() => import('@/components/CartDrawer'));
+const CookieBanner = dynamic(() => import('@/components/CookieBanner'));
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#005667',
+};
 
 export const metadata: Metadata = {
   title: 'Stappando — Vini Italiani d\'Eccellenza',
@@ -22,6 +31,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it">
+      <head>
+        {/* Preconnect to image CDN origins — eliminates DNS+TLS latency for LCP images */}
+        <link rel="preconnect" href="https://stappando.it" />
+        <link rel="preconnect" href="https://i0.wp.com" />
+        <link rel="dns-prefetch" href="https://i1.wp.com" />
+        <link rel="dns-prefetch" href="https://i2.wp.com" />
+      </head>
       <body className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>

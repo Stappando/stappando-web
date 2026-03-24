@@ -8,22 +8,22 @@ import { api, type WCProduct, type WCCategory, type WPPost, type WPCategory } fr
 
 /* ── Categories (change very rarely) ────────────────────── */
 
-/** All root categories — revalidate every hour */
+/** All root categories — revalidate every 4 hours (categories rarely change) */
 export const getCachedCategories = unstable_cache(
   async (params?: Record<string, string | number>) => {
     return api.getCategories(params);
   },
   ['wc-categories'],
-  { revalidate: 3600, tags: ['categories'] },
+  { revalidate: 14400, tags: ['categories'] },
 );
 
-/** Single category by slug — revalidate every hour */
+/** Single category by slug — revalidate every 4 hours */
 export const getCachedCategory = unstable_cache(
   async (slug: string) => {
     return api.getCategory(slug);
   },
   ['wc-category'],
-  { revalidate: 3600, tags: ['categories'] },
+  { revalidate: 14400, tags: ['categories'] },
 );
 
 /* ── Vendor map (change very rarely) ────────────────────── */
