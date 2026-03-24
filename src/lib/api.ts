@@ -18,6 +18,7 @@ export interface WCProduct {
   categories: { id: number; name: string; slug: string }[];
   attributes: { id: number; name: string; options: string[] }[];
   tags: { id: number; name: string; slug: string }[];
+  meta_data?: { id?: number; key: string; value: string }[];
   stock_status: string;
   average_rating: string;
   rating_count: number;
