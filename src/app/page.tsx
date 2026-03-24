@@ -56,7 +56,7 @@ function CategoriesSkeleton() {
 
 async function HeroWithData() {
   const circuito = await getCachedProducts({
-    per_page: 3,
+    per_page: 6,
     tag: String(API_CONFIG.tags.circuito),
     orderby: 'popularity',
   }).catch(() => [] as WCProduct[]);
