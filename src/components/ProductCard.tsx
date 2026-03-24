@@ -101,7 +101,7 @@ export default function ProductCard({ product }: Props) {
                 </span>
                 {discount > 0 && (
                   <span className="bg-[#c0392b] text-white text-sm font-semibold px-1.5 py-0.5 rounded">
-                    -{discount}%
+                    -{discount}% SCONTO
                   </span>
                 )}
                 <span className={`text-lg font-bold ${circuito ? 'text-[#d9c39a]' : 'text-[#055667]'}`}>
