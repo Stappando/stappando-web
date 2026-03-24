@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { type WCProduct, formatPrice, decodeHtml } from '@/lib/api';
+import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 
 export default function ConsigliatiMini() {
   const [products, setProducts] = useState<WCProduct[]>([]);
@@ -31,7 +32,7 @@ export default function ConsigliatiMini() {
             <p className="text-[10px] font-bold text-[#055667]">{formatPrice(p.price)} €</p>
           </div>
           <button
-            onClick={() => addItem({ id: p.id, name: p.name, price: parseFloat(p.price), image: p.images[0]?.src || '', vendorId: 'default', vendorName: 'Stappando' })}
+            onClick={() => addItem({ id: p.id, name: p.name, price: parseFloat(p.price), image: p.images[0]?.src || '', vendorId: 'default', vendorName: DEFAULT_VENDOR_NAME })}
             className="shrink-0 w-6 h-6 rounded-full bg-[#055667] text-white flex items-center justify-center hover:bg-[#044556]"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>

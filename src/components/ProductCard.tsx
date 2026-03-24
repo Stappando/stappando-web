@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { type WCProduct, getProduttore, formatPrice, getDiscount, decodeHtml } from '@/lib/api';
-import { API_CONFIG } from '@/lib/config';
+import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
 
 interface Props {
   product: WCProduct;
@@ -27,7 +27,7 @@ export default function ProductCard({ product }: Props) {
   const [added, setAdded] = useState(false);
   const discount = getDiscount(product);
   const produttore = getProduttore(product);
-  const vendorName = product._vendorName || product.store?.name;
+  const vendorName = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
   const circuito = getCircuitoMeta(product);
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -39,7 +39,7 @@ export default function ProductCard({ product }: Props) {
       price: parseFloat(product.price),
       image: product.images[0]?.src || '',
       vendorId: product._vendorId || String(product.store?.id || 'default'),
-      vendorName: product._vendorName || product.store?.name || 'Stappando',
+      vendorName: product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -116,7 +116,7 @@ export default function ProductCard({ product }: Props) {
             </svg>
             Venduto e spedito da
           </p>
-          <p className={`text-[10px] font-medium ${circuito ? 'text-white/60' : 'text-gray-500'}`}>{vendorName || 'Stappando Enoteca'}</p>
+          <p className={`text-[10px] font-medium ${circuito ? 'text-white/60' : 'text-gray-500'}`}>{vendorName}</p>
         </div>
       </Link>
 

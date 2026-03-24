@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { unstable_cache } from 'next/cache';
 import { api, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
+import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 import AddToCartButton from '@/components/AddToCartButton';
 
 /** Single product — revalidate every 5 min */
@@ -32,7 +33,7 @@ export default async function ProductPage({ params }: Props) {
 
   const discount = getDiscount(product);
   const produttore = getProduttore(product);
-  const vendorName = product._vendorName || product.store?.name || 'Stappando';
+  const vendorName = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
 
   const galleryImages = product.images.length > 0 ? product.images : [{ id: 0, src: '', alt: product.name }];
 

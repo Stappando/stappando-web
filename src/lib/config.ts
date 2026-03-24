@@ -19,6 +19,8 @@ export function getWCSecrets() {
 
 /* ── Public config (safe for client & server) ─────────── */
 
+export const DEFAULT_VENDOR_NAME = 'Stappando Enoteca';
+
 export const API_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it',
   freeShippingThreshold: 69,

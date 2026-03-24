@@ -15,6 +15,7 @@ import {
 } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
+import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 
 /* ── Status badge colors ───────────────────────────────── */
 
@@ -606,7 +607,7 @@ function OrdersSection({ userId }: { userId: number }) {
         price: parseFloat(item.price),
         image: item.image?.src || '',
         vendorId: 'default',
-        vendorName: 'Stappando Enoteca',
+        vendorName: DEFAULT_VENDOR_NAME,
       });
     });
     alert('Prodotti aggiunti al carrello!');

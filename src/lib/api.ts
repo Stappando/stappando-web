@@ -1,4 +1,4 @@
-import { API_CONFIG, getWCSecrets } from './config';
+import { API_CONFIG, DEFAULT_VENDOR_NAME, getWCSecrets } from './config';
 
 const { baseUrl } = API_CONFIG;
 
@@ -155,7 +155,7 @@ async function enrichProductsWithVendors(products: WCProduct[]): Promise<WCProdu
       if (p.store?.id) {
         return { ...p, _vendorId: String(p.store.id), _vendorName: p.store.name };
       }
-      return { ...p, _vendorId: 'stappando', _vendorName: 'Stappando' };
+      return { ...p, _vendorId: 'stappando', _vendorName: DEFAULT_VENDOR_NAME };
     });
   } catch {
     return products;

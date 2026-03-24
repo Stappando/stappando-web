@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
+import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 
 /* ── Types ─────────────────────────────── */
 interface Product {
@@ -129,7 +130,7 @@ function SearchAutocomplete({ query, products, onSelect, onClose }: {
 function ResultCard({ p }: { p: Product }) {
   const addItem = useCartStore(s => s.addItem);
   const [added, setAdded] = useState(false);
-  const vendor = p._vendorName || 'Stappando Enoteca';
+  const vendor = p._vendorName || DEFAULT_VENDOR_NAME;
   const isStapp = vendor.toLowerCase().includes('stappando');
   const discount = p.on_sale ? pct(p.regular_price, p.sale_price) : 0;
   const img = p.images?.[0]?.src || '';
