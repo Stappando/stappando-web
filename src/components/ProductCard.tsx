@@ -100,13 +100,24 @@ export default function ProductCard({ product }: Props) {
           <h3 className={`text-sm font-semibold line-clamp-2 mb-2 leading-snug ${circuito ? 'text-white' : 'text-gray-900'}`}>
             {decodeHtml(product.name)}
           </h3>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className={`text-lg font-bold ${circuito ? 'text-[#d9c39a]' : 'text-[#055667]'}`}>
-              {formatPrice(product.price)} &euro;
-            </span>
-            {product.on_sale && product.regular_price && (
-              <span className={`text-xs line-through ${circuito ? 'text-white/40' : 'text-gray-400'}`}>
-                {formatPrice(product.regular_price)} &euro;
+          <div className="flex items-baseline gap-1.5 flex-wrap mt-auto">
+            {product.on_sale && product.regular_price ? (
+              <>
+                <span className={`text-xs line-through ${circuito ? 'text-white/40' : 'text-gray-400'}`}>
+                  {formatPrice(product.regular_price)} &euro;
+                </span>
+                {discount > 0 && (
+                  <span className="bg-[#c0392b] text-white text-[9px] font-semibold px-[5px] py-[2px] rounded">
+                    -{discount}%
+                  </span>
+                )}
+                <span className={`text-lg font-bold ${circuito ? 'text-[#d9c39a]' : 'text-[#055667]'}`}>
+                  {formatPrice(product.price)} &euro;
+                </span>
+              </>
+            ) : (
+              <span className={`text-lg font-bold ${circuito ? 'text-[#d9c39a]' : 'text-[#055667]'}`}>
+                {formatPrice(product.price)} &euro;
               </span>
             )}
           </div>
