@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { type WCProduct, decodeHtml, formatPrice, getProduttore } from '@/lib/api';
+import { type WCProduct, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
 import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 import { useCartStore } from '@/store/cart';
 
@@ -151,9 +151,9 @@ export default function HeroSection({ circuitoProducts }: Props) {
               ))}
             </div>
 
-            {/* Mobile: 2 cols × 2 rows = 4 cards */}
+            {/* Mobile: 2 cards side by side */}
             <div className="grid grid-cols-2 gap-2 lg:hidden">
-              {circuitoProducts.slice(0, 4).map((product) => (
+              {circuitoProducts.slice(0, 2).map((product) => (
                 <CircuitoCardVertical key={product.id} product={product} imgHeight="h-[100px]" />
               ))}
             </div>
@@ -228,10 +228,15 @@ function CircuitoCardVertical({ product, imgHeight }: { product: WCProduct; imgH
         <p className="text-[9px] text-[#005667] mt-[1px]">Da {vendorName}</p>
 
         <div className="mt-auto pt-1">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[14px] font-bold text-[#005667]">{formatPrice(product.price)} €</span>
-            {product.on_sale && product.regular_price && (
-              <span className="text-[9px] text-[#bbb] line-through">{formatPrice(product.regular_price)} €</span>
+          <div className="flex items-baseline gap-1 flex-wrap">
+            {product.on_sale && product.regular_price ? (
+              <>
+                <span className="text-[10px] text-[#bbb] line-through">{formatPrice(product.regular_price)} €</span>
+                <span className="bg-[#c0392b] text-white text-[8px] font-semibold px-1 py-[1px] rounded">-{getDiscount(product)}% SCONTO</span>
+                <span className="text-[14px] font-bold text-[#005667]">{formatPrice(product.price)} €</span>
+              </>
+            ) : (
+              <span className="text-[14px] font-bold text-[#005667]">{formatPrice(product.price)} €</span>
             )}
           </div>
           <button
