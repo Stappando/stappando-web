@@ -2,9 +2,10 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type WCProduct, type WCCategory, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
-import { getCachedProducts, getCachedCategories, getCachedLatestPost } from '@/lib/cached';
+import { API_CONFIG } from '@/lib/config';
+import { getCachedProducts, getCachedCategories } from '@/lib/cached';
 import ProductCarousel from '@/components/ProductCarousel';
-import PlusBar from '@/components/PlusBar';
+import HeroSection from '@/components/HeroSection';
 
 const TRENDING_IDS = [5202, 5203, 1397, 4448, 4447, 4449, 5204, 5205];
 const EXCLUDED_IDS = new Set([...TRENDING_IDS, 18243, 5347, 19461]);
@@ -51,75 +52,19 @@ function CategoriesSkeleton() {
   );
 }
 
-/* ── Async section components (stream independently) ──── */
+/* ── Hero with circuito products (server component) ───── */
 
-async function HeroBanner() {
-  const [latestPost, circuito] = await Promise.all([
-    getCachedLatestPost(),
-    getCachedProducts({ per_page: 2, include: '69890,69817' }).catch(() => [] as WCProduct[]),
-  ]);
+async function HeroWithData() {
+  const circuito = await getCachedProducts({
+    per_page: 3,
+    tag: String(API_CONFIG.tags.circuito),
+    orderby: 'popularity',
+  }).catch(() => [] as WCProduct[]);
 
-  return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Banner blog — 3/5 */}
-        <div className="lg:col-span-3 relative rounded-2xl overflow-hidden h-52 sm:h-64 lg:h-80">
-          {latestPost?._embedded?.['wp:featuredmedia']?.[0]?.source_url ? (
-            <Image src={latestPost._embedded['wp:featuredmedia'][0].source_url} alt="Blog" fill className="object-cover" priority sizes="(max-width: 1024px) 100vw, 60vw" />
-          ) : (
-            <div className="absolute inset-0 bg-[#055667]" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent flex flex-col justify-end p-6 lg:p-8">
-            <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-2">Dal Blog</span>
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-white leading-tight max-w-lg line-clamp-2">
-              {latestPost ? decodeHtml(latestPost.title.rendered) : "Vini italiani d'eccellenza"}
-            </h2>
-            <Link href={latestPost ? `/blog/${latestPost.slug}` : '/blog'} className="inline-flex items-center gap-2 bg-white text-[#055667] font-bold text-xs px-4 py-2 rounded-full self-start mt-3 hover:shadow-lg transition-all">
-              LEGGI
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-            </Link>
-          </div>
-        </div>
-
-        {/* Consigliati — 2/5 */}
-        <div className="lg:col-span-2 rounded-2xl overflow-hidden bg-[#1a1a1a] flex flex-col">
-          <div className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#b8973f] to-[#d4af5a]">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-            <span className="text-sm font-bold text-white tracking-wide">I Consigliati</span>
-          </div>
-          <div className="flex-1 flex flex-col divide-y divide-white/10">
-            {circuito.slice(0, 2).map((product) => {
-              const produttore = getProduttore(product);
-              const discount = getDiscount(product);
-              return (
-                <Link key={product.id} href={`/prodotto/${product.slug}`} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors flex-1">
-                  <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-white">
-                    {product.images[0]?.src && (
-                      <Image src={product.images[0].src} alt={decodeHtml(product.name)} fill className="object-contain p-1.5" sizes="80px" />
-                    )}
-                    {discount > 0 && (
-                      <div className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">-{discount}%</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {produttore && <p className="text-[10px] font-bold text-[#b8973f] uppercase tracking-wider">{produttore}</p>}
-                    <p className="text-sm font-semibold text-white line-clamp-2 leading-tight mt-0.5">{decodeHtml(product.name)}</p>
-                    <div className="flex items-baseline gap-2 mt-1.5">
-                      <span className="text-lg font-extrabold text-[#b8973f]">{formatPrice(product.price)} &euro;</span>
-                      {product.on_sale && product.regular_price && (
-                        <span className="text-xs text-white/40 line-through">{formatPrice(product.regular_price)} &euro;</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  return <HeroSection circuitoProducts={circuito} />;
 }
+
+/* ── Async section components (stream independently) ──── */
 
 async function BestSellers() {
   const bestSellers = await getCachedProducts({ per_page: 10, orderby: 'popularity' }).catch(() => [] as WCProduct[]);
@@ -228,7 +173,7 @@ async function CategoryGrid() {
   );
 }
 
-/* ── Static sections (no data fetching) ───────────────── */
+/* ── Static sections ──────────────────────────────────── */
 
 function AppBanner() {
   return (
@@ -311,14 +256,12 @@ function BottomBars() {
 export default function HomePage() {
   return (
     <div>
-      {/* Hero + Consigliati — highest priority, fetches blog post + circuito */}
-      <Suspense fallback={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4"><div className="h-52 sm:h-64 lg:h-80 bg-gray-100 rounded-2xl animate-pulse" /></div>}>
-        <HeroBanner />
+      {/* Hero — above the fold */}
+      <Suspense fallback={<div className="bg-[#f8f6f1]"><div className="max-w-7xl mx-auto px-4 sm:px-10 py-11"><div className="h-64 lg:h-80 animate-pulse rounded-xl bg-[#efe9dc]" /></div></div>}>
+        <HeroWithData />
       </Suspense>
 
-      <PlusBar />
-
-      {/* Best sellers — streams independently */}
+      {/* Best sellers */}
       <Suspense fallback={<div className="mt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><CarouselSkeleton /></div>}>
         <BestSellers />
       </Suspense>
@@ -338,7 +281,7 @@ export default function HomePage() {
         <CategoryGrid />
       </Suspense>
 
-      {/* Static sections — no data fetching, render immediately */}
+      {/* Static sections */}
       <AppBanner />
       <BottomBars />
 
