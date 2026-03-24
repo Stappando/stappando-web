@@ -6,10 +6,10 @@ import { sendEmail } from './mandrill';
 import {
   orderConfirmed, orderShipped, orderCancelled,
   pointsUpdate, birthday, giftCardReceived,
-  welcome, abandonedCart,
+  welcome, abandonedCart, reviewRequest,
   type OrderConfirmedData, type OrderShippedData, type OrderCancelledData,
   type PointsUpdateData, type BirthdayData, type GiftCardData,
-  type WelcomeData, type AbandonedCartData,
+  type WelcomeData, type AbandonedCartData, type ReviewRequestData,
 } from './templates';
 
 type EmailEvent =
@@ -20,7 +20,8 @@ type EmailEvent =
   | { type: 'birthday'; email: string; name: string; data: BirthdayData }
   | { type: 'giftcard.received'; email: string; name: string; data: GiftCardData }
   | { type: 'welcome'; email: string; name: string; data: WelcomeData }
-  | { type: 'cart.abandoned'; email: string; name: string; data: AbandonedCartData };
+  | { type: 'cart.abandoned'; email: string; name: string; data: AbandonedCartData }
+  | { type: 'review.request'; email: string; name: string; data: ReviewRequestData };
 
 const TEMPLATE_MAP = {
   'order.confirmed': orderConfirmed,
@@ -31,6 +32,7 @@ const TEMPLATE_MAP = {
   'giftcard.received': giftCardReceived,
   'welcome': welcome,
   'cart.abandoned': abandonedCart,
+  'review.request': reviewRequest,
 } as const;
 
 /** Dispatch an email event — generates template and sends via Mandrill */

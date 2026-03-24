@@ -323,6 +323,53 @@ export interface AbandonedCartData {
   total: string;
 }
 
+/* ── Template: Recensisci il tuo ordine ──────────────── */
+
+export interface ReviewRequestData {
+  customerName: string;
+  orderNumber: string;
+  items: { name: string; slug: string; image?: string }[];
+}
+
+export function reviewRequest(data: ReviewRequestData): { subject: string; html: string } {
+  const productRows = data.items.map(item => `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
+        <table cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td style="width:60px;vertical-align:top;">
+            ${item.image ? `<img src="${item.image}" width="56" height="56" style="border-radius:10px;object-fit:cover;display:block;" />` : `<div style="width:56px;height:56px;background:#f5f5f0;border-radius:10px;"></div>`}
+          </td>
+          <td style="padding-left:12px;vertical-align:middle;">
+            <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#333;">${item.name}</p>
+            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:6px 16px;background:#d9c39a;color:#1a1a1a;font-size:12px;font-weight:700;text-decoration:none;border-radius:8px;">
+              Recensisci &rarr; +100 POP
+            </a>
+          </td>
+        </tr></table>
+      </td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: 'Come è andata? Guadagna 100 Punti POP',
+    html: baseLayout(`
+      ${heading('Il tuo ordine è arrivato bene?')}
+      ${paragraph(`Ciao ${data.customerName}, speriamo che i vini del tuo ordine #${data.orderNumber} ti stiano piacendo!`)}
+      ${paragraph('Lascia una recensione per ogni prodotto e <strong>guadagna 100 Punti POP</strong> per ciascuna:')}
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+        ${productRows}
+      </table>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:12px;margin:16px 0;">
+        <tr><td style="padding:16px 24px;text-align:center;">
+          <p style="margin:0;font-size:13px;color:#d9c39a;font-weight:600;">Ogni recensione = 100 Punti POP accreditati entro 24h</p>
+        </td></tr>
+      </table>
+      ${paragraph('<span style="font-size:13px;color:#888;">Le tue recensioni aiutano altri appassionati a scegliere il vino perfetto.</span>')}
+    `, `Recensisci i prodotti dell'ordine #${data.orderNumber} e guadagna Punti POP`),
+  };
+}
+
 export function abandonedCart(data: AbandonedCartData): { subject: string; html: string } {
   const itemsList = data.items.map(item => `
     <tr>

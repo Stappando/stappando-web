@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { dispatchEmail } from '@/lib/mail/dispatcher';
 import { formatPrice } from '@/lib/api';
+import { getWCSecrets } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,15 @@ async function handleOrderEvent(order: Record<string, unknown>) {
           },
         });
       }
+
+      // Schedule review email 3 days after completion
+      if (status === 'completed') {
+        const alreadySent = meta.find(m => m.key === '_review_email_sent')?.value;
+        if (!alreadySent) {
+          const sendAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+          await setOrderMeta(String(order.id), '_review_email_scheduled', sendAt);
+        }
+      }
       break;
     }
 
@@ -251,5 +261,21 @@ async function handleCustomAction(topic: string, payload: Record<string, unknown
 
     default:
       console.log(`WC webhook: unhandled action ${topic}`);
+  }
+}
+
+/* ── Helper: set order meta via WC REST API ────────────── */
+
+async function setOrderMeta(orderId: string, key: string, value: string) {
+  const wc = getWCSecrets();
+  const url = `${wc.baseUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+  try {
+    await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meta_data: [{ key, value }] }),
+    });
+  } catch (err) {
+    console.error(`Failed to set order meta ${key} on #${orderId}:`, err);
   }
 }
