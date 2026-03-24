@@ -76,19 +76,21 @@ export const useCartStore = create<CartState>()(
       getSubtotal: () => get().items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
       getVendorShipping: () => {
-        const vendorTotals: Record<string, { name: string; total: number }> = {};
+        // Group by vendorName (not vendorId) — consistent regardless of ID source
+        const vendorTotals: Record<string, { vendorId: string; total: number }> = {};
         get().items.forEach((item) => {
           if (item.vendorId === 'giftcard') return;
-          if (!vendorTotals[item.vendorId])
-            vendorTotals[item.vendorId] = { name: item.vendorName, total: 0 };
-          vendorTotals[item.vendorId].total += item.price * item.quantity;
+          const key = item.vendorName; // bucket by display name
+          if (!vendorTotals[key])
+            vendorTotals[key] = { vendorId: item.vendorId, total: 0 };
+          vendorTotals[key].total += item.price * item.quantity;
         });
         const threshold = API_CONFIG.freeShippingThreshold;
-        return Object.entries(vendorTotals).map(([vendorId, data]) => {
+        return Object.entries(vendorTotals).map(([vendorName, data]) => {
           const isFree = data.total >= threshold;
           return {
-            vendorId,
-            vendorName: data.name,
+            vendorId: data.vendorId,
+            vendorName,
             total: data.total,
             isFree,
             remaining: isFree ? 0 : threshold - data.total,
