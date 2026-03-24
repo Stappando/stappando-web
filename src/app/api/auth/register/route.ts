@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
 import { subscribeToMailchimp } from '@/lib/mail/mailchimp';
+import { generateCoupon } from '@/lib/coupons/generate';
+import { sendEmail } from '@/lib/mail/mandrill';
+import { welcomeTemplate } from '@/lib/mail/templates';
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,18 +49,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Subscribe to Mailchimp ONLY if user explicitly opted in (GDPR)
-    if (newsletter) {
-      // Fire and forget — don't block registration if Mailchimp fails
-      subscribeToMailchimp({
-        email,
-        firstName,
-        lastName,
-        tags: ['registrazione-web'],
-      }).catch((err) => console.error('Mailchimp subscribe after register failed:', err));
-    }
+    const customerId = data.id;
 
-    return NextResponse.json({ success: true, customerId: data.id });
+    // Fire-and-forget: coupon + mail + newsletter (don't block response)
+    (async () => {
+      try {
+        // 1. Generate welcome coupon
+        const coupon = await generateCoupon({
+          type: 'welcome',
+          firstName,
+          email,
+          customerId,
+        });
+
+        // 2. Send welcome email with coupon
+        const expiresDate = new Date(coupon.expires).toLocaleDateString('it-IT', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        });
+
+        await sendEmail({
+          to: [{ email, name: firstName }],
+          subject: `Benvenuto ${firstName}! Ecco il tuo sconto del 5%`,
+          html: welcomeTemplate(firstName, coupon.code, expiresDate),
+        });
+
+        console.log(`Welcome coupon ${coupon.code} sent to ${email}`);
+      } catch (err) {
+        console.error('Welcome coupon/mail failed:', err);
+      }
+
+      // 3. Mailchimp (GDPR)
+      if (newsletter) {
+        subscribeToMailchimp({
+          email,
+          firstName,
+          lastName,
+          tags: ['registrazione-web'],
+        }).catch((err) => console.error('Mailchimp subscribe failed:', err));
+      }
+    })();
+
+    return NextResponse.json({ success: true, customerId });
   } catch {
     return NextResponse.json({ message: 'Errore del server' }, { status: 500 });
   }

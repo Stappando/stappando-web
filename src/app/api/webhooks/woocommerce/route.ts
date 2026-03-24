@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import { dispatchEmail } from '@/lib/mail/dispatcher';
 import { formatPrice } from '@/lib/api';
 import { getWCSecrets } from '@/lib/config';
+import { generateCoupon, markCouponUsed, orderUsedCouponPrefix, getCustomerCouponMeta } from '@/lib/coupons/generate';
+import { sendEmail } from '@/lib/mail/mandrill';
+import { secondOrderTemplate } from '@/lib/mail/templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,6 +142,12 @@ async function handleOrderEvent(order: Record<string, unknown>) {
           const sendAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
           await setOrderMeta(String(order.id), '_review_email_scheduled', sendAt);
         }
+
+        // Coupon flow: check if welcome coupon was used → generate second coupon
+        const customerId = order.customer_id as number;
+        if (customerId) {
+          await handleCouponFlow(customerId, order, billing);
+        }
       }
       break;
     }
@@ -261,6 +270,55 @@ async function handleCustomAction(topic: string, payload: Record<string, unknown
 
     default:
       console.log(`WC webhook: unhandled action ${topic}`);
+  }
+}
+
+/* ── Coupon flow on order completion ────────────────────── */
+
+async function handleCouponFlow(
+  customerId: number,
+  order: Record<string, unknown>,
+  billing: Record<string, string>,
+) {
+  try {
+    const couponMeta = await getCustomerCouponMeta(customerId);
+
+    // Check if this order used the welcome coupon (BENVENUTO-*)
+    if (orderUsedCouponPrefix(order as { coupon_lines?: { code: string }[] }, 'BENVENUTO')) {
+      // Mark welcome coupon as used
+      await markCouponUsed(customerId, 'welcome');
+
+      // Generate second coupon only if not already generated
+      if (!couponMeta._coupon2_code) {
+        const firstName = billing.first_name || 'Cliente';
+        const coupon = await generateCoupon({
+          type: 'second',
+          firstName,
+          email: billing.email,
+          customerId,
+        });
+
+        const expiresDate = new Date(coupon.expires).toLocaleDateString('it-IT', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        });
+
+        await sendEmail({
+          to: [{ email: billing.email, name: firstName }],
+          subject: `Grazie ${firstName}! Ecco un altro 5% per te`,
+          html: secondOrderTemplate(firstName, coupon.code, expiresDate),
+        });
+
+        console.log(`Second coupon ${coupon.code} sent to ${billing.email}`);
+      }
+    }
+
+    // Check if this order used the second coupon (GRAZIE-*)
+    if (orderUsedCouponPrefix(order as { coupon_lines?: { code: string }[] }, 'GRAZIE')) {
+      await markCouponUsed(customerId, 'second');
+      console.log(`Customer ${customerId} completed coupon journey`);
+    }
+  } catch (err) {
+    console.error(`Coupon flow error for customer ${customerId}:`, err);
   }
 }
 

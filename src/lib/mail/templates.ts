@@ -314,6 +314,46 @@ export function welcome(data: WelcomeData): { subject: string; html: string } {
   };
 }
 
+/* ── Template: Benvenuto con coupon ────────────────────── */
+
+export function welcomeTemplate(firstName: string, couponCode: string, expiresDate: string): string {
+  return baseLayout(`
+    ${heading(`Benvenuto ${firstName}!`)}
+    ${paragraph('Siamo felici di averti con noi. Stappando è il marketplace dei migliori vini italiani, selezionati direttamente dai produttori.')}
+    ${divider()}
+    ${paragraph('<strong style="color:#005667;">Il tuo codice sconto di benvenuto:</strong>')}
+    <div style="background:#f8f6f1;border:2px dashed #005667;border-radius:8px;padding:16px;text-align:center;margin:0 0 16px;">
+      <span style="font-size:20px;font-weight:700;color:#005667;letter-spacing:2px;">${couponCode}</span>
+    </div>
+    ${paragraph('Valido <strong>5% su tutto il catalogo</strong>')}
+    ${paragraph(`Scade il <strong>${expiresDate}</strong>`)}
+    ${ctaButton('Usa il codice ora →', 'https://stappando.it/cerca')}
+    ${divider()}
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:8px 0;"><strong style="color:#005667;">★ Selezionati da sommelier</strong> — Qualità garantita</td></tr>
+      <tr><td style="padding:8px 0;"><strong style="color:#005667;">🚚 Consegna 24-48h</strong> — Gratuita da 69€</td></tr>
+      <tr><td style="padding:8px 0;"><strong style="color:#005667;">🎯 Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
+    </table>
+  `, `Benvenuto! Ecco il tuo sconto del 5%: ${couponCode}`);
+}
+
+/* ── Template: Secondo ordine con coupon ──────────────── */
+
+export function secondOrderTemplate(firstName: string, couponCode: string, expiresDate: string): string {
+  return baseLayout(`
+    ${heading('Grazie per il tuo primo ordine!')}
+    ${paragraph(`Ciao ${firstName}, il tuo ordine ci ha fatto piacere. Ecco un regalo per ringraziarti.`)}
+    ${divider()}
+    ${paragraph('<strong style="color:#005667;">Ecco il tuo secondo sconto:</strong>')}
+    <div style="background:#f8f6f1;border:2px dashed #005667;border-radius:8px;padding:16px;text-align:center;margin:0 0 16px;">
+      <span style="font-size:20px;font-weight:700;color:#005667;letter-spacing:2px;">${couponCode}</span>
+    </div>
+    ${paragraph('<strong>5% sul prossimo ordine</strong>')}
+    ${paragraph(`Scade il <strong>${expiresDate}</strong>`)}
+    ${ctaButton('Ordina di nuovo →', 'https://stappando.it/cerca')}
+  `, `Grazie! Ecco il tuo secondo sconto del 5%: ${couponCode}`);
+}
+
 /* ── Template: Carrello abbandonato ───────────────────── */
 
 export interface AbandonedCartData {
