@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import AuthModal from '@/components/AuthModal';
+import SearchOverlay from '@/components/SearchOverlay';
 
 /* ══════════════════════════════════════════════════════════
    NAV — 5 voci esatte, nessun link esterno
@@ -52,51 +53,6 @@ function TopBar({ visible }: { visible: boolean }) {
           Spedizione gratuita da 69€
         </p>
       </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════
-   SEARCH OVERLAY
-   Full-width under header, autofocus, ESC + click-outside
-   ══════════════════════════════════════════════════════════ */
-function SearchOverlay({ onClose }: { onClose: () => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const v = inputRef.current?.value?.trim();
-    if (v) { window.location.href = `/cerca?q=${encodeURIComponent(v)}`; onClose(); }
-  };
-
-  return (
-    <div className="absolute inset-x-0 top-full bg-white border-b border-[#e5e5e5] shadow-lg z-50">
-      <div className="max-w-3xl mx-auto px-4 md:px-8 py-4">
-        <form onSubmit={handleSubmit} className="relative">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#005667]/40 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Cerca vino, occasione o abbinamento…"
-            className="w-full pl-12 pr-28 py-3.5 bg-white border-2 border-[#005667]/15 rounded-2xl text-base focus:outline-none focus:border-[#005667]/40 focus:shadow-[0_0_0_4px_rgba(0,86,103,0.06)] transition-all"
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-            <button type="submit" className="px-5 py-2 bg-[#005667] text-white rounded-xl text-xs font-bold hover:bg-[#004555] transition-colors shadow-sm">Cerca</button>
-            <button type="button" onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-        </form>
-      </div>
-      {/* Click outside to close */}
-      <div className="fixed inset-0 -z-10" onClick={onClose} />
     </div>
   );
 }
@@ -287,6 +243,7 @@ function MobileDrawer({ isOpen, onClose, onOpenAuth }: { isOpen: boolean; onClos
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [topBarVisible, setTopBarVisible] = useState(true);
@@ -369,9 +326,13 @@ export default function Header() {
 
             {/* RIGHT — Actions */}
             <div className="flex items-center">
-              {/* Search — 44x44 */}
+              {/* Search — 44x44, desktop: overlay under header, mobile: fullscreen */}
               <button
-                onClick={() => setSearchOpen(!searchOpen)}
+                onClick={() => {
+                  const mobile = window.innerWidth < 640;
+                  if (mobile) setMobileSearchOpen(true);
+                  else setSearchOpen(!searchOpen);
+                }}
                 className={`flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${
                   searchOpen ? 'text-[#005667] bg-gray-100' : 'text-gray-500 hover:text-[#005667] hover:bg-gray-50'
                 }`}
@@ -409,6 +370,9 @@ export default function Header() {
 
       {/* Auth modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+
+      {/* Mobile search — fullscreen overlay */}
+      {mobileSearchOpen && <SearchOverlay onClose={() => setMobileSearchOpen(false)} isMobile />}
     </>
   );
 }
