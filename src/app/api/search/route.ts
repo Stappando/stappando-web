@@ -20,11 +20,14 @@ interface SearchResult {
   circuito_badge: string;
 }
 
-/** Fetch and cache WC search results for 5 minutes */
+/** Only request the fields we actually use — cuts WC response payload ~70% */
+const WC_FIELDS = 'id,slug,name,price,regular_price,sale_price,on_sale,images,attributes,tags,meta_data';
+
+/** Fetch and cache WC search results for 10 minutes */
 const searchProducts = unstable_cache(
   async (query: string, limit: number): Promise<SearchResult[]> => {
     const wc = getWCSecrets();
-    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${encodeURIComponent(query)}&per_page=${Math.min(limit + 10, 30)}&status=publish&orderby=popularity&order=desc`;
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${encodeURIComponent(query)}&per_page=${Math.min(limit + 10, 30)}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
 
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -65,7 +68,7 @@ const searchProducts = unstable_cache(
     return [...circuito, ...rest].slice(0, limit);
   },
   ['search-products'],
-  { revalidate: 300, tags: ['search'] }, // 5 min cache
+  { revalidate: 600, tags: ['search'] }, // 10 min cache
 );
 
 export async function GET(req: NextRequest) {

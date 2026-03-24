@@ -60,11 +60,20 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, isMobile]);
 
+  // Pre-cache common terms in background on mount
+  useEffect(() => {
+    const PRECACHE_TERMS = ['rosso', 'bianco', 'prosecco', 'barolo', 'champagne', 'regalo'];
+    PRECACHE_TERMS.forEach(term => {
+      fetch(`/api/search?q=${encodeURIComponent(term)}&limit=5`).catch(() => {});
+    });
+  }, []);
+
   // Debounced search
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) {
       setResults([]);
       setSearched(false);
+      setLoading(false);
       return;
     }
 
@@ -73,7 +82,7 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setLoading(true);
+    // Loading already shown from handleInput — don't set again
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`, {
         signal: controller.signal,
@@ -94,8 +103,12 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
 
   const handleInput = useCallback((value: string) => {
     setQuery(value);
+    // Show skeleton immediately when 2+ chars typed
+    if (value.trim().length >= 2) {
+      setLoading(true);
+    }
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(value), 250);
+    debounceRef.current = setTimeout(() => doSearch(value), 150);
   }, [doSearch]);
 
   const handleSuggestion = useCallback((term: string) => {
