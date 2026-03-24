@@ -65,7 +65,7 @@ interface AuthState {
   error: string | null;
 
   login: (username: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string, newsletter?: boolean) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   isAuthenticated: () => boolean;
@@ -102,13 +102,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (email: string, password: string, firstName: string, lastName: string) => {
+      register: async (email: string, password: string, firstName: string, lastName: string, newsletter: boolean = false) => {
         set({ isLoading: true, error: null });
         try {
           const res = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, firstName, lastName }),
+            body: JSON.stringify({ email, password, firstName, lastName, newsletter }),
           });
           const data = await res.json();
           if (!res.ok) {

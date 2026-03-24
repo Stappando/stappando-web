@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
+import { subscribeToMailchimp } from '@/lib/mail/mailchimp';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
     const password = sanitize(body.password, 128);
     const firstName = sanitize(body.firstName, 100);
     const lastName = sanitize(body.lastName, 100);
+    const newsletter = body.newsletter === true; // Explicit opt-in only (GDPR)
 
     if (!isValidEmail(email)) {
       return NextResponse.json({ message: 'Email non valida' }, { status: 400 });
@@ -42,6 +44,17 @@ export async function POST(req: NextRequest) {
         { message: data.message || 'Errore durante la registrazione' },
         { status: res.status },
       );
+    }
+
+    // Subscribe to Mailchimp ONLY if user explicitly opted in (GDPR)
+    if (newsletter) {
+      // Fire and forget — don't block registration if Mailchimp fails
+      subscribeToMailchimp({
+        email,
+        firstName,
+        lastName,
+        tags: ['registrazione-web'],
+      }).catch((err) => console.error('Mailchimp subscribe after register failed:', err));
     }
 
     return NextResponse.json({ success: true, customerId: data.id });

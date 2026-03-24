@@ -15,6 +15,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [newsletter, setNewsletter] = useState(false);
   const [localError, setLocalError] = useState('');
   const { login, register, isLoading, error, clearError } = useAuthStore();
 
@@ -31,6 +32,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setPassword('');
       setFirstName('');
       setLastName('');
+      setNewsletter(false);
       setLocalError('');
       clearError();
     }
@@ -61,7 +63,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
-    await register(email, password, firstName, lastName);
+    await register(email, password, firstName, lastName, newsletter);
     const state = useAuthStore.getState();
     if (state.token) {
       onClose();
@@ -193,6 +195,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </div>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-2.5" placeholder="Email" />
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3" placeholder="Password (min 6 caratteri)" />
+              {/* Newsletter opt-in — NOT checked by default (GDPR) */}
+              <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={newsletter}
+                  onChange={(e) => setNewsletter(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#055667] focus:ring-[#055667] shrink-0"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  Voglio ricevere offerte e novità da Stappando
+                </span>
+              </label>
               <button
                 type="submit"
                 disabled={isLoading}

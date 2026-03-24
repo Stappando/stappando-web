@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { api } from '@/lib/api';
 import { isValidEmail } from '@/lib/validation';
+import { subscribeToMailchimp } from '@/lib/mail/mailchimp';
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Email non valida' }, { status: 400 });
     }
 
-    const result = await api.subscribeNewsletter(body.email);
+    const result = await subscribeToMailchimp({
+      email: body.email,
+      firstName: body.firstName || '',
+      lastName: body.lastName || '',
+      tags: ['newsletter-footer'],
+    });
+
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ success: false, message: 'Errore del server' }, { status: 500 });
