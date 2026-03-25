@@ -65,7 +65,7 @@ export default function ProductCard({ product }: Props) {
             alt={decodeHtml(product.name)}
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
-            className="object-contain p-2"
+            className="object-contain p-1"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
