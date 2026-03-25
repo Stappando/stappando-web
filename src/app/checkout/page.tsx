@@ -10,7 +10,9 @@ import { formatPrice } from '@/lib/api';
 
 /* ── Stripe singleton ─────────────────────────────────── */
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '');
+const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
+const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
+const stripePromise = STRIPE_VALID ? loadStripe(STRIPE_KEY) : null;
 
 /* ── Types ────────────────────────────────────────────── */
 

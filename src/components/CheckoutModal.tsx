@@ -9,7 +9,9 @@ import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 import AuthModal from '@/components/AuthModal';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '');
+const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
+const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
+const stripePromise = STRIPE_VALID ? loadStripe(STRIPE_KEY) : null;
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -553,7 +555,19 @@ function Step3Payment() {
     }
   }, [shippingData, user, items, getTotalShipping]);
 
-  useEffect(() => { createIntent(); }, [createIntent]);
+  useEffect(() => { if (STRIPE_VALID) createIntent(); }, [createIntent]);
+
+  // Guard: Stripe key not configured
+  if (!STRIPE_VALID) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-12 px-8 text-center">
+        <svg className="w-14 h-14 text-red-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <h3 className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Pagamento non disponibile</h3>
+        <p className="text-[13px] text-[#888] mb-4">La configurazione del sistema di pagamento non è completa. Contattaci per assistenza.</p>
+        <button onClick={() => setCheckoutStep(2)} className="text-[13px] text-[#005667] font-medium hover:underline">← Torna alla spedizione</button>
+      </div>
+    );
+  }
 
   return (
     <>
