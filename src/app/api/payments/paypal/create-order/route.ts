@@ -62,9 +62,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ approvalUrl: order.approvalUrl, orderId: order.id });
   } catch (err) {
-    console.error('PayPal create-order error:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('PayPal create-order error:', msg);
+    console.error('PayPal create-order stack:', err instanceof Error ? err.stack : '');
     return NextResponse.json(
-      { error: 'Errore nella creazione ordine PayPal' },
+      { error: `Errore PayPal: ${msg}` },
       { status: 500 },
     );
   }
