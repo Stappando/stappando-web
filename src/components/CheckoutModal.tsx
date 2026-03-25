@@ -217,32 +217,34 @@ function Step1Cart() {
               </div>
             </div>
 
-            {/* Coupon + summary */}
-            <div className="px-6 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-3.5">
-                <div className="flex gap-2.5">
-                  <input
-                    type="text" value={coupon} onChange={e => setCoupon(e.target.value)}
-                    placeholder="Codice sconto"
-                    className="flex-1 h-10 px-3.5 text-[13px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667]"
-                  />
-                  <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
-                </div>
+            {/* Coupon */}
+            <div className="px-6 mb-4">
+              <div className="flex gap-2.5">
+                <input
+                  type="text" value={coupon} onChange={e => setCoupon(e.target.value)}
+                  placeholder="Codice sconto"
+                  className="flex-1 h-10 px-3.5 text-[13px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667]"
+                />
+                <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
               </div>
+            </div>
 
-              {/* Right — summary desktop */}
-              <div className="hidden sm:block space-y-2.5">
+            {/* POP points */}
+            <div className="mx-6 flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-lg px-3.5 py-2.5 mb-5">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span className="text-[12px] font-medium">Guadagnerai {popPoints} Punti POP con questo ordine</span>
+            </div>
+
+            {/* Summary */}
+            <div className="px-6 pb-5">
+              <div className="space-y-2.5">
                 <div className="flex justify-between text-[13px]"><span className="text-[#888]">Subtotale</span><span>{formatPrice(subtotal)} €</span></div>
                 <div className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vendorShipping.length} vendor</span><span>{totalShipping === 0 ? 'Gratuita' : `${formatPrice(totalShipping)} €`}</span></div>
                 <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-                <div className="flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-full px-3.5 py-2 mt-3">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  <span className="text-[11px] font-medium">Guadagnerai {popPoints} Punti POP</span>
-                </div>
-                <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors">
-                  Continua →
-                </button>
               </div>
+              <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-4 hover:bg-[#004555] transition-colors hidden sm:block">
+                Continua →
+              </button>
             </div>
           </>
         )}
@@ -340,12 +342,8 @@ function Step1Cart() {
       </div>
 
       {/* Mobile footer */}
-      <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 flex items-center gap-3 shrink-0 bg-white">
-        <div className="flex items-center gap-1.5 bg-[#dff0f5] text-[#005667] rounded-full px-3 py-2 shrink-0">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-          <span className="text-[10px] font-medium">+{popPoints} POP</span>
-        </div>
-        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="flex-1 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+      <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
+        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
           {tab === 'gifts' ? '← Torna al carrello' : `${formatPrice(total)} € · Continua →`}
         </button>
       </div>
