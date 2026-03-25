@@ -27,6 +27,16 @@ export default function ProductCard({ product }: Props) {
   const vendorName = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
   const circuito = getCircuitoMeta(product);
 
+  // Rating
+  const avgRating = parseFloat(product.average_rating || '0');
+  const ratingCount = product.rating_count || 0;
+  const hasRating = avgRating > 0 && ratingCount > 0;
+
+  // Stock
+  const stockQty = product.stock_quantity;
+  const isOutOfStock = product.stock_status === 'outofstock' || stockQty === 0;
+  const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 3;
+
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -82,10 +92,21 @@ export default function ProductCard({ product }: Props) {
         )}
 
         <Link href={`/prodotto/${product.slug}`}>
-          <h3 className="text-[12px] font-semibold text-[#1a1a1a] leading-[1.35] line-clamp-2 flex-1 mb-2">
+          <h3 className="text-[12px] font-semibold text-[#1a1a1a] leading-[1.35] line-clamp-2 flex-1 mb-1">
             {decodeHtml(product.name)}
           </h3>
         </Link>
+
+        {/* Rating */}
+        {hasRating && (
+          <div className="flex items-center gap-1 mb-1.5">
+            <span className="text-[10px] text-[#d9c39a] tracking-[1px]">
+              {Array.from({ length: 5 }).map((_, i) => i < Math.round(avgRating) ? '★' : '☆').join('')}
+            </span>
+            <span className="text-[10px] font-medium text-[#1a1a1a]">({avgRating.toFixed(1)})</span>
+            <span className="text-[10px] text-[#999]">· {ratingCount} recension{ratingCount === 1 ? 'e' : 'i'}</span>
+          </div>
+        )}
 
         {/* Price — FIXED ORDER: strikethrough → badge → current */}
         <div className="flex items-baseline gap-1.5 flex-wrap mb-[5px]">
@@ -112,19 +133,39 @@ export default function ProductCard({ product }: Props) {
           <span className="text-[9px] text-[#888] truncate">Spedito da {vendorName}</span>
         </div>
 
+        {/* Low stock badge */}
+        {isLowStock && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c0392b] opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#c0392b]" />
+            </span>
+            <span className="text-[9px] font-semibold text-[#c0392b]">Ultime {stockQty} bottigli{stockQty === 1 ? 'a' : 'e'}</span>
+          </div>
+        )}
+
         {/* CTA */}
-        <button
-          onClick={handleAdd}
-          className={`w-full py-[9px] rounded-lg text-[11px] font-medium transition-all mt-auto ${
-            added
-              ? 'bg-green-500 text-white'
-              : circuito
-                ? 'bg-[#2C2C2A] text-white hover:bg-[#1a1a18]'
-                : 'bg-[#005667] text-white hover:bg-[#004555]'
-          }`}
-        >
-          {added ? 'Aggiunto ✓' : 'Aggiungi al carrello'}
-        </button>
+        {isOutOfStock ? (
+          <button
+            disabled
+            className="w-full py-[9px] rounded-lg text-[11px] font-medium bg-[#e0e0e0] text-[#999] cursor-not-allowed mt-auto"
+          >
+            Non disponibile
+          </button>
+        ) : (
+          <button
+            onClick={handleAdd}
+            className={`w-full py-[9px] rounded-lg text-[11px] font-medium transition-all mt-auto ${
+              added
+                ? 'bg-green-500 text-white'
+                : circuito
+                  ? 'bg-[#2C2C2A] text-white hover:bg-[#1a1a18]'
+                  : 'bg-[#005667] text-white hover:bg-[#004555]'
+            }`}
+          >
+            {added ? 'Aggiunto ✓' : 'Aggiungi al carrello'}
+          </button>
+        )}
       </div>
     </div>
   );

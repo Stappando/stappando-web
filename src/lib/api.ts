@@ -20,6 +20,7 @@ export interface WCProduct {
   tags: { id: number; name: string; slug: string }[];
   meta_data?: { id?: number; key: string; value: string }[];
   stock_status: string;
+  stock_quantity: number | null;
   average_rating: string;
   rating_count: number;
   store?: { id: number; name: string; url: string };
