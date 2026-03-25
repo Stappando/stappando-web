@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 
 /* Lazy-load non-critical client components — code-split from main bundle */
 const CartDrawer = dynamic(() => import('@/components/CartDrawer'));
+const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'));
 const CookieBanner = dynamic(() => import('@/components/CookieBanner'));
 
 export const viewport: Viewport = {
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1">{children}</main>
         <Footer />
         <CartDrawer />
+        <CheckoutModal />
         <CookieBanner />
       </body>
     </html>

@@ -27,9 +27,14 @@ export interface VendorShipping {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  checkoutOpen: boolean;
+  checkoutStep: number;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  openCheckout: (step?: number) => void;
+  closeCheckout: () => void;
+  setCheckoutStep: (step: number) => void;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -46,9 +51,14 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      checkoutOpen: false,
+      checkoutStep: 1,
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
+      openCheckout: (step = 1) => set({ checkoutOpen: true, checkoutStep: step, isOpen: false }),
+      closeCheckout: () => set({ checkoutOpen: false, checkoutStep: 1 }),
+      setCheckoutStep: (step) => set({ checkoutStep: step }),
 
       addItem: (item) => {
         set((state) => {
@@ -56,10 +66,9 @@ export const useCartStore = create<CartState>()(
           if (existing) {
             return {
               items: state.items.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)),
-              isOpen: true,
             };
           }
-          return { items: [...state.items, { ...item, quantity: 1 }], isOpen: true };
+          return { items: [...state.items, { ...item, quantity: 1 }] };
         });
       },
 
