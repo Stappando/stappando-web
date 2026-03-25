@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
-import { API_CONFIG } from '@/lib/config';
+import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
 import { getCachedProducts, getCachedCategories } from '@/lib/cached';
 import ProductCard from '@/components/ProductCard';
 import HeroSection from '@/components/HeroSection';
@@ -92,32 +92,50 @@ async function BestSellers() {
   );
 }
 
-/* ── 2. Offerte ───────────────────────────────────────── */
+/* ── 2. Dai piccoli produttori ─────────────────────────── */
 
-async function Offerte() {
-  const products = await getCachedProducts({
-    per_page: 8,
-    on_sale: 'true',
-    orderby: 'popularity',
-  }).catch(() => [] as WCProduct[]);
+async function PiccoliProduttori() {
+  // Fetch best sellers to exclude them
+  const [bestSellers, allRecent] = await Promise.all([
+    getCachedProducts({
+      per_page: 8,
+      tag: String(API_CONFIG.tags.bestSeller),
+      orderby: 'popularity',
+    }).catch(() => [] as WCProduct[]),
+    getCachedProducts({
+      per_page: 30,
+      orderby: 'date',
+      order: 'desc',
+    }).catch(() => [] as WCProduct[]),
+  ]);
+
+  const bestSellerIds = new Set(bestSellers.map(p => p.id));
+
+  // Filter: not Stappando Enoteca, not in best sellers
+  const products = allRecent
+    .filter(p => {
+      const vendor = p._vendorName || p.store?.name || DEFAULT_VENDOR_NAME;
+      return vendor !== DEFAULT_VENDOR_NAME && !bestSellerIds.has(p.id);
+    })
+    .slice(0, 8);
 
   if (products.length === 0) return null;
 
   return (
     <section>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-[20px] font-semibold text-[#1a1a1a]">Offerte</h2>
-        <Link href="/cerca?on_sale=true" className="text-[12px] font-medium text-[#005667] hover:underline">
-          Vedi tutte →
+        <h2 className="text-[20px] font-semibold text-[#1a1a1a]">Dai piccoli produttori</h2>
+        <Link href="/cantine" className="text-[12px] font-medium text-[#005667] hover:underline">
+          Scopri tutte le cantine →
         </Link>
       </div>
       <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {products.slice(0, 8).map((p) => (
+        {products.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
       <div className="flex gap-3 overflow-x-auto no-scrollbar sm:hidden -mx-4 px-4">
-        {products.slice(0, 8).map((p) => (
+        {products.map((p) => (
           <div key={p.id} className="w-[170px] shrink-0">
             <ProductCard product={p} />
           </div>
@@ -245,9 +263,9 @@ export default function HomePage() {
           <BestSellers />
         </Suspense>
 
-        {/* 2. Offerte */}
+        {/* 2. Dai piccoli produttori */}
         <Suspense fallback={<GridSkeleton />}>
-          <Offerte />
+          <PiccoliProduttori />
         </Suspense>
 
         {/* 3. Category Grid */}
