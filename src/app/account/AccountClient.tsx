@@ -106,6 +106,14 @@ function IconTicket() {
   );
 }
 
+function IconTruck() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+    </svg>
+  );
+}
+
 function IconLogout() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,25 +125,57 @@ function IconLogout() {
 /* ── Section type ───────────────────────────────────────── */
 
 type Section =
-  | 'profilo'
   | 'ordini'
-  | 'indirizzi'
+  | 'tracking'
   | 'punti'
-  | 'preferiti'
-  | 'dettagli'
   | 'buoni'
-  | 'assistenza';
+  | 'preferiti'
+  | 'profilo'
+  | 'indirizzi'
+  | 'pagamenti'
+  | 'assistenza'
+  | 'recensioni';
 
-const sections: { key: Section; label: string; icon: () => React.ReactNode }[] = [
-  { key: 'profilo', label: 'Profilo', icon: IconUser },
-  { key: 'ordini', label: 'I miei ordini', icon: IconBox },
-  { key: 'indirizzi', label: 'Indirizzi', icon: IconMap },
-  { key: 'punti', label: 'Punti POP', icon: IconStar },
-  { key: 'preferiti', label: 'Preferiti', icon: IconHeart },
-  { key: 'dettagli', label: 'Dettagli account', icon: IconLock },
-  { key: 'buoni', label: 'Buoni regalo', icon: IconGift },
-  { key: 'assistenza', label: 'Ticket assistenza', icon: IconTicket },
+interface SectionGroup {
+  label: string;
+  items: { key: Section; label: string; icon: () => React.ReactNode }[];
+}
+
+const sectionGroups: SectionGroup[] = [
+  {
+    label: 'ORDINI',
+    items: [
+      { key: 'ordini', label: 'I miei ordini', icon: IconBox },
+      { key: 'tracking', label: 'Tracciamento spedizioni', icon: IconTruck },
+    ],
+  },
+  {
+    label: 'VANTAGGI',
+    items: [
+      { key: 'punti', label: 'Punti POP & storico', icon: IconStar },
+      { key: 'buoni', label: 'Buoni regalo & coupon', icon: IconGift },
+      { key: 'preferiti', label: 'Preferiti', icon: IconHeart },
+    ],
+  },
+  {
+    label: 'ACCOUNT',
+    items: [
+      { key: 'profilo', label: 'Profilo & sicurezza', icon: IconUser },
+      { key: 'indirizzi', label: 'Indirizzi', icon: IconMap },
+      { key: 'pagamenti', label: 'Metodi di pagamento', icon: IconLock },
+    ],
+  },
+  {
+    label: 'SUPPORTO',
+    items: [
+      { key: 'assistenza', label: 'Assistenza & ticket', icon: IconTicket },
+      { key: 'recensioni', label: 'Lascia una recensione', icon: IconStar },
+    ],
+  },
 ];
+
+// Flat list for mobile toggle label
+const allSections = sectionGroups.flatMap(g => g.items);
 
 /* ── Main component ────────────────────────────────────── */
 
@@ -480,13 +520,14 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
         {/* Sidebar */}
         <aside className="lg:w-64 shrink-0">
           {/* Mobile toggle */}
+          {/* Mobile toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden w-full flex items-center justify-between bg-white rounded-xl border border-brand-border p-4 mb-3"
           >
             <span className="font-medium">
-              {sections.find((s) => s.key === activeSection)?.label}
+              {allSections.find((s) => s.key === activeSection)?.label}
             </span>
             <svg className={`w-5 h-5 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -494,28 +535,35 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
           </button>
 
           <nav className={`bg-white rounded-2xl border border-brand-border overflow-hidden ${mobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
-            {sections.map((s) => {
-              const Icon = s.icon;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => { setActiveSection(s.key); setMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm font-medium transition-colors text-left ${
-                    activeSection === s.key
-                      ? 'bg-brand-primary/5 text-brand-primary border-l-3 border-brand-primary'
-                      : 'text-brand-text hover:bg-brand-bg'
-                  }`}
-                >
-                  <Icon />
-                  {s.label}
-                </button>
-              );
-            })}
+            {sectionGroups.map((group, gi) => (
+              <div key={group.label}>
+                <p className={`px-5 text-[10px] font-semibold text-[#bbb] uppercase tracking-[0.06em] ${gi === 0 ? 'pt-4' : 'pt-4 mt-1 border-t border-brand-border'} pb-1.5`}>
+                  {group.label}
+                </p>
+                {group.items.map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => { setActiveSection(s.key); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-5 py-3 text-[13px] font-medium transition-colors text-left ${
+                        activeSection === s.key
+                          ? 'bg-[#005667]/5 text-[#005667] border-l-[3px] border-[#005667]'
+                          : 'text-[#1a1a1a] hover:bg-[#f8f6f1]'
+                      }`}
+                    >
+                      <Icon />
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
             <button
               type="button"
               onClick={onLogout}
-              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left border-t border-brand-border"
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-medium text-red-500 hover:bg-red-50 transition-colors text-left border-t border-brand-border mt-2"
             >
               <IconLogout />
               Esci
@@ -525,14 +573,16 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {activeSection === 'profilo' && <ProfileSection user={user} />}
           {activeSection === 'ordini' && <OrdersSection userId={user.id} />}
-          {activeSection === 'indirizzi' && <AddressesSection userId={user.id} />}
+          {activeSection === 'tracking' && <TrackingSection userId={user.id} />}
           {activeSection === 'punti' && <PointsSection userId={user.id} />}
-          {activeSection === 'preferiti' && <FavoritesSection />}
-          {activeSection === 'dettagli' && <AccountDetailsSection userId={user.id} />}
           {activeSection === 'buoni' && <GiftCardsSection />}
+          {activeSection === 'preferiti' && <FavoritesSection />}
+          {activeSection === 'profilo' && <ProfileSection user={user} />}
+          {activeSection === 'indirizzi' && <AddressesSection userId={user.id} />}
+          {activeSection === 'pagamenti' && <PaymentMethodsSection />}
           {activeSection === 'assistenza' && <SupportSection user={user} />}
+          {activeSection === 'recensioni' && <ReviewsSection userId={user.id} />}
         </div>
       </div>
     </div>
@@ -1124,6 +1174,173 @@ function SupportSection({ user }: { user: { id: number; email: string; firstName
           )}
         </button>
       </form>
+    </SectionCard>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TRACKING SECTION
+   ══════════════════════════════════════════════════════════ */
+
+function TrackingSection({ userId }: { userId: number }) {
+  const [orders, setOrders] = useState<WCOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders(userId).then((o) => { setOrders(o); setLoading(false); }).catch(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) return <LoadingSpinner />;
+
+  const shippedOrders = orders.filter(o => ['completed', 'processing'].includes(o.status));
+
+  const steps = ['Ordinato', 'In preparazione', 'Spedito', 'In consegna', 'Consegnato'];
+  const getStep = (status: string) => {
+    if (status === 'completed') return 4;
+    if (status === 'processing') return 1;
+    return 0;
+  };
+
+  return (
+    <SectionCard title="Tracciamento spedizioni">
+      {shippedOrders.length === 0 ? (
+        <p className="text-[14px] text-[#888] py-8 text-center">Nessun ordine in spedizione</p>
+      ) : (
+        <div className="space-y-6">
+          {shippedOrders.slice(0, 10).map((order) => {
+            const currentStep = getStep(order.status);
+            return (
+              <div key={order.id} className="border border-[#e8e4dc] rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-[14px] font-bold">Ordine #{order.number}</p>
+                    <p className="text-[12px] text-[#888]">{new Date(order.date_created).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  </div>
+                  <span className={`text-[11px] font-semibold px-3 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {statusLabels[order.status] || order.status}
+                  </span>
+                </div>
+
+                {/* Timeline */}
+                <div className="flex items-center gap-0 mb-2">
+                  {steps.map((s, i) => (
+                    <div key={s} className="flex-1 flex flex-col items-center">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        i <= currentStep ? 'bg-[#005667] text-white' : 'bg-[#e8e4dc] text-[#bbb]'
+                      }`}>{i < currentStep ? '✓' : i + 1}</div>
+                      <p className={`text-[9px] mt-1 text-center ${i <= currentStep ? 'text-[#005667] font-semibold' : 'text-[#bbb]'}`}>{s}</p>
+                      {i < steps.length - 1 && (
+                        <div className={`h-0.5 w-full absolute ${i < currentStep ? 'bg-[#005667]' : 'bg-[#e8e4dc]'}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {order.status === 'completed' && (
+                  <p className="text-[12px] text-[#005667] font-medium mt-3 text-center">Consegnato con successo</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAYMENT METHODS SECTION
+   ══════════════════════════════════════════════════════════ */
+
+function PaymentMethodsSection() {
+  return (
+    <SectionCard title="Metodi di pagamento">
+      <div className="space-y-4">
+        <p className="text-[14px] text-[#888]">I metodi di pagamento accettati su Stappando:</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { name: 'Carta di credito/debito', desc: 'Visa, Mastercard, Amex', icon: '💳' },
+            { name: 'PayPal', desc: 'Account PayPal o carta', icon: '🅿️' },
+            { name: 'Satispay', desc: 'Pagamento mobile', icon: '📱' },
+            { name: 'Klarna', desc: 'Paga in 3 rate', icon: '🔄' },
+            { name: 'Google Pay', desc: 'Dal tuo telefono', icon: '📲' },
+            { name: 'Apple Pay', desc: 'Solo dispositivi Apple', icon: '🍎' },
+          ].map((m) => (
+            <div key={m.name} className="border border-[#e8e4dc] rounded-xl p-4 text-center">
+              <p className="text-2xl mb-2">{m.icon}</p>
+              <p className="text-[13px] font-semibold text-[#1a1a1a]">{m.name}</p>
+              <p className="text-[11px] text-[#888]">{m.desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-[12px] text-[#888] mt-4">
+          I dati di pagamento non vengono mai salvati sui nostri server. Tutti i pagamenti sono processati in modo sicuro da Stripe e PayPal.
+        </p>
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   REVIEWS SECTION
+   ══════════════════════════════════════════════════════════ */
+
+function ReviewsSection({ userId }: { userId: number }) {
+  const [orders, setOrders] = useState<WCOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders(userId).then((o) => { setOrders(o); setLoading(false); }).catch(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) return <LoadingSpinner />;
+
+  const completedOrders = orders.filter(o => o.status === 'completed');
+  const allProducts = completedOrders.flatMap(o => o.line_items || []);
+
+  // Deduplicate by product_id
+  const seen = new Set<number>();
+  const uniqueProducts = allProducts.filter(p => {
+    if (seen.has(p.product_id)) return false;
+    seen.add(p.product_id);
+    return true;
+  });
+
+  return (
+    <SectionCard title="Lascia una recensione">
+      <p className="text-[14px] text-[#888] mb-6">
+        Ogni recensione ti fa guadagnare <strong className="text-[#005667]">100 Punti POP</strong>. Aiuta la community!
+      </p>
+      {uniqueProducts.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-[14px] text-[#888] mb-4">Nessun prodotto da recensire ancora.</p>
+          <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+            Scopri i vini
+          </a>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {uniqueProducts.slice(0, 20).map((product) => (
+            <div key={product.product_id} className="flex items-center gap-4 border border-[#e8e4dc] rounded-xl p-4">
+              <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center shrink-0 overflow-hidden">
+                {product.image?.src && (
+                  <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{product.name}</p>
+                <p className="text-[11px] text-[#888]">+100 Punti POP per la recensione</p>
+              </div>
+              <a
+                href={`/prodotto/${product.product_id}#recensioni`}
+                className="shrink-0 bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[12px] font-semibold hover:bg-[#004555] transition-colors"
+              >
+                Recensisci
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
     </SectionCard>
   );
 }
