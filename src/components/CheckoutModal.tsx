@@ -11,11 +11,6 @@ import AuthModal from '@/components/AuthModal';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
 const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
-// TEMP DIAG — log the PK embedded at build time
-if (typeof window !== 'undefined') {
-  console.log('STRIPE PK (client, first 30):', STRIPE_KEY.substring(0, 30));
-  console.log('STRIPE_VALID:', STRIPE_VALID);
-}
 // Lazy singleton — loadStripe only called once, on first access
 let _stripePromise: ReturnType<typeof loadStripe> | null = null;
 function getStripePromise() {

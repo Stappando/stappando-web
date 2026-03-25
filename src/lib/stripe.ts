@@ -9,7 +9,7 @@ export function getStripe(): Stripe {
     if (!key) {
       throw new Error('Missing STRIPE_SECRET_KEY env var');
     }
-    _stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' });
+    _stripe = new Stripe(key);
   }
   return _stripe;
 }

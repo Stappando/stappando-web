@@ -87,12 +87,6 @@ export async function POST(req: NextRequest) {
       receipt_email: sanitize(c.email, 254),
     });
 
-    // TEMP DIAG — remove after fix
-    console.log('PI id:', paymentIntent.id);
-    console.log('PI client_secret prefix:', paymentIntent.client_secret?.substring(0, 30));
-    console.log('SK used (first 30):', process.env.STRIPE_SECRET_KEY?.substring(0, 30));
-    console.log('PK on server env (first 30):', process.env.NEXT_PUBLIC_STRIPE_KEY?.substring(0, 30));
-
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
