@@ -502,113 +502,230 @@ function Step2Shipping() {
 }
 
 /* ═══════════════════════════════════════════════════════ */
-/* STEP 3 — PAYMENT (Stripe only, automatic methods)      */
+/* STEP 3 — PAYMENT (PayPal Smart Buttons + Stripe)       */
 /* ═══════════════════════════════════════════════════════ */
 
 function Step3Payment() {
-  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping, shippingData } = useCartStore();
+  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping, shippingData, clearCart } = useCartStore();
   const { user } = useAuthStore();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [paypalReady, setPaypalReady] = useState(false);
+  const paypalContainerRef = useCallback((node: HTMLDivElement | null) => { if (node) initPayPal(node); }, []);
 
   const total = getTotal();
   const popPoints = Math.round(total);
 
-  // Create payment intent on mount — use shipping form data (guest or logged)
-  const createIntent = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const getCustomerData = useCallback(() => {
+    const sd = shippingData;
+    return {
+      email: sd?.email || user?.email || '',
+      firstName: sd?.firstName || user?.firstName || '',
+      lastName: sd?.lastName || user?.lastName || '',
+      phone: sd?.phone || '',
+      address: sd?.address || '',
+      city: sd?.city || '',
+      province: '',
+      zip: sd?.zip || '',
+      notes: sd?.notes || '',
+    };
+  }, [shippingData, user]);
+
+  const initPayPal = useCallback(async (container: HTMLDivElement) => {
+    if (paypalReady) return;
+
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) {
+      setError('PayPal non configurato');
+      return;
+    }
+
+    // Load PayPal JS SDK
+    const existingScript = document.getElementById('paypal-sdk');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.id = 'paypal-sdk';
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&locale=it_IT&intent=capture`;
+      script.async = true;
+      script.onload = () => renderButtons(container);
+      script.onerror = () => setError('Errore caricamento PayPal');
+      document.head.appendChild(script);
+    } else {
+      renderButtons(container);
+    }
+  }, [paypalReady]);
+
+  const renderButtons = useCallback((container: HTMLDivElement) => {
+    const pp = (window as unknown as Record<string, unknown>).paypal as Record<string, unknown> | undefined;
+    if (!pp?.Buttons) {
+      setError('PayPal SDK non disponibile');
+      return;
+    }
+
+    container.innerHTML = '';
+
+    const Buttons = pp.Buttons as (config: Record<string, unknown>) => { render: (el: HTMLElement) => void };
+    Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'rect',
+        label: 'pay',
+        height: 48,
+      },
+      createOrder: async () => {
+        setError(null);
+        setPaying(true);
+        const customer = getCustomerData();
+
+        const res = await fetch('/api/payments/paypal/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+            shipping: getTotalShipping(),
+            customer,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Errore creazione ordine');
+          setPaying(false);
+          throw new Error(data.error);
+        }
+        return data.orderId;
+      },
+      onApprove: async (data: { orderID: string }) => {
+        try {
+          const customer = getCustomerData();
+          const res = await fetch('/api/payments/paypal/capture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: data.orderID,
+              customer,
+              items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+              shipping: getTotalShipping(),
+            }),
+          });
+
+          const result = await res.json();
+          if (!res.ok) {
+            throw new Error(result.error || 'Errore cattura pagamento');
+          }
+
+          clearCart();
+          setCheckoutStep(4);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Errore pagamento');
+          setPaying(false);
+        }
+      },
+      onCancel: () => {
+        setPaying(false);
+      },
+      onError: (err: Error) => {
+        console.error('PayPal button error:', err);
+        setError('Errore PayPal. Riprova.');
+        setPaying(false);
+      },
+    }).render(container);
+
+    setPaypalReady(true);
+  }, [items, getTotalShipping, getCustomerData, clearCart, setCheckoutStep]);
+
+  // Also try Stripe as secondary option
+  const [stripeSecret, setStripeSecret] = useState<string | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [showStripe, setShowStripe] = useState(false);
+
+  const loadStripeIntent = useCallback(async () => {
+    if (!STRIPE_VALID || stripeSecret) return;
+    setStripeLoading(true);
     try {
-      const sd = shippingData;
-      const email = sd?.email || user?.email || '';
-      if (!email || !email.includes('@') || !email.includes('.')) {
-        throw new Error('Email non valida — torna alla spedizione e verifica');
-      }
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const customer = getCustomerData();
       const res = await fetch('/api/payments/create-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
         body: JSON.stringify({
           items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
           shipping: getTotalShipping(),
-          customer: {
-            email,
-            firstName: sd?.firstName || user?.firstName || '',
-            lastName: sd?.lastName || user?.lastName || '',
-            phone: sd?.phone || '',
-            address: sd?.address || '',
-            city: sd?.city || '',
-            province: '',
-            zip: sd?.zip || '',
-            notes: sd?.notes || '',
-          },
+          customer,
         }),
       });
-      clearTimeout(timeout);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Errore creazione pagamento');
-      setClientSecret(data.clientSecret);
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') {
-        setError('Timeout — il server non risponde. Riprova.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Errore');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [shippingData, user, items, getTotalShipping]);
-
-  useEffect(() => { if (STRIPE_VALID) createIntent(); }, [createIntent]);
-
-  // Guard: Stripe key not configured
-  if (!STRIPE_VALID) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center py-12 px-8 text-center">
-        <svg className="w-14 h-14 text-red-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-        <h3 className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Pagamento non disponibile</h3>
-        <p className="text-[13px] text-[#888] mb-4">La configurazione del sistema di pagamento non è completa. Contattaci per assistenza.</p>
-        <button onClick={() => setCheckoutStep(2)} className="text-[13px] text-[#005667] font-medium hover:underline">← Torna alla spedizione</button>
-      </div>
-    );
-  }
+      if (res.ok) setStripeSecret(data.clientSecret);
+    } catch { /* ignore stripe errors */ }
+    setStripeLoading(false);
+  }, [items, getTotalShipping, getCustomerData, stripeSecret]);
 
   return (
     <>
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-7">
           <div>
-            {loading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-6 h-6 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-              </div>
-            )}
-
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-                <p className="text-[13px] text-red-700 mb-2">{error}</p>
-                <button onClick={createIntent} className="text-[12px] text-[#005667] font-medium hover:underline">Riprova</button>
+                <p className="text-[13px] text-red-700">{error}</p>
               </div>
             )}
 
-            {/* Stripe Elements — shows all automatic methods */}
-            {clientSecret && (
-              <Elements
-                stripe={getStripePromise()}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: { colorPrimary: '#005667', borderRadius: '10px', fontFamily: 'system-ui, -apple-system, sans-serif' },
-                  },
-                  locale: 'it',
-                }}
-              >
-                <StripeForm total={total} popPoints={popPoints} />
-              </Elements>
+            {paying && (
+              <div className="flex items-center justify-center py-4 mb-3">
+                <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+                <span className="ml-3 text-[13px] text-[#888]">Pagamento in corso...</span>
+              </div>
+            )}
+
+            {/* PayPal Smart Buttons — primary */}
+            <div className="mb-5">
+              <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-3">Paga con PayPal</p>
+              <div ref={paypalContainerRef} className="min-h-[50px]" />
+            </div>
+
+            {/* Stripe — secondary option */}
+            {STRIPE_VALID && (
+              <div className="border-t border-[#f0f0f0] pt-5">
+                {!showStripe ? (
+                  <button
+                    onClick={() => { setShowStripe(true); loadStripeIntent(); }}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-[#e5e5e5] hover:border-[#005667] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+                      <div className="text-left">
+                        <p className="text-[13px] font-semibold text-[#1a1a1a]">Carta di credito</p>
+                        <p className="text-[11px] text-[#999]">Visa, Mastercard, Amex</p>
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-[#bbb]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                ) : (
+                  <>
+                    <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-3">Carta di credito</p>
+                    {stripeLoading && (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+                        <span className="ml-3 text-[13px] text-[#888]">Caricamento...</span>
+                      </div>
+                    )}
+                    {stripeSecret && (
+                      <Elements
+                        stripe={getStripePromise()}
+                        options={{
+                          clientSecret: stripeSecret,
+                          appearance: { theme: 'stripe', variables: { colorPrimary: '#005667', borderRadius: '10px' } },
+                          locale: 'it',
+                        }}
+                      >
+                        <StripeForm total={total} popPoints={popPoints} />
+                      </Elements>
+                    )}
+                    <button onClick={() => setShowStripe(false)} className="text-[12px] text-[#aaa] hover:text-[#666] mt-3">← Altre opzioni</button>
+                  </>
+                )}
+              </div>
             )}
 
             {/* Security badge */}

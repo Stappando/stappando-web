@@ -5,7 +5,36 @@ import type { OrderCustomer, OrderLineItem } from '@/lib/payments/types';
 
 export const dynamic = 'force-dynamic';
 
-/** PayPal redirects here after buyer approval — capture and create WC order */
+/** POST: inline capture from PayPal JS SDK (modal checkout) */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => null);
+    if (!body?.orderId || !body?.customer || !body?.items) {
+      return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 });
+    }
+
+    const capture = await capturePayPalOrder(body.orderId);
+
+    if (capture.status !== 'COMPLETED') {
+      return NextResponse.json({ error: 'Pagamento non completato', status: capture.status }, { status: 400 });
+    }
+
+    await createWCOrder({
+      provider: 'paypal',
+      transactionId: capture.captureId,
+      customer: body.customer,
+      items: body.items,
+      shippingCost: body.shipping || 0,
+    });
+
+    return NextResponse.json({ success: true, captureId: capture.captureId });
+  } catch (err) {
+    console.error('PayPal inline capture error:', err);
+    return NextResponse.json({ error: 'Errore cattura pagamento PayPal' }, { status: 500 });
+  }
+}
+
+/** GET: redirect capture after PayPal approval (legacy checkout page) */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const token = searchParams.get('token'); // PayPal order ID
