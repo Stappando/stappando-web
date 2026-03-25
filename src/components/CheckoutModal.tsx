@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
@@ -714,6 +714,7 @@ function Step3Payment() {
                       <Elements
                         stripe={getStripePromise()}
                         options={{
+                          clientSecret: stripeSecret,
                           appearance: { theme: 'stripe', variables: { colorPrimary: '#005667', borderRadius: '10px' } },
                           locale: 'it',
                         }}
@@ -760,55 +761,77 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [useCardFallback, setUseCardFallback] = useState(false);
   const { setCheckoutStep, clearCart } = useCartStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
-
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) return;
-
     setPaying(true);
     setError(null);
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card: cardElement },
-    });
-
-    if (result.error) {
-      setError(result.error.message || 'Errore pagamento');
-      setPaying(false);
-    } else if (result.paymentIntent?.status === 'succeeded') {
-      clearCart();
-      setCheckoutStep(4);
+    if (useCardFallback) {
+      // CardElement fallback
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) { setPaying(false); return; }
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
+      });
+      if (result.error) {
+        setError(result.error.message || 'Errore pagamento');
+        setPaying(false);
+      } else if (result.paymentIntent?.status === 'succeeded') {
+        clearCart();
+        setCheckoutStep(4);
+      }
+    } else {
+      // PaymentElement
+      const result = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
+      if (result.error) {
+        setError(result.error.message || 'Errore pagamento');
+        setPaying(false);
+      } else if (result.paymentIntent?.status === 'succeeded') {
+        clearCart();
+        setCheckoutStep(4);
+      }
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="p-4 border border-[#e5e5e5] rounded-xl bg-white">
-        <CardElement
-          onReady={() => setReady(true)}
-          options={{
-            style: {
-              base: {
-                fontSize: '15px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                color: '#1a1a1a',
-                '::placeholder': { color: '#aaa' },
+      {!useCardFallback ? (
+        <>
+          <PaymentElement
+            onReady={() => setReady(true)}
+            onLoadError={() => {
+              console.warn('PaymentElement failed, falling back to CardElement');
+              setUseCardFallback(true);
+              setReady(false);
+            }}
+            options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }}
+          />
+          {!ready && (
+            <div className="flex items-center justify-center py-6">
+              <div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+              <span className="ml-2 text-[12px] text-[#888]">Caricamento metodi...</span>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="p-4 border border-[#e5e5e5] rounded-xl bg-white">
+          <CardElement
+            onReady={() => setReady(true)}
+            options={{
+              style: {
+                base: { fontSize: '15px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1a1a1a', '::placeholder': { color: '#aaa' } },
+                invalid: { color: '#c0392b' },
               },
-              invalid: { color: '#c0392b' },
-            },
-            hidePostalCode: true,
-          }}
-        />
-      </div>
-
-      {!ready && (
-        <div className="flex items-center justify-center py-4">
-          <div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-          <span className="ml-2 text-[12px] text-[#888]">Caricamento...</span>
+              hidePostalCode: true,
+            }}
+          />
         </div>
       )}
 
@@ -820,11 +843,13 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         </button>
       )}
 
-      <div className="flex items-center justify-center gap-3 mt-3">
-        {['Visa', 'Mastercard', 'Amex'].map(b => (
-          <span key={b} className="text-[9px] font-bold text-[#999] bg-[#f5f5f5] px-2 py-1 rounded">{b}</span>
-        ))}
-      </div>
+      {useCardFallback && (
+        <div className="flex items-center justify-center gap-3 mt-3">
+          {['Visa', 'Mastercard', 'Amex'].map(b => (
+            <span key={b} className="text-[9px] font-bold text-[#999] bg-[#f5f5f5] px-2 py-1 rounded">{b}</span>
+          ))}
+        </div>
+      )}
     </form>
   );
 }
