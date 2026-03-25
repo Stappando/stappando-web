@@ -45,7 +45,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
         items: MOCK_ITEMS,
         shipping: 'Gratuita',
         total: '93,90',
-        orderUrl: 'https://stappando.it/mio-account/view-order/12847/',
+        orderUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/account`,
         shippingAddress: 'Via Roma 42, 00184 Roma (RM)',
         pointsEarned: 150,
         totalPoints: 820,
@@ -108,7 +108,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
-        cartUrl: 'https://stappando.it/carrello',
+        cartUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/checkout`,
         total: '93,90',
       }).html,
     },
@@ -118,7 +118,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
-        cartUrl: 'https://stappando.it/carrello',
+        cartUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/checkout`,
         total: '93,90',
         isReminder: true,
       }).html,

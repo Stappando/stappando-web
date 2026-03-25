@@ -82,7 +82,8 @@ async function handleOrderEvent(order: Record<string, unknown>) {
   const customerName = `${billing.first_name || ''} ${billing.last_name || ''}`.trim() || 'Cliente';
   const orderNumber = String(order.number || order.id);
   const lineItems = (order.line_items || []) as Record<string, unknown>[];
-  const orderUrl = `https://stappando.it/mio-account/view-order/${order.id}/`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
+  const orderUrl = `${siteUrl}/account`;
 
   const items = lineItems.map((li) => ({
     name: String(li.name || ''),
@@ -262,7 +263,7 @@ async function handleCustomAction(topic: string, payload: Record<string, unknown
           customerName: name,
           items,
           total,
-          cartUrl: 'https://stappando.it/carrello',
+          cartUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/checkout`,
         },
       });
       break;

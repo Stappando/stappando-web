@@ -3,6 +3,8 @@
  * Premium design — brand palette: #005667, #d9c39a, #ffffff
  */
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
+
 /* ── Base layout — premium white header with logo ─────── */
 
 function baseLayout(content: string, preheader?: string): string {
@@ -20,7 +22,7 @@ function baseLayout(content: string, preheader?: string): string {
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
         <!-- Header — clean white, logo + rating -->
         <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
-          <a href="https://stappando.it" style="text-decoration:none;">
+          <a href="${SITE}" style="text-decoration:none;">
             <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
           </a>
           <p style="margin:10px 0 0;font-size:11px;color:#999;">
@@ -41,12 +43,12 @@ function baseLayout(content: string, preheader?: string): string {
               <td style="padding:0 6px;color:#ccc;">|</td>
               <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:12px;">Facebook</a></td>
               <td style="padding:0 6px;color:#ccc;">|</td>
-              <td style="padding:0 6px;"><a href="https://stappando.it" style="text-decoration:none;color:#005667;font-size:12px;font-weight:600;">stappando.it</a></td>
+              <td style="padding:0 6px;"><a href="${SITE}" style="text-decoration:none;color:#005667;font-size:12px;font-weight:600;">stappando.it</a></td>
             </tr>
           </table>
           <p style="margin:0;font-size:11px;color:#aaa;line-height:1.5;">
             Stappando S.r.l.s. — Enocultura italiana<br>
-            <a href="https://stappando.it/privacy" style="color:#aaa;text-decoration:underline;">Privacy</a> · <a href="https://stappando.it/termini" style="color:#aaa;text-decoration:underline;">Termini</a>
+            <a href="${SITE}/privacy" style="color:#aaa;text-decoration:underline;">Privacy</a> · <a href="${SITE}/termini" style="color:#aaa;text-decoration:underline;">Termini</a>
           </p>
         </td></tr>
       </table>
@@ -163,7 +165,7 @@ function circuitoSuggestions(products: CircuitoProduct[]): string {
         <tr><td style="padding:10px 12px;">
           <p style="margin:0 0 2px;font-size:11px;font-weight:600;color:#1a1a1a;line-height:1.3;">${p.name}</p>
           <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#005667;">${p.price} &euro;</p>
-          <a href="https://stappando.it/prodotto/${p.slug}" style="display:block;text-align:center;padding:8px;background:#005667;color:#fff;font-size:11px;font-weight:600;text-decoration:none;border-radius:6px;">Scopri</a>
+          <a href="${SITE}/prodotto/${p.slug}" style="display:block;text-align:center;padding:8px;background:#005667;color:#fff;font-size:11px;font-weight:600;text-decoration:none;border-radius:6px;">Scopri</a>
         </td></tr>
       </table>
     </td>
@@ -275,7 +277,7 @@ export function orderCancelled(data: OrderCancelledData): { subject: string; htm
       ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato annullato.`)}
       ${paragraph('Se il pagamento era già stato effettuato, il rimborso verrà elaborato entro 5-10 giorni lavorativi.')}
       ${paragraph('Hai bisogno di aiuto? Rispondi a questa email o scrivici su <a href="mailto:info@stappando.it" style="color:#005667;font-weight:600;">info@stappando.it</a>')}
-      ${ctaButton('Torna allo shop', 'https://stappando.it')}
+      ${ctaButton('Torna allo shop', SITE)}
     `, `Ordine #${data.orderNumber} annullato`),
   };
 }
@@ -303,7 +305,7 @@ export function pointsUpdate(data: PointsUpdateData): { subject: string; html: s
         </td></tr>
       </table>
       ${paragraph('Usa i tuoi punti per ottenere sconti esclusivi sul prossimo ordine.')}
-      ${ctaButton('Scopri i tuoi premi', 'https://stappando.it/punti-pop')}
+      ${ctaButton('Scopri i tuoi premi', `${SITE}/punti-pop`)}
     `, `+${data.pointsEarned} Punti POP`),
   };
 }
@@ -333,7 +335,7 @@ export function birthday(data: BirthdayData): { subject: string; html: string } 
           <p style="margin:14px 0 0;font-size:12px;color:#d9c39a;">Valido fino a ${data.expiresAt}</p>
         </td></tr>
       </table>
-      ${ctaButton('Festeggia con un buon vino', `https://stappando.it/cerca?coupon=${data.couponCode}`)}
+      ${ctaButton('Festeggia con un buon vino', `${SITE}/cerca?coupon=${data.couponCode}`)}
     `, `${data.customerName}, -20% per il tuo compleanno`),
   };
 }
@@ -365,7 +367,7 @@ export function giftCardReceived(data: GiftCardData): { subject: string; html: s
         </td></tr>
       </table>
       ${paragraph('Usala su tutto il catalogo: vini, confezioni, esperienze.')}
-      ${ctaButton('Scegli il tuo vino', 'https://stappando.it/cerca')}
+      ${ctaButton('Scegli il tuo vino', `${SITE}/cerca`)}
     `, `${data.senderName} ti ha inviato ${data.amount}€`),
   };
 }
@@ -389,7 +391,7 @@ export function welcome(data: WelcomeData): { subject: string; html: string } {
         <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Consegna 24-48h</strong> — Spedizione gratuita da 69€</td></tr>
         <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
       </table>
-      ${ctaButton('Esplora il catalogo', 'https://stappando.it/cerca')}
+      ${ctaButton('Esplora il catalogo', `${SITE}/cerca`)}
     `, `Benvenuto in Stappando`),
   };
 }
@@ -404,7 +406,7 @@ export function welcomeTemplate(firstName: string, couponCode: string, expiresDa
     ${couponBox(couponCode)}
     ${paragraph('Valido <strong>5% su tutto il catalogo</strong>.')}
     ${paragraph(`Scade il <strong>${expiresDate}</strong>.`)}
-    ${ctaButton('Usa il codice ora', 'https://stappando.it/cerca')}
+    ${ctaButton('Usa il codice ora', `${SITE}/cerca`)}
     ${divider()}
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualità garantita</td></tr>
@@ -424,7 +426,7 @@ export function secondOrderTemplate(firstName: string, couponCode: string, expir
     ${couponBox(couponCode)}
     ${paragraph('<strong>5% sul prossimo ordine.</strong>')}
     ${paragraph(`Scade il <strong>${expiresDate}</strong>.`)}
-    ${ctaButton('Ordina di nuovo', 'https://stappando.it/cerca')}
+    ${ctaButton('Ordina di nuovo', `${SITE}/cerca`)}
   `, `Grazie! Ecco il tuo secondo sconto: ${couponCode}`);
 }
 
@@ -504,7 +506,7 @@ export function reviewRequest(data: ReviewRequestData): { subject: string; html:
           <td style="padding-left:14px;vertical-align:middle;">
             <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#1a1a1a;">${item.name}</p>
             <p style="margin:0 0 8px;font-size:16px;color:#d9c39a;letter-spacing:2px;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
-            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:8px 20px;background:#d9c39a;color:#5a4200;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">
+            <a href="${SITE}/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:8px 20px;background:#d9c39a;color:#5a4200;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">
               Lascia una recensione &rarr; +100 POP
             </a>
           </td>
