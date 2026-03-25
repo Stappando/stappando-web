@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
@@ -10,6 +10,7 @@ interface Spec { key: string; value: string; }
 
 interface PDPProduct {
   id: number;
+  slug: string;
   name: string;
   price: string;
   regularPrice: string;
@@ -39,6 +40,10 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
   const [added, setAdded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const openCheckout = useCartStore((s) => s.openCheckout);
+  const trackView = useCartStore((s) => s.trackView);
+
+  // Track product view
+  useEffect(() => { trackView(p.id, p.slug); }, [p.id, p.slug, trackView]);
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) {

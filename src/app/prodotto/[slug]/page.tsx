@@ -94,6 +94,7 @@ export default async function ProductPage({ params }: Props) {
         <PDPClient
           product={{
             id: product.id,
+            slug: product.slug,
             name: decodeHtml(product.name),
             price: product.price,
             regularPrice: product.regular_price,

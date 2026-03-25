@@ -102,12 +102,19 @@ async function PiccoliProduttori() {
 
   const bestSellerIds = new Set(bestSellers.map(p => p.id));
 
-  const products = allRecent
+  const filtered = allRecent
     .filter(p => {
       const vendor = p._vendorName || p.store?.name || DEFAULT_VENDOR_NAME;
       return vendor !== DEFAULT_VENDOR_NAME && !bestSellerIds.has(p.id);
-    })
-    .slice(0, 8);
+    });
+
+  // Shuffle — different products each page load, not always "ultimi inseriti"
+  for (let i = filtered.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+  }
+
+  const products = filtered.slice(0, 8);
 
   if (products.length === 0) return null;
 

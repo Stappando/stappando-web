@@ -30,12 +30,19 @@ export interface ShippingData {
   notes: string;
 }
 
+export interface RecentlyViewed {
+  id: number;
+  slug: string;
+  timestamp: number;
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
   checkoutOpen: boolean;
   checkoutStep: number;
   shippingData: ShippingData | null;
+  recentlyViewed: RecentlyViewed[];
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -47,6 +54,8 @@ interface CartState {
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
+  trackView: (id: number, slug: string) => void;
+  getRecentlyViewedIds: () => number[];
   getSubtotal: () => number;
   getVendorShipping: () => VendorShipping[];
   getTotalShipping: () => number;
@@ -58,6 +67,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      recentlyViewed: [],
       isOpen: false,
       checkoutOpen: false,
       checkoutStep: 1,
@@ -91,6 +101,14 @@ export const useCartStore = create<CartState>()(
         }),
 
       clearCart: () => set({ items: [] }),
+
+      trackView: (id: number, slug: string) => {
+        const rv = get().recentlyViewed.filter(v => v.id !== id);
+        rv.unshift({ id, slug, timestamp: Date.now() });
+        set({ recentlyViewed: rv.slice(0, 20) }); // Keep last 20
+      },
+
+      getRecentlyViewedIds: () => get().recentlyViewed.map(v => v.id),
 
       getSubtotal: () => get().items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
