@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
@@ -714,12 +714,11 @@ function Step3Payment() {
                       <Elements
                         stripe={getStripePromise()}
                         options={{
-                          clientSecret: stripeSecret,
                           appearance: { theme: 'stripe', variables: { colorPrimary: '#005667', borderRadius: '10px' } },
                           locale: 'it',
                         }}
                       >
-                        <StripeForm total={total} popPoints={popPoints} />
+                        <StripeForm total={total} popPoints={popPoints} clientSecret={stripeSecret} />
                       </Elements>
                     )}
                     <button onClick={() => setShowStripe(false)} className="text-[12px] text-[#aaa] hover:text-[#666] mt-3">← Altre opzioni</button>
@@ -755,35 +754,26 @@ function Step3Payment() {
 
 /* ── Stripe Form (inside Elements) ────────────────────── */
 
-function StripeForm({ total, popPoints }: { total: number; popPoints: number }) {
+function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoints: number; clientSecret: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
   const { setCheckoutStep, clearCart } = useCartStore();
-
-  // Fallback: if Elements doesn't fire onReady in 10s, show it anyway
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!ready) {
-        console.warn('Stripe PaymentElement onReady timeout — forcing display');
-        setTimedOut(true);
-      }
-    }, 10000);
-    return () => clearTimeout(t);
-  }, [ready]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) return;
+
     setPaying(true);
     setError(null);
 
-    const result = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required',
+    const result = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement },
     });
 
     if (result.error) {
@@ -795,31 +785,46 @@ function StripeForm({ total, popPoints }: { total: number; popPoints: number }) 
     }
   };
 
-  const showForm = ready || timedOut;
-
   return (
     <form onSubmit={handleSubmit}>
-      {!showForm && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-          <span className="ml-3 text-[13px] text-[#888]">Caricamento metodi di pagamento...</span>
-        </div>
-      )}
-      <div className={showForm ? '' : 'h-0 overflow-hidden'}>
-        <PaymentElement
+      <div className="p-4 border border-[#e5e5e5] rounded-xl bg-white">
+        <CardElement
           onReady={() => setReady(true)}
-          onLoadError={(e) => { console.error('PaymentElement loadError:', e); setError('Errore caricamento metodi di pagamento. Riprova.'); }}
-          options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }}
+          options={{
+            style: {
+              base: {
+                fontSize: '15px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                color: '#1a1a1a',
+                '::placeholder': { color: '#aaa' },
+              },
+              invalid: { color: '#c0392b' },
+            },
+            hidePostalCode: true,
+          }}
         />
       </div>
+
+      {!ready && (
+        <div className="flex items-center justify-center py-4">
+          <div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+          <span className="ml-2 text-[12px] text-[#888]">Caricamento...</span>
+        </div>
+      )}
+
       {error && <p className="mt-3 text-[13px] text-red-500">{error}</p>}
 
-      {/* CTA — visible when payment methods loaded or timed out */}
-      {showForm && (
-        <button type="submit" disabled={!stripe || paying} className="w-full mt-5 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
-          {paying ? 'Pagamento in corso...' : `Ordina ora · ${formatPrice(total)} €`}
+      {ready && (
+        <button type="submit" disabled={!stripe || paying} className="w-full mt-4 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
+          {paying ? 'Pagamento in corso...' : `Paga con carta · ${formatPrice(total)} €`}
         </button>
       )}
+
+      <div className="flex items-center justify-center gap-3 mt-3">
+        {['Visa', 'Mastercard', 'Amex'].map(b => (
+          <span key={b} className="text-[9px] font-bold text-[#999] bg-[#f5f5f5] px-2 py-1 rounded">{b}</span>
+        ))}
+      </div>
     </form>
   );
 }
