@@ -447,11 +447,14 @@ function Step2Shipping() {
               </div>
             )}
 
-            {/* Login link for guests */}
+            {/* Login prompt for guests */}
             {!isLogged && (
-              <button onClick={() => setAuthOpen(true)} className="text-[12px] text-[#aaa] hover:text-[#005667] transition-colors mt-1">
-                Accedi per salvare i dati →
-              </button>
+              <div className="flex items-center justify-between bg-[#f8f6f1] rounded-lg px-4 py-3 mt-1">
+                <span className="text-[13px] text-[#444]">Hai già un account?</span>
+                <button onClick={() => setAuthOpen(true)} className="text-[13px] text-[#005667] font-semibold hover:underline">
+                  Accedi
+                </button>
+              </div>
             )}
           </div>
 
@@ -542,7 +545,10 @@ function Step3Payment() {
             )}
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700 mb-4">{error}</div>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                <p className="text-[13px] text-red-700 mb-2">{error}</p>
+                <button onClick={() => { setError(null); setLoading(true); window.location.reload(); }} className="text-[12px] text-[#005667] font-medium hover:underline">Riprova</button>
+              </div>
             )}
 
             {/* Stripe Elements — shows all automatic methods */}
