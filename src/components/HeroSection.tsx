@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type WCProduct } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
+import IncentiveBlock from '@/components/IncentiveBlock';
 
 interface Props {
   circuitoProducts: WCProduct[];
@@ -132,6 +133,11 @@ export default function HeroSection({ circuitoProducts }: Props) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Incentive block — compact, inside left column */}
+            <div className="mt-5">
+              <IncentiveBlock />
             </div>
           </div>
 
