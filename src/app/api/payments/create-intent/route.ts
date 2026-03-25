@@ -89,9 +89,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
-    console.error('Stripe create-intent error:', err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errStack = err instanceof Error ? err.stack : '';
+    console.error('Stripe create-intent error:', errMsg);
+    console.error('Stripe create-intent stack:', errStack);
+    console.error('STRIPE_SECRET_KEY present:', !!process.env.STRIPE_SECRET_KEY);
+    console.error('STRIPE_SECRET_KEY prefix:', process.env.STRIPE_SECRET_KEY?.slice(0, 7) || 'MISSING');
     return NextResponse.json(
-      { error: 'Errore nella creazione del pagamento' },
+      { error: `Errore pagamento: ${errMsg}` },
       { status: 500 },
     );
   }
