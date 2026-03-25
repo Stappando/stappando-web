@@ -46,6 +46,13 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
         shipping: 'Gratuita',
         total: '93,90',
         orderUrl: 'https://stappando.it/mio-account/view-order/12847/',
+        shippingAddress: 'Via Roma 42, 00184 Roma (RM)',
+        pointsEarned: 150,
+        totalPoints: 820,
+        circuitoProducts: [
+          { name: 'Barolo DOCG 2019 — Marchesi', slug: 'barolo-docg-2019', price: '42,00', image: 'https://stappando.it/wp-content/uploads/2021/06/barolo.jpg' },
+          { name: 'Brunello di Montalcino 2018', slug: 'brunello-montalcino-2018', price: '38,50', image: 'https://stappando.it/wp-content/uploads/2021/06/brunello.jpg' },
+        ],
       }).html,
     },
     {
@@ -97,12 +104,23 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'abandoned-cart',
-      title: '9. Carrello abbandonato',
+      title: '9. Carrello abbandonato (prima)',
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
         cartUrl: 'https://stappando.it/carrello',
         total: '93,90',
+      }).html,
+    },
+    {
+      id: 'abandoned-cart-reminder',
+      title: '10. Carrello abbandonato (reminder 3h)',
+      html: abandonedCart({
+        customerName: 'Roberto',
+        items: MOCK_ITEMS,
+        cartUrl: 'https://stappando.it/carrello',
+        total: '93,90',
+        isReminder: true,
       }).html,
     },
   ];

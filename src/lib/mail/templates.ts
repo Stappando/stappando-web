@@ -1,9 +1,9 @@
 /**
  * Email HTML templates for Stappando transactional emails.
- * Brand palette: #005667 (petrolio), #d9c39a (sabbia/oro), #ffffff (bianco)
+ * Premium design — brand palette: #005667, #d9c39a, #ffffff
  */
 
-/* ── Base layout wrapper ──────────────────────────────── */
+/* ── Base layout — premium white header with logo ─────── */
 
 function baseLayout(content: string, preheader?: string): string {
   return `<!DOCTYPE html>
@@ -13,27 +13,35 @@ function baseLayout(content: string, preheader?: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stappando</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f5f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${preheader}</div>` : ''}
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;">
-    <tr><td align="center" style="padding:24px 16px;">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;">
-        <!-- Header -->
-        <tr><td style="background:#005667;padding:24px 32px;text-align:center;">
-          <img src="https://stappando.it/wp-content/uploads/2021/06/logo-stappando-white.png" alt="Stappando" width="160" style="display:inline-block;max-width:160px;height:auto;" />
+<body style="margin:0;padding:0;background:#f5f3ee;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheader}</div>` : ''}
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
+        <!-- Header — white bg, centered logo -->
+        <tr><td style="padding:28px 32px 20px;text-align:center;border-bottom:1px solid #f0ece4;">
+          <a href="https://stappando.it" style="text-decoration:none;">
+            <img src="https://stappando.it/wp-content/uploads/2021/06/logo-stappando.png" alt="Stappando" width="140" style="display:inline-block;max-width:140px;height:auto;" />
+          </a>
         </td></tr>
         <!-- Content -->
-        <tr><td style="padding:32px;">
+        <tr><td style="padding:36px 36px 28px;">
           ${content}
         </td></tr>
         <!-- Footer -->
-        <tr><td style="background:#f5f5f0;padding:24px 32px;text-align:center;">
-          <p style="margin:0 0 8px;font-size:12px;color:#888;">
-            <a href="https://stappando.it" style="color:#005667;text-decoration:none;font-weight:600;">stappando.it</a>
-          </p>
-          <p style="margin:0;font-size:11px;color:#aaa;">
-            Stappando S.r.l. — Enocultura italiana<br>
-            Ricevi questa email perché hai effettuato un ordine o sei iscritto a Stappando.
+        <tr><td style="border-top:1px solid #f0ece4;padding:24px 36px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px;">
+            <tr>
+              <td style="padding:0 6px;"><a href="https://www.instagram.com/stappando.it" style="text-decoration:none;color:#888;font-size:12px;">Instagram</a></td>
+              <td style="padding:0 6px;color:#ccc;">|</td>
+              <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:12px;">Facebook</a></td>
+              <td style="padding:0 6px;color:#ccc;">|</td>
+              <td style="padding:0 6px;"><a href="https://stappando.it" style="text-decoration:none;color:#005667;font-size:12px;font-weight:600;">stappando.it</a></td>
+            </tr>
+          </table>
+          <p style="margin:0;font-size:11px;color:#aaa;line-height:1.5;">
+            Stappando S.r.l.s. — Enocultura italiana<br>
+            <a href="https://stappando.it/privacy" style="color:#aaa;text-decoration:underline;">Privacy</a> · <a href="https://stappando.it/termini" style="color:#aaa;text-decoration:underline;">Termini</a>
           </p>
         </td></tr>
       </table>
@@ -43,30 +51,55 @@ function baseLayout(content: string, preheader?: string): string {
 </html>`;
 }
 
-/* ── Shared components ────────────────────────────────── */
+/* ── Shared components — premium style ────────────────── */
 
 function heading(text: string): string {
-  return `<h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#005667;line-height:1.3;">${text}</h1>`;
+  return `<h1 style="margin:0 0 12px;font-size:26px;font-weight:700;color:#1a1a1a;line-height:1.25;letter-spacing:-0.3px;">${text}</h1>`;
+}
+
+function subheading(text: string): string {
+  return `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.5;">${text}</p>`;
 }
 
 function paragraph(text: string): string {
-  return `<p style="margin:0 0 16px;font-size:15px;color:#333;line-height:1.6;">${text}</p>`;
+  return `<p style="margin:0 0 16px;font-size:15px;color:#444;line-height:1.65;">${text}</p>`;
 }
 
 function ctaButton(text: string, url: string): string {
   return `<table cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td>
-    <a href="${url}" style="display:inline-block;padding:14px 32px;background:#005667;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;">
+    <a href="${url}" style="display:inline-block;padding:14px 36px;background:#005667;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;letter-spacing:0.2px;">
+      ${text}
+    </a>
+  </td></tr></table>`;
+}
+
+function secondaryButton(text: string, url: string): string {
+  return `<table cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td>
+    <a href="${url}" style="display:inline-block;padding:12px 28px;background:#ffffff;color:#005667;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;border:1.5px solid #005667;">
       ${text}
     </a>
   </td></tr></table>`;
 }
 
 function divider(): string {
-  return `<hr style="border:none;border-top:1px solid #e8e4dc;margin:24px 0;" />`;
+  return `<hr style="border:none;border-top:1px solid #f0ece4;margin:28px 0;" />`;
 }
 
 function goldBadge(text: string): string {
-  return `<span style="display:inline-block;padding:4px 12px;background:#d9c39a;color:#1a1a1a;font-size:12px;font-weight:700;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;">${text}</span>`;
+  return `<span style="display:inline-block;padding:5px 14px;background:#d9c39a;color:#5a4200;font-size:11px;font-weight:700;border-radius:20px;text-transform:uppercase;letter-spacing:0.6px;">${text}</span>`;
+}
+
+function couponBox(code: string): string {
+  return `<div style="background:#f8f6f1;border:2px dashed #005667;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
+    <span style="font-size:24px;font-weight:700;color:#005667;letter-spacing:3px;">${code}</span>
+  </div>`;
+}
+
+function infoCard(label: string, value: string): string {
+  return `<td style="padding:10px 16px;">
+    <p style="margin:0;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">${label}</p>
+    <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#1a1a1a;">${value}</p>
+  </td>`;
 }
 
 /* ── Order item row ───────────────────────────────────── */
@@ -81,12 +114,12 @@ interface OrderItem {
 function orderItemsTable(items: OrderItem[], shipping: string, total: string): string {
   const rows = items.map(item => `
     <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;">
+      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
         ${item.image ? `<img src="${item.image}" width="48" height="48" style="border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:12px;" />` : ''}
-        <span style="font-size:14px;color:#333;">${item.name}</span>
-        <span style="font-size:12px;color:#888;"> x${item.quantity}</span>
+        <span style="font-size:14px;color:#333;font-weight:500;">${item.name}</span>
+        <span style="font-size:12px;color:#999;"> x${item.quantity}</span>
       </td>
-      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#333;">${item.total} &euro;</td>
+      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
     </tr>
   `).join('');
 
@@ -94,14 +127,47 @@ function orderItemsTable(items: OrderItem[], shipping: string, total: string): s
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
       ${rows}
       <tr>
-        <td style="padding:8px 0;font-size:13px;color:#888;">Spedizione</td>
-        <td style="padding:8px 0;text-align:right;font-size:13px;color:#888;">${shipping}</td>
+        <td style="padding:10px 0;font-size:13px;color:#888;">Spedizione</td>
+        <td style="padding:10px 0;text-align:right;font-size:13px;color:#888;">${shipping}</td>
       </tr>
       <tr>
-        <td style="padding:12px 0;font-size:18px;font-weight:700;color:#005667;">Totale</td>
-        <td style="padding:12px 0;text-align:right;font-size:18px;font-weight:700;color:#005667;">${total} &euro;</td>
+        <td style="padding:14px 0;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">Totale</td>
+        <td style="padding:14px 0;text-align:right;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">${total} &euro;</td>
       </tr>
     </table>
+  `;
+}
+
+/* ── Circuito product suggestion row ─────────────────── */
+
+interface CircuitoProduct {
+  name: string;
+  slug: string;
+  price: string;
+  image?: string;
+}
+
+function circuitoSuggestions(products: CircuitoProduct[]): string {
+  if (products.length === 0) return '';
+  const cards = products.map(p => `
+    <td width="50%" style="padding:6px;vertical-align:top;">
+      <table cellpadding="0" cellspacing="0" width="100%" style="border:1.5px solid #d9c39a;border-radius:10px;overflow:hidden;">
+        <tr><td style="background:linear-gradient(160deg,#f5f1ea,#e8e0d2);padding:12px;text-align:center;height:80px;">
+          ${p.image ? `<img src="${p.image}" width="60" height="70" style="object-fit:contain;" />` : ''}
+        </td></tr>
+        <tr><td style="padding:10px 12px;">
+          <p style="margin:0 0 2px;font-size:11px;font-weight:600;color:#1a1a1a;line-height:1.3;">${p.name}</p>
+          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#005667;">${p.price} &euro;</p>
+          <a href="https://stappando.it/prodotto/${p.slug}" style="display:block;text-align:center;padding:8px;background:#005667;color:#fff;font-size:11px;font-weight:600;text-decoration:none;border-radius:6px;">Scopri</a>
+        </td></tr>
+      </table>
+    </td>
+  `).join('');
+
+  return `
+    ${divider()}
+    <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#005667;text-transform:uppercase;letter-spacing:0.6px;">Scelti dal Sommelier per te</p>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>${cards}</tr></table>
   `;
 }
 
@@ -114,19 +180,50 @@ export interface OrderConfirmedData {
   shipping: string;
   total: string;
   orderUrl: string;
+  shippingAddress?: string;
+  pointsEarned?: number;
+  totalPoints?: number;
+  circuitoProducts?: CircuitoProduct[];
 }
 
 export function orderConfirmed(data: OrderConfirmedData): { subject: string; html: string } {
   return {
-    subject: `Ordine #${data.orderNumber} confermato — Stappando`,
+    subject: `Ordine #${data.orderNumber} confermato`,
     html: baseLayout(`
-      ${heading('Ordine confermato! 🍷')}
-      ${paragraph(`Ciao ${data.customerName}, grazie per il tuo ordine! Stiamo già preparando il tuo pacco con cura.`)}
+      ${heading('Ordine confermato')}
+      ${subheading(`Grazie ${data.customerName}, stiamo preparando il tuo pacco con cura.`)}
       ${goldBadge(`Ordine #${data.orderNumber}`)}
       ${orderItemsTable(data.items, data.shipping, data.total)}
-      ${paragraph('Riceverai una email con il tracking non appena il pacco sarà affidato al corriere.')}
-      ${ctaButton('Vedi il tuo ordine', data.orderUrl)}
-    `, `Il tuo ordine #${data.orderNumber} è confermato`),
+
+      ${data.shippingAddress ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
+        <tr>${infoCard('Spedizione a', data.shippingAddress)}</tr>
+      </table>
+      ` : ''}
+
+      ${data.pointsEarned ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:10px;margin:20px 0;">
+        <tr>
+          <td style="padding:18px 24px;">
+            <table cellpadding="0" cellspacing="0" width="100%"><tr>
+              <td>
+                <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Punti POP guadagnati</p>
+                <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#ffffff;">+${data.pointsEarned}</p>
+              </td>
+              <td style="text-align:right;">
+                <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Saldo totale</p>
+                <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#d9c39a;">${data.totalPoints || 0}</p>
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+      </table>
+      ` : ''}
+
+      ${paragraph('Riceverai un\'email con il tracking non appena il pacco sar&agrave; affidato al corriere.')}
+      ${ctaButton('Segui il tuo ordine', data.orderUrl)}
+      ${circuitoSuggestions(data.circuitoProducts || [])}
+    `, `Ordine #${data.orderNumber} confermato`),
   };
 }
 
@@ -142,24 +239,19 @@ export interface OrderShippedData {
 
 export function orderShipped(data: OrderShippedData): { subject: string; html: string } {
   return {
-    subject: `Il tuo ordine #${data.orderNumber} è in viaggio!`,
+    subject: `Il tuo ordine #${data.orderNumber} è in viaggio`,
     html: baseLayout(`
-      ${heading('Il tuo vino è in viaggio! 🚚')}
-      ${paragraph(`Ciao ${data.customerName}, il tuo ordine #${data.orderNumber} è stato affidato al corriere.`)}
-      ${divider()}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;border-radius:12px;padding:16px;margin:16px 0;">
-        <tr><td style="padding:8px 16px;">
-          <p style="margin:0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Corriere</p>
-          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#333;">${data.carrier}</p>
-        </td></tr>
-        <tr><td style="padding:8px 16px;">
-          <p style="margin:0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Tracking</p>
-          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#005667;">${data.trackingNumber}</p>
-        </td></tr>
+      ${heading('Il tuo vino è in viaggio')}
+      ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato affidato al corriere.`)}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
+        <tr>
+          ${infoCard('Corriere', data.carrier)}
+          ${infoCard('Tracking', data.trackingNumber)}
+        </tr>
       </table>
-      ${paragraph('La consegna è prevista in 24-48 ore lavorative.')}
+      ${paragraph('La consegna è prevista in <strong>24-48 ore lavorative</strong>.')}
       ${ctaButton('Traccia il pacco', data.trackingUrl)}
-    `, `Ordine #${data.orderNumber} spedito — tracking disponibile`),
+    `, `Ordine #${data.orderNumber} spedito`),
   };
 }
 
@@ -175,12 +267,10 @@ export function orderCancelled(data: OrderCancelledData): { subject: string; htm
     subject: `Ordine #${data.orderNumber} annullato`,
     html: baseLayout(`
       ${heading('Ordine annullato')}
-      ${paragraph(`Ciao ${data.customerName}, il tuo ordine #${data.orderNumber} è stato annullato.`)}
+      ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato annullato.`)}
       ${paragraph('Se il pagamento era già stato effettuato, il rimborso verrà elaborato entro 5-10 giorni lavorativi.')}
-      ${paragraph('Se hai bisogno di aiuto o vuoi effettuare un nuovo ordine, siamo qui per te.')}
+      ${paragraph('Hai bisogno di aiuto? Rispondi a questa email o scrivici su <a href="mailto:info@stappando.it" style="color:#005667;font-weight:600;">info@stappando.it</a>')}
       ${ctaButton('Torna allo shop', 'https://stappando.it')}
-      ${divider()}
-      ${paragraph('<span style="font-size:13px;color:#888;">Hai domande? Rispondi a questa email o scrivici su <a href="mailto:info@stappando.it" style="color:#005667;">info@stappando.it</a></span>')}
     `, `Ordine #${data.orderNumber} annullato`),
   };
 }
@@ -196,20 +286,20 @@ export interface PointsUpdateData {
 
 export function pointsUpdate(data: PointsUpdateData): { subject: string; html: string } {
   return {
-    subject: `Hai guadagnato ${data.pointsEarned} Punti POP! 🎉`,
+    subject: `+${data.pointsEarned} Punti POP guadagnati`,
     html: baseLayout(`
-      ${heading('Nuovi Punti POP! 🎉')}
-      ${paragraph(`Ciao ${data.customerName}, hai appena guadagnato <strong>${data.pointsEarned} Punti POP</strong>${data.orderNumber ? ` con l'ordine #${data.orderNumber}` : ''}!`)}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:16px;margin:24px 0;">
-        <tr><td style="padding:24px;text-align:center;">
-          <p style="margin:0;font-size:14px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;">Il tuo saldo</p>
-          <p style="margin:8px 0 0;font-size:42px;font-weight:800;color:#ffffff;">${data.totalPoints}</p>
-          <p style="margin:4px 0 0;font-size:14px;color:#d9c39a;">Punti POP</p>
+      ${heading('Nuovi Punti POP')}
+      ${subheading(`${data.customerName}, hai guadagnato <strong style="color:#005667;">${data.pointsEarned} punti</strong>${data.orderNumber ? ` con l'ordine #${data.orderNumber}` : ''}.`)}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:12px;margin:24px 0;">
+        <tr><td style="padding:28px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Il tuo saldo</p>
+          <p style="margin:10px 0 0;font-size:48px;font-weight:800;color:#ffffff;letter-spacing:-1px;">${data.totalPoints}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#d9c39a;">Punti POP</p>
         </td></tr>
       </table>
-      ${paragraph('Accumula punti ad ogni ordine e usali per ottenere sconti esclusivi!')}
+      ${paragraph('Usa i tuoi punti per ottenere sconti esclusivi sul prossimo ordine.')}
       ${ctaButton('Scopri i tuoi premi', 'https://stappando.it/punti-pop')}
-    `, `+${data.pointsEarned} Punti POP — saldo: ${data.totalPoints}`),
+    `, `+${data.pointsEarned} Punti POP`),
   };
 }
 
@@ -218,28 +308,28 @@ export function pointsUpdate(data: PointsUpdateData): { subject: string; html: s
 export interface BirthdayData {
   customerName: string;
   couponCode: string;
-  expiresAt: string; // e.g. "domani alle 23:59"
+  expiresAt: string;
 }
 
 export function birthday(data: BirthdayData): { subject: string; html: string } {
   return {
-    subject: `Buon compleanno ${data.customerName}! 🎂 Un regalo per te`,
+    subject: `Buon compleanno ${data.customerName} — un regalo per te`,
     html: baseLayout(`
-      ${heading('Buon compleanno! 🎂🍷')}
-      ${paragraph(`Ciao ${data.customerName}, da tutto il team Stappando: tanti auguri!`)}
+      ${heading('Tanti auguri!')}
+      ${subheading(`${data.customerName}, da tutto il team Stappando: buon compleanno.`)}
       ${paragraph('Per festeggiare, ecco un regalo speciale solo per te:')}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#005667,#007a8a);border-radius:16px;margin:24px 0;">
-        <tr><td style="padding:32px;text-align:center;">
-          <p style="margin:0;font-size:48px;font-weight:800;color:#d9c39a;">-20%</p>
-          <p style="margin:8px 0 16px;font-size:15px;color:#ffffff;">su tutto il catalogo</p>
-          <div style="display:inline-block;padding:12px 24px;background:#ffffff;border-radius:8px;border:2px dashed #d9c39a;">
-            <span style="font-size:20px;font-weight:800;color:#005667;letter-spacing:2px;">${data.couponCode}</span>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#005667,#007a8a);border-radius:12px;margin:24px 0;">
+        <tr><td style="padding:36px;text-align:center;">
+          <p style="margin:0;font-size:52px;font-weight:800;color:#d9c39a;letter-spacing:-1px;">-20%</p>
+          <p style="margin:8px 0 20px;font-size:15px;color:#ffffff;">su tutto il catalogo</p>
+          <div style="display:inline-block;padding:14px 28px;background:#ffffff;border-radius:10px;border:2px dashed #d9c39a;">
+            <span style="font-size:22px;font-weight:800;color:#005667;letter-spacing:3px;">${data.couponCode}</span>
           </div>
-          <p style="margin:12px 0 0;font-size:12px;color:#d9c39a;">Valido fino a ${data.expiresAt}</p>
+          <p style="margin:14px 0 0;font-size:12px;color:#d9c39a;">Valido fino a ${data.expiresAt}</p>
         </td></tr>
       </table>
-      ${ctaButton('Usa il tuo sconto', `https://stappando.it/cerca?coupon=${data.couponCode}`)}
-    `, `${data.customerName}, -20% per il tuo compleanno!`),
+      ${ctaButton('Festeggia con un buon vino', `https://stappando.it/cerca?coupon=${data.couponCode}`)}
+    `, `${data.customerName}, -20% per il tuo compleanno`),
   };
 }
 
@@ -255,23 +345,23 @@ export interface GiftCardData {
 
 export function giftCardReceived(data: GiftCardData): { subject: string; html: string } {
   return {
-    subject: `${data.senderName} ti ha inviato una Gift Card Stappando! 🎁`,
+    subject: `${data.senderName} ti ha inviato una Gift Card Stappando`,
     html: baseLayout(`
-      ${heading('Hai ricevuto un regalo! 🎁')}
-      ${paragraph(`Ciao ${data.recipientName}, <strong>${data.senderName}</strong> ti ha inviato una Gift Card Stappando!`)}
-      ${data.message ? `<div style="background:#f5f5f0;border-left:4px solid #d9c39a;padding:16px;border-radius:0 8px 8px 0;margin:16px 0;font-style:italic;color:#555;">"${data.message}"</div>` : ''}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:16px;margin:24px 0;">
-        <tr><td style="padding:32px;text-align:center;">
+      ${heading('Hai ricevuto un regalo')}
+      ${subheading(`${data.recipientName}, <strong>${data.senderName}</strong> ti ha inviato una Gift Card.`)}
+      ${data.message ? `<div style="background:#f8f6f1;border-left:3px solid #d9c39a;padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;font-size:14px;font-style:italic;color:#555;line-height:1.5;">"${data.message}"</div>` : ''}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;margin:24px 0;">
+        <tr><td style="padding:36px;text-align:center;">
           ${goldBadge('Gift Card')}
-          <p style="margin:16px 0 8px;font-size:42px;font-weight:800;color:#d9c39a;">${data.amount} &euro;</p>
-          <div style="display:inline-block;padding:10px 20px;background:#333;border-radius:8px;margin-top:8px;">
-            <span style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:2px;">${data.code}</span>
+          <p style="margin:18px 0 10px;font-size:48px;font-weight:800;color:#d9c39a;letter-spacing:-1px;">${data.amount} &euro;</p>
+          <div style="display:inline-block;padding:12px 24px;background:#333;border-radius:8px;margin-top:8px;">
+            <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:3px;">${data.code}</span>
           </div>
         </td></tr>
       </table>
-      ${paragraph('Usala su tutto il catalogo Stappando — vini, confezioni, esperienze.')}
-      ${ctaButton('Usa la tua Gift Card', 'https://stappando.it/cerca')}
-    `, `${data.senderName} ti ha inviato ${data.amount}€ su Stappando`),
+      ${paragraph('Usala su tutto il catalogo: vini, confezioni, esperienze.')}
+      ${ctaButton('Scegli il tuo vino', 'https://stappando.it/cerca')}
+    `, `${data.senderName} ti ha inviato ${data.amount}€`),
   };
 }
 
@@ -283,34 +373,19 @@ export interface WelcomeData {
 
 export function welcome(data: WelcomeData): { subject: string; html: string } {
   return {
-    subject: `Benvenuto in Stappando, ${data.customerName}! 🍷`,
+    subject: `Benvenuto in Stappando, ${data.customerName}`,
     html: baseLayout(`
-      ${heading('Benvenuto in Stappando! 🍷')}
-      ${paragraph(`Ciao ${data.customerName}, siamo felici di averti con noi!`)}
+      ${heading(`Benvenuto, ${data.customerName}`)}
+      ${subheading('Siamo felici di averti con noi.')}
       ${paragraph('Stappando è il marketplace dei migliori vini italiani, selezionati direttamente dai produttori e spediti con cura fino a casa tua.')}
       ${divider()}
       <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="padding:12px 0;">
-            <strong style="color:#005667;">★ Selezionati da sommelier</strong><br>
-            <span style="font-size:13px;color:#666;">Ogni vino è scelto per qualità e territorio</span>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:12px 0;">
-            <strong style="color:#005667;">🚚 Consegna in 24-48h</strong><br>
-            <span style="font-size:13px;color:#666;">Spedizione gratuita da 69€</span>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:12px 0;">
-            <strong style="color:#005667;">🎯 Punti POP</strong><br>
-            <span style="font-size:13px;color:#666;">Accumula punti ad ogni ordine e ottieni sconti</span>
-          </td>
-        </tr>
+        <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualità e territorio garantiti</td></tr>
+        <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Consegna 24-48h</strong> — Spedizione gratuita da 69€</td></tr>
+        <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
       </table>
       ${ctaButton('Esplora il catalogo', 'https://stappando.it/cerca')}
-    `, `Benvenuto in Stappando — vini italiani d'eccellenza`),
+    `, `Benvenuto in Stappando`),
   };
 }
 
@@ -318,21 +393,18 @@ export function welcome(data: WelcomeData): { subject: string; html: string } {
 
 export function welcomeTemplate(firstName: string, couponCode: string, expiresDate: string): string {
   return baseLayout(`
-    ${heading(`Benvenuto ${firstName}!`)}
-    ${paragraph('Siamo felici di averti con noi. Stappando è il marketplace dei migliori vini italiani, selezionati direttamente dai produttori.')}
-    ${divider()}
+    ${heading(`Benvenuto, ${firstName}`)}
+    ${subheading('Siamo felici di averti con noi. Ecco un regalo per iniziare.')}
     ${paragraph('<strong style="color:#005667;">Il tuo codice sconto di benvenuto:</strong>')}
-    <div style="background:#f8f6f1;border:2px dashed #005667;border-radius:8px;padding:16px;text-align:center;margin:0 0 16px;">
-      <span style="font-size:20px;font-weight:700;color:#005667;letter-spacing:2px;">${couponCode}</span>
-    </div>
-    ${paragraph('Valido <strong>5% su tutto il catalogo</strong>')}
-    ${paragraph(`Scade il <strong>${expiresDate}</strong>`)}
-    ${ctaButton('Usa il codice ora →', 'https://stappando.it/cerca')}
+    ${couponBox(couponCode)}
+    ${paragraph('Valido <strong>5% su tutto il catalogo</strong>.')}
+    ${paragraph(`Scade il <strong>${expiresDate}</strong>.`)}
+    ${ctaButton('Usa il codice ora', 'https://stappando.it/cerca')}
     ${divider()}
     <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td style="padding:8px 0;"><strong style="color:#005667;">★ Selezionati da sommelier</strong> — Qualità garantita</td></tr>
-      <tr><td style="padding:8px 0;"><strong style="color:#005667;">🚚 Consegna 24-48h</strong> — Gratuita da 69€</td></tr>
-      <tr><td style="padding:8px 0;"><strong style="color:#005667;">🎯 Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
+      <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualità garantita</td></tr>
+      <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Consegna 24-48h</strong> — Gratuita da 69€</td></tr>
+      <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
     </table>
   `, `Benvenuto! Ecco il tuo sconto del 5%: ${couponCode}`);
 }
@@ -341,17 +413,14 @@ export function welcomeTemplate(firstName: string, couponCode: string, expiresDa
 
 export function secondOrderTemplate(firstName: string, couponCode: string, expiresDate: string): string {
   return baseLayout(`
-    ${heading('Grazie per il tuo primo ordine!')}
-    ${paragraph(`Ciao ${firstName}, il tuo ordine ci ha fatto piacere. Ecco un regalo per ringraziarti.`)}
-    ${divider()}
-    ${paragraph('<strong style="color:#005667;">Ecco il tuo secondo sconto:</strong>')}
-    <div style="background:#f8f6f1;border:2px dashed #005667;border-radius:8px;padding:16px;text-align:center;margin:0 0 16px;">
-      <span style="font-size:20px;font-weight:700;color:#005667;letter-spacing:2px;">${couponCode}</span>
-    </div>
-    ${paragraph('<strong>5% sul prossimo ordine</strong>')}
-    ${paragraph(`Scade il <strong>${expiresDate}</strong>`)}
-    ${ctaButton('Ordina di nuovo →', 'https://stappando.it/cerca')}
-  `, `Grazie! Ecco il tuo secondo sconto del 5%: ${couponCode}`);
+    ${heading('Grazie per il tuo primo ordine')}
+    ${subheading(`${firstName}, ecco un regalo per ringraziarti.`)}
+    ${paragraph('<strong style="color:#005667;">Il tuo secondo sconto:</strong>')}
+    ${couponBox(couponCode)}
+    ${paragraph('<strong>5% sul prossimo ordine.</strong>')}
+    ${paragraph(`Scade il <strong>${expiresDate}</strong>.`)}
+    ${ctaButton('Ordina di nuovo', 'https://stappando.it/cerca')}
+  `, `Grazie! Ecco il tuo secondo sconto: ${couponCode}`);
 }
 
 /* ── Template: Carrello abbandonato ───────────────────── */
@@ -361,6 +430,54 @@ export interface AbandonedCartData {
   items: OrderItem[];
   cartUrl: string;
   total: string;
+  isReminder?: boolean; // true = second email after 3h
+}
+
+export function abandonedCart(data: AbandonedCartData): { subject: string; html: string } {
+  const itemsList = data.items.map(item => `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
+        ${item.image ? `<img src="${item.image}" width="52" height="52" style="border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:14px;" />` : ''}
+        <span style="font-size:14px;color:#1a1a1a;font-weight:500;">${item.name}</span>
+        <span style="font-size:12px;color:#999;"> x${item.quantity}</span>
+      </td>
+      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:15px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
+    </tr>
+  `).join('');
+
+  const isReminder = data.isReminder;
+
+  return {
+    subject: isReminder
+      ? `${data.customerName}, i tuoi vini stanno per finire`
+      : `${data.customerName}, hai dimenticato qualcosa?`,
+    html: baseLayout(`
+      ${heading(isReminder ? 'Le scorte si stanno esaurendo' : 'Il tuo carrello ti aspetta')}
+      ${subheading(isReminder
+        ? `${data.customerName}, i prodotti nel tuo carrello hanno disponibilità limitata. Non vorremmo che li perdessi.`
+        : `${data.customerName}, hai lasciato qualcosa nel carrello. Lo teniamo da parte per te.`
+      )}
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+        ${itemsList}
+        <tr>
+          <td style="padding:16px 0;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">Totale</td>
+          <td style="padding:16px 0;text-align:right;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">${data.total} &euro;</td>
+        </tr>
+      </table>
+      ${ctaButton('Completa l\'ordine', data.cartUrl)}
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;">
+        <tr>
+          <td style="padding:14px 20px;font-size:12px;color:#666;text-align:center;">
+            Spedizione gratuita da 69€ &middot; Consegna 24-48h &middot; Pagamento 100% sicuro
+          </td>
+        </tr>
+      </table>
+    `, isReminder
+      ? `Ultima chance — i tuoi vini stanno per finire`
+      : `Il tuo carrello ti aspetta: ${data.items.length} prodott${data.items.length === 1 ? 'o' : 'i'}`
+    ),
+  };
 }
 
 /* ── Template: Recensisci il tuo ordine ──────────────── */
@@ -374,15 +491,15 @@ export interface ReviewRequestData {
 export function reviewRequest(data: ReviewRequestData): { subject: string; html: string } {
   const productRows = data.items.map(item => `
     <tr>
-      <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
+      <td style="padding:14px 0;border-bottom:1px solid #f0ece4;">
         <table cellpadding="0" cellspacing="0" width="100%"><tr>
-          <td style="width:60px;vertical-align:top;">
+          <td style="width:64px;vertical-align:top;">
             ${item.image ? `<img src="${item.image}" width="56" height="56" style="border-radius:10px;object-fit:cover;display:block;" />` : `<div style="width:56px;height:56px;background:#f5f5f0;border-radius:10px;"></div>`}
           </td>
-          <td style="padding-left:12px;vertical-align:middle;">
-            <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#333;">${item.name}</p>
-            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:6px 16px;background:#d9c39a;color:#1a1a1a;font-size:12px;font-weight:700;text-decoration:none;border-radius:8px;">
-              Recensisci &rarr; +100 POP
+          <td style="padding-left:14px;vertical-align:middle;">
+            <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1a1a1a;">${item.name}</p>
+            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:8px 18px;background:#d9c39a;color:#5a4200;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">
+              Recensisci — +100 POP
             </a>
           </td>
         </tr></table>
@@ -393,51 +510,17 @@ export function reviewRequest(data: ReviewRequestData): { subject: string; html:
   return {
     subject: 'Come è andata? Guadagna 100 Punti POP',
     html: baseLayout(`
-      ${heading('Il tuo ordine è arrivato bene?')}
-      ${paragraph(`Ciao ${data.customerName}, speriamo che i vini del tuo ordine #${data.orderNumber} ti stiano piacendo!`)}
-      ${paragraph('Lascia una recensione per ogni prodotto e <strong>guadagna 100 Punti POP</strong> per ciascuna:')}
+      ${heading('Tutto ok con il tuo ordine?')}
+      ${subheading(`${data.customerName}, speriamo che i vini dell'ordine #${data.orderNumber} ti stiano piacendo.`)}
+      ${paragraph('Lascia una recensione per ogni prodotto e guadagna <strong>100 Punti POP</strong> per ciascuna:')}
       <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
         ${productRows}
       </table>
-      ${divider()}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:12px;margin:16px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:10px;margin:20px 0;">
         <tr><td style="padding:16px 24px;text-align:center;">
           <p style="margin:0;font-size:13px;color:#d9c39a;font-weight:600;">Ogni recensione = 100 Punti POP accreditati entro 24h</p>
         </td></tr>
       </table>
-      ${paragraph('<span style="font-size:13px;color:#888;">Le tue recensioni aiutano altri appassionati a scegliere il vino perfetto.</span>')}
-    `, `Recensisci i prodotti dell'ordine #${data.orderNumber} e guadagna Punti POP`),
-  };
-}
-
-export function abandonedCart(data: AbandonedCartData): { subject: string; html: string } {
-  const itemsList = data.items.map(item => `
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;">
-        ${item.image ? `<img src="${item.image}" width="48" height="48" style="border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:12px;" />` : ''}
-        <span style="font-size:14px;color:#333;">${item.name}</span>
-        <span style="font-size:12px;color:#888;"> x${item.quantity}</span>
-      </td>
-      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#333;">${item.total} &euro;</td>
-    </tr>
-  `).join('');
-
-  return {
-    subject: `${data.customerName}, hai dimenticato qualcosa? 🍷`,
-    html: baseLayout(`
-      ${heading('Hai lasciato qualcosa nel carrello')}
-      ${paragraph(`Ciao ${data.customerName}, abbiamo notato che hai lasciato alcuni prodotti nel carrello. Li teniamo da parte per te!`)}
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
-        ${itemsList}
-        <tr>
-          <td style="padding:12px 0;font-size:16px;font-weight:700;color:#005667;">Totale</td>
-          <td style="padding:12px 0;text-align:right;font-size:16px;font-weight:700;color:#005667;">${data.total} &euro;</td>
-        </tr>
-      </table>
-      ${paragraph('Completa il tuo ordine prima che le scorte finiscano!')}
-      ${ctaButton('Completa l\'ordine', data.cartUrl)}
-      ${divider()}
-      ${paragraph('<span style="font-size:13px;color:#888;">Spedizione gratuita da 69€ · Consegna in 24-48h · Pagamento sicuro</span>')}
-    `, `Il tuo carrello ti aspetta — ${data.items.length} prodott${data.items.length === 1 ? 'o' : 'i'}`),
+    `, `Recensisci i prodotti dell'ordine #${data.orderNumber}`),
   };
 }
