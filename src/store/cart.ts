@@ -24,17 +24,25 @@ export interface VendorShipping {
   shippingCost: number;
 }
 
+export interface ShippingData {
+  firstName: string; lastName: string; email: string;
+  address: string; zip: string; city: string; phone: string;
+  notes: string;
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
   checkoutOpen: boolean;
   checkoutStep: number;
+  shippingData: ShippingData | null;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
   openCheckout: (step?: number) => void;
   closeCheckout: () => void;
   setCheckoutStep: (step: number) => void;
+  setShippingData: (data: ShippingData) => void;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -53,11 +61,13 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
       checkoutOpen: false,
       checkoutStep: 1,
+      shippingData: null,
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
       openCheckout: (step = 1) => set({ checkoutOpen: true, checkoutStep: step, isOpen: false }),
       closeCheckout: () => set({ checkoutOpen: false, checkoutStep: 1 }),
+      setShippingData: (data) => set({ shippingData: data }),
       setCheckoutStep: (step) => set({ checkoutStep: step }),
 
       addItem: (item) => {

@@ -358,7 +358,7 @@ function Step1Cart() {
 /* ═══════════════════════════════════════════════════════ */
 
 function Step2Shipping() {
-  const { setCheckoutStep, getTotal, items, getTotalShipping, getSubtotal } = useCartStore();
+  const { setCheckoutStep, setShippingData, getTotal, items, getTotalShipping, getSubtotal } = useCartStore();
   const { token, user } = useAuthStore();
   const isLogged = !!token && !!user;
   const [authOpen, setAuthOpen] = useState(false);
@@ -463,7 +463,7 @@ function Step2Shipping() {
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
             <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-            <button onClick={() => isValid && setCheckoutStep(3)} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '' }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Continua →
             </button>
             <button onClick={() => setCheckoutStep(1)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-1.5">← Torna al carrello</button>
@@ -473,7 +473,7 @@ function Step2Shipping() {
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => isValid && setCheckoutStep(3)} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '' }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Continua →
         </button>
       </div>
@@ -488,10 +488,8 @@ function Step2Shipping() {
 /* ═══════════════════════════════════════════════════════ */
 
 function Step3Payment() {
-  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping } = useCartStore();
-  const { token, user } = useAuthStore();
-  const isLogged = !!token && !!user;
-  const [authOpen, setAuthOpen] = useState(false);
+  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping, shippingData } = useCartStore();
+  const { user } = useAuthStore();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -499,11 +497,11 @@ function Step3Payment() {
   const total = getTotal();
   const popPoints = Math.round(total);
 
-  // Create payment intent on mount — use logged user data
+  // Create payment intent on mount — use shipping form data (guest or logged)
   useEffect(() => {
-    if (!isLogged) { setLoading(false); return; }
     (async () => {
       try {
+        const sd = shippingData;
         const res = await fetch('/api/payments/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -511,10 +509,15 @@ function Step3Payment() {
             items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
             shipping: getTotalShipping(),
             customer: {
-              email: user?.email || '',
-              firstName: user?.firstName || '',
-              lastName: user?.lastName || '',
-              phone: '', address: '', city: '', province: '', zip: '', notes: '',
+              email: sd?.email || user?.email || '',
+              firstName: sd?.firstName || user?.firstName || '',
+              lastName: sd?.lastName || user?.lastName || '',
+              phone: sd?.phone || '',
+              address: sd?.address || '',
+              city: sd?.city || '',
+              province: '',
+              zip: sd?.zip || '',
+              notes: sd?.notes || '',
             },
           }),
         });
@@ -527,28 +530,7 @@ function Step3Payment() {
         setLoading(false);
       }
     })();
-  }, [isLogged]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Guest: show login prompt
-  if (!isLogged) {
-    return (
-      <>
-        <div className="flex-1 flex flex-col items-center justify-center py-12 px-8 text-center">
-          <svg className="w-16 h-16 text-[#005667]/20 mb-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          <h3 className="text-[18px] font-semibold text-[#1a1a1a] mb-2">Accedi per completare l&apos;ordine</h3>
-          <p className="text-[13px] text-[#888] mb-6">Per procedere al pagamento devi accedere o registrarti.</p>
-          <button
-            onClick={() => setAuthOpen(true)}
-            className="bg-[#005667] text-white rounded-lg px-8 py-3.5 text-[14px] font-semibold hover:bg-[#004555] transition-colors"
-          >
-            Accedi o Registrati
-          </button>
-          <button onClick={() => setCheckoutStep(2)} className="text-[12px] text-[#aaa] hover:text-[#666] mt-4">← Torna alla spedizione</button>
-        </div>
-        <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
-      </>
-    );
-  }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
