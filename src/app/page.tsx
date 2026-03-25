@@ -6,6 +6,7 @@ import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
 import { getCachedProducts, getCachedCategories } from '@/lib/cached';
 import ProductCard from '@/components/ProductCard';
 import HeroSection from '@/components/HeroSection';
+import IncentiveBlock from '@/components/IncentiveBlock';
 
 const EXCLUDED_SLUGS = new Set(['uncategorized', 'altri-prodotti']);
 
@@ -240,6 +241,9 @@ export default function HomePage() {
 
       {/* Below the fold — consistent padding and spacing */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 space-y-10 pb-10">
+        {/* Incentive block — guest: 5% discount, logged: POP points */}
+        <IncentiveBlock />
+
         {/* 1. Best Sellers */}
         <Suspense fallback={<GridSkeleton />}>
           <BestSellers />
