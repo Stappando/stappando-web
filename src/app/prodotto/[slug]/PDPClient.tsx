@@ -65,9 +65,9 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
         {/* ═══ LEFT COLUMN ═══ */}
         <div className="space-y-4">
           {/* Gallery */}
-          <div className="relative bg-white border border-[#e8e4dc] rounded-2xl p-5 overflow-hidden" style={{ height: 'clamp(290px, 40vw, 380px)' }}>
+          <div className="relative bg-white border border-[#e8e4dc] rounded-2xl p-5 overflow-hidden" style={{ height: 'clamp(320px, 45vw, 460px)' }}>
             {p.galleryImages[activeImg]?.src ? (
-              <Image src={p.galleryImages[activeImg].src} alt={p.galleryImages[activeImg].alt} fill className="object-contain p-4" priority sizes="(max-width: 1024px) 100vw, 50vw" />
+              <Image src={p.galleryImages[activeImg].src} alt={p.galleryImages[activeImg].alt} fill className="object-contain p-2" priority sizes="(max-width: 1024px) 100vw, 50vw" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#ccc]">
                 <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -77,13 +77,13 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             {/* Pills top-left */}
             <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10">
               {p.isCircuito && (
-                <span className="bg-[#d9c39a] text-[#1a1a1a] text-[10px] font-bold px-2.5 py-1 rounded-full">★ Sommelier</span>
+                <span className="bg-[#d9c39a] text-[#1a1a1a] text-[14px] font-bold px-2.5 py-1 rounded-full">★ Sommelier</span>
               )}
               {p.alcol && (
-                <span className="bg-white/95 border border-[#e0dbd4] text-[10px] font-semibold text-[#666] px-2.5 py-1 rounded-full">{p.alcol}</span>
+                <span className="bg-white/95 border border-[#e0dbd4] text-[14px] font-semibold text-[#666] px-2.5 py-1 rounded-full">{p.alcol}</span>
               )}
               {p.denominazione && (
-                <span className="bg-white/95 border border-[#e0dbd4] text-[10px] font-semibold text-[#666] px-2.5 py-1 rounded-full">{p.denominazione}</span>
+                <span className="bg-white/95 border border-[#e0dbd4] text-[14px] font-semibold text-[#666] px-2.5 py-1 rounded-full">{p.denominazione}</span>
               )}
             </div>
 
@@ -119,8 +119,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                   <svg className="w-4 h-4 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
                 <div>
-                  <p className="text-[9px] text-[#d9c39a] font-bold uppercase tracking-widest mb-1">★ Scelta del Sommelier</p>
-                  <p className="text-[11px] text-[#ccc] leading-relaxed italic">&ldquo;{p.circuitoBadge}&rdquo;</p>
+                  <p className="text-[11px] text-[#d9c39a] font-bold uppercase tracking-widest mb-1">★ Scelta del Sommelier</p>
+                  <p className="text-[15px] text-[#ccc] leading-relaxed italic">&ldquo;{p.circuitoBadge}&rdquo;</p>
                 </div>
               </div>
             </div>
@@ -129,10 +129,10 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           {/* Abbinamenti — desktop only */}
           {p.abbinamenti.length > 0 && (
             <div className="hidden lg:block">
-              <p className="text-[10px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
+              <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
                 {p.abbinamenti.map((a, i) => (
-                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[11px] font-medium">{a}</span>
+                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[15px] font-medium">{a}</span>
                 ))}
               </div>
             </div>
@@ -143,34 +143,34 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
         <div>
           {/* Produttore */}
           {p.produttore && (
-            <p className="text-[11px] text-[#d9c39a] font-bold uppercase tracking-wide mb-1.5">{p.produttore}</p>
+            <p className="text-[15px] text-[#d9c39a] font-bold uppercase tracking-wide mb-1.5">{p.produttore}</p>
           )}
 
           {/* Title */}
-          <h1 className="text-[22px] font-bold text-[#1a1a1a] leading-[1.3] mb-4">{p.name}</h1>
+          <h1 className="text-[24px] font-bold text-[#1a1a1a] leading-[1.3] mb-4">{p.name}</h1>
 
           {/* Price */}
           <div className="flex items-center flex-wrap gap-2 mb-2">
             {p.onSale && p.regularPrice && (
               <>
                 <span className="text-[14px] text-[#bbb] line-through">{formatPrice(p.regularPrice)}€</span>
-                <span className="bg-[#c0392b] text-white text-[10px] font-bold px-2 py-0.5 rounded">-{p.discount}% SCONTO</span>
+                <span className="bg-[#c0392b] text-white text-[14px] font-bold px-2 py-0.5 rounded">-{p.discount}% SCONTO</span>
               </>
             )}
-            <span className="text-[28px] font-bold text-[#005667]">{formatPrice(p.price)}€</span>
+            <span className="text-[30px] font-bold text-[#005667]">{formatPrice(p.price)}€</span>
           </div>
 
           {/* POP points */}
           <div className="flex items-center gap-1.5 mb-5">
             <svg className="w-3.5 h-3.5 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span className="text-[11px] text-[#888]">+{p.popPoints} Punti POP con questo acquisto</span>
+            <span className="text-[15px] text-[#888]">+{p.popPoints} Punti POP con questo acquisto</span>
           </div>
 
           {/* Low stock warning */}
           {lowStock && (
             <div className="flex items-center gap-2 mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-[#c0392b] animate-pulse" />
-              <span className="text-[11px] text-[#c0392b] font-semibold">Ultime {p.stockQuantity} bottiglie</span>
+              <span className="text-[15px] text-[#c0392b] font-semibold">Ultime {p.stockQuantity} bottiglie</span>
             </div>
           )}
 
@@ -183,7 +183,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                   <span className="w-9 text-center font-semibold text-[#1a1a1a] text-[14px]">{qty}</span>
                   <button onClick={() => setQty(qty + 1)} className="w-10 h-11 flex items-center justify-center text-[#888] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors text-lg">+</button>
                 </div>
-                <button onClick={handleAdd} className="flex-1 h-11 bg-[#005667] text-white font-semibold text-[13px] rounded-lg hover:bg-[#004555] transition-colors flex items-center justify-center gap-2">
+                <button onClick={handleAdd} className="flex-1 h-11 bg-[#005667] text-white font-semibold text-[15px] rounded-lg hover:bg-[#004555] transition-colors flex items-center justify-center gap-2">
                   {added ? (
                     <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>Aggiunto!</>
                   ) : (
@@ -191,12 +191,12 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                   )}
                 </button>
               </div>
-              <button onClick={handleBuyNow} className="w-full h-11 bg-[#1a1a1a] text-[#d9c39a] font-semibold text-[13px] rounded-lg hover:bg-[#2a2a2a] transition-colors">
+              <button onClick={handleBuyNow} className="w-full h-11 bg-[#1a1a1a] text-[#d9c39a] font-semibold text-[15px] rounded-lg hover:bg-[#2a2a2a] transition-colors">
                 Acquista ora
               </button>
             </div>
           ) : (
-            <div className="mb-4 py-3 px-4 bg-[#f0f0f0] rounded-lg text-center text-[13px] text-[#999] font-medium">
+            <div className="mb-4 py-3 px-4 bg-[#f0f0f0] rounded-lg text-center text-[15px] text-[#999] font-medium">
               Non disponibile
             </div>
           )}
@@ -210,7 +210,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             ].map((row, i) => (
               <div key={i} className="flex items-center gap-2.5">
                 <svg className="w-4 h-4 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d={row.icon} /></svg>
-                <span className="text-[12px] text-[#666]">{row.text}</span>
+                <span className="text-[14px] text-[#666]">{row.text}</span>
               </div>
             ))}
           </div>
@@ -218,19 +218,19 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           {/* Short description */}
           {p.shortDesc && (
             <div className="bg-[#f8f6f1] border-l-[3px] border-[#e8e4dc] rounded-lg p-3.5 mb-5">
-              <p className="text-[13px] text-[#444] leading-[1.7]">{p.shortDesc}</p>
+              <p className="text-[15px] text-[#444] leading-[1.7]">{p.shortDesc}</p>
             </div>
           )}
 
           {/* Specs table */}
           {p.specs.length > 0 && (
             <div className="mb-5">
-              <h3 className="text-[10px] text-[#888] font-semibold uppercase tracking-wider mb-3">Caratteristiche</h3>
+              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Caratteristiche</h3>
               <div>
                 {p.specs.map((spec, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-[#f0f0f0] last:border-0">
-                    <span className="text-[10px] text-[#888] uppercase tracking-wide">{spec.key}</span>
-                    <span className="text-[12px] text-[#1a1a1a] font-medium text-right">{spec.value}</span>
+                    <span className="text-[14px] text-[#888] uppercase tracking-wide">{spec.key}</span>
+                    <span className="text-[14px] text-[#1a1a1a] font-medium text-right">{spec.value}</span>
                   </div>
                 ))}
               </div>
@@ -240,10 +240,10 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           {/* Abbinamenti — mobile */}
           {p.abbinamenti.length > 0 && (
             <div className="lg:hidden mb-5">
-              <p className="text-[10px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
+              <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
                 {p.abbinamenti.map((a, i) => (
-                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[11px] font-medium">{a}</span>
+                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[15px] font-medium">{a}</span>
                 ))}
               </div>
             </div>
@@ -257,8 +257,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                   <svg className="w-4 h-4 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
                 <div>
-                  <p className="text-[9px] text-[#d9c39a] font-bold uppercase tracking-widest mb-1">★ Scelta del Sommelier</p>
-                  <p className="text-[11px] text-[#ccc] leading-relaxed italic">&ldquo;{p.circuitoBadge}&rdquo;</p>
+                  <p className="text-[11px] text-[#d9c39a] font-bold uppercase tracking-widest mb-1">★ Scelta del Sommelier</p>
+                  <p className="text-[15px] text-[#ccc] leading-relaxed italic">&ldquo;{p.circuitoBadge}&rdquo;</p>
                 </div>
               </div>
             </div>
@@ -270,7 +270,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
       {p.description && (
         <div className="mt-10 max-w-3xl">
           <h2 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Descrizione</h2>
-          <div className="text-[13px] text-[#444] leading-[1.7] wp-content" dangerouslySetInnerHTML={{ __html: p.description }} />
+          <div className="text-[15px] text-[#444] leading-[1.7] wp-content" dangerouslySetInnerHTML={{ __html: p.description }} />
         </div>
       )}
 

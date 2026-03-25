@@ -1,13 +1,13 @@
 import { unstable_cache } from 'next/cache';
 import { api } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
-import ProductCard from '@/components/ProductCard';
+import RelatedCarousel from './RelatedCarousel';
 
 const getCachedRelated = unstable_cache(
-  async (categorySlug: string, produttore: string) => {
+  async (categorySlug: string) => {
     const [byCategory, bestSellers] = await Promise.all([
-      categorySlug ? api.getProducts({ category: categorySlug, per_page: 10 }).catch(() => []) : Promise.resolve([]),
-      api.getProducts({ tag: String(API_CONFIG.tags.bestSeller), per_page: 10 }).catch(() => []),
+      categorySlug ? api.getProducts({ category: categorySlug, per_page: 20 }).catch(() => []) : Promise.resolve([]),
+      api.getProducts({ tag: String(API_CONFIG.tags.bestSeller), per_page: 12 }).catch(() => []),
     ]);
     return { byCategory, bestSellers };
   },
@@ -19,52 +19,49 @@ interface Props {
   productId: number;
   categorySlug: string;
   produttore: string;
+  uvaggio: string;
 }
 
-export default async function RelatedProducts({ productId, categorySlug, produttore }: Props) {
-  const { byCategory, bestSellers } = await getCachedRelated(categorySlug, produttore);
+export default async function RelatedProducts({ productId, categorySlug, produttore, uvaggio }: Props) {
+  const { byCategory, bestSellers } = await getCachedRelated(categorySlug);
 
-  // Merge: same category/producer first, then best sellers to fill
+  // Parse uvaggio grapes for matching
+  const grapes = uvaggio ? uvaggio.split(',').map(g => g.trim().toLowerCase()).filter(Boolean) : [];
+
   type Product = (typeof byCategory)[number];
   const seen = new Set<number>([productId]);
   const related: Product[] = [];
 
-  // Priority: same producer
-  for (const p of byCategory) {
-    if (seen.has(p.id)) continue;
-    const vendor = p._vendorName || p.store?.name || '';
-    if (produttore && vendor.toLowerCase().includes(produttore.toLowerCase())) {
-      related.push(p);
-      seen.add(p.id);
+  // Score products by relevance
+  const score = (p: Product): number => {
+    let s = 0;
+    const vendor = (p._vendorName || p.store?.name || '').toLowerCase();
+    if (produttore && vendor.includes(produttore.toLowerCase())) s += 10;
+
+    // Match uvaggio
+    if (grapes.length > 0) {
+      const pAttr = p.attributes?.find((a: { name: string }) => a.name === 'Uvaggio');
+      const pGrapes = pAttr?.options?.join(',').toLowerCase() || '';
+      for (const g of grapes) {
+        if (pGrapes.includes(g)) s += 5;
+      }
     }
+    return s;
+  };
+
+  // All candidates
+  const allProducts = [...byCategory, ...bestSellers];
+  const scored = allProducts
+    .filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; })
+    .map(p => ({ product: p, score: score(p) }))
+    .sort((a, b) => b.score - a.score);
+
+  for (const { product } of scored) {
+    related.push(product);
+    if (related.length >= 8) break;
   }
 
-  // Then same category
-  for (const p of byCategory) {
-    if (seen.has(p.id)) continue;
-    related.push(p);
-    seen.add(p.id);
-  }
+  if (related.length === 0) return null;
 
-  // Fill with best sellers
-  for (const p of bestSellers) {
-    if (seen.has(p.id)) continue;
-    related.push(p);
-    seen.add(p.id);
-  }
-
-  const final = related.slice(0, 6);
-
-  if (final.length === 0) return null;
-
-  return (
-    <div className="mt-12 mb-8">
-      <h2 className="text-[18px] font-semibold text-[#1a1a1a] mb-5">Ti potrebbe piacere</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {final.map((p) => (
-          <ProductCard key={p.id} product={p} />
-        ))}
-      </div>
-    </div>
-  );
+  return <RelatedCarousel products={related} />;
 }

@@ -77,7 +77,7 @@ export default async function ProductPage({ params }: Props) {
     <div className="bg-[#f8f6f1] min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Breadcrumb */}
-        <nav className="text-[12px] text-[#999] mb-5">
+        <nav className="text-[14px] text-[#999] mb-5">
           <a href="/" className="hover:text-[#005667]">Home</a>
           <span className="mx-1.5">/</span>
           {product.categories?.[0] && (
@@ -126,6 +126,7 @@ export default async function ProductPage({ params }: Props) {
           productId={product.id}
           categorySlug={product.categories?.[0]?.slug || ''}
           produttore={produttore || ''}
+          uvaggio={getAttr('Uvaggio')}
         />
       </div>
     </div>
