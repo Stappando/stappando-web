@@ -64,16 +64,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Importo minimo 0,50€' }, { status: 400 });
     }
 
-    // TEMP DEBUG — remove after key verification
-    console.log('STRIPE_SECRET_KEY first 20:', process.env.STRIPE_SECRET_KEY?.slice(0, 20));
-    console.log('NEXT_PUBLIC_STRIPE_KEY first 20:', process.env.NEXT_PUBLIC_STRIPE_KEY?.slice(0, 20));
-
     const stripe = getStripe();
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: 'eur',
-      payment_method_types: ['card'],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         customer_email: sanitize(c.email, 254),
         customer_name: sanitize(`${c.firstName} ${c.lastName}`, 200),
