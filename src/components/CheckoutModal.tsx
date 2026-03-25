@@ -432,7 +432,7 @@ function Step2Shipping() {
             {/* Notes */}
             <textarea
               name="notes" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="Note per l'ordine o messaggio regalo..."
+              placeholder="Note per l'ordine"
               rows={2}
               className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
             />
