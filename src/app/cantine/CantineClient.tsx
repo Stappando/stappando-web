@@ -3,7 +3,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { type WCProduct, decodeHtml } from '@/lib/api';
+import { DEFAULT_VENDOR_NAME } from '@/lib/config';
+
+interface IndexEntry {
+  i: number;
+  s: string;
+  n: string;
+  N: string;
+  p: string;
+  r: string;
+  l: string;
+  o: boolean;
+  v: string;  // vendor
+  g: string;  // region
+  t: string[];
+  c: boolean;
+  b: string;
+  m: string;  // image
+}
 
 interface Cantina {
   name: string;
@@ -14,68 +31,47 @@ interface Cantina {
 }
 
 export default function CantineClient() {
-  const [products, setProducts] = useState<WCProduct[]>([]);
+  const [cantine, setCantine] = useState<Cantina[]>([]);
   const [ready, setReady] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/products.json')
+    fetch('/api/search/index')
       .then(r => r.json())
-      .then((data: WCProduct[]) => {
-        setProducts(data);
+      .then((entries: IndexEntry[]) => {
+        const map = new Map<string, Cantina>();
+
+        for (const entry of entries) {
+          const vendor = entry.v?.trim();
+          if (!vendor || vendor === DEFAULT_VENDOR_NAME) continue;
+
+          const slug = vendor.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          const existing = map.get(slug);
+          const region = entry.g?.trim() || '';
+
+          if (existing) {
+            existing.productCount++;
+            if (!existing.image && entry.m) existing.image = entry.m;
+            if (region && !existing.regions.includes(region)) existing.regions.push(region);
+          } else {
+            map.set(slug, {
+              name: vendor,
+              slug,
+              productCount: 1,
+              image: entry.m || null,
+              regions: region ? [region] : [],
+            });
+          }
+        }
+
+        const sorted = Array.from(map.values()).sort((a, b) =>
+          b.productCount - a.productCount || a.name.localeCompare(b.name),
+        );
+        setCantine(sorted);
         setReady(true);
       })
       .catch(() => setReady(true));
   }, []);
-
-  const cantine = useMemo(() => {
-    if (!ready) return [];
-
-    const map = new Map<string, Cantina>();
-
-    for (const p of products) {
-      // Extract "Produttore" from attributes
-      const produttoreAttr = p.attributes?.find(
-        a => a.name === 'Produttore' || a.name === 'produttore' || a.name === 'Cantina',
-      );
-      if (!produttoreAttr?.options?.length) continue;
-
-      for (const raw of produttoreAttr.options) {
-        const name = decodeHtml(raw).trim();
-        if (!name) continue;
-
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const existing = map.get(slug);
-
-        // Get region
-        const regionAttr = p.attributes?.find(a => a.name === 'Regione');
-        const region = regionAttr?.options?.[0] || '';
-
-        if (existing) {
-          existing.productCount++;
-          if (!existing.image && p.images?.[0]?.src) {
-            existing.image = p.images[0].src;
-          }
-          if (region && !existing.regions.includes(region)) {
-            existing.regions.push(region);
-          }
-        } else {
-          map.set(slug, {
-            name,
-            slug,
-            productCount: 1,
-            image: p.images?.[0]?.src || null,
-            regions: region ? [region] : [],
-          });
-        }
-      }
-    }
-
-    // Sort by product count descending, then alphabetically
-    return Array.from(map.values()).sort((a, b) =>
-      b.productCount - a.productCount || a.name.localeCompare(b.name),
-    );
-  }, [products, ready]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return cantine;
@@ -89,9 +85,9 @@ export default function CantineClient() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#005667]">Le nostre Cantine</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a]">Le nostre Cantine</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {ready ? `${cantine.length} cantine selezionate` : 'Caricamento...'}
+          {ready ? `${cantine.length} produttori selezionati dal nostro sommelier` : 'Caricamento...'}
         </p>
       </div>
 
@@ -125,11 +121,11 @@ export default function CantineClient() {
           {filtered.map(cantina => (
             <Link
               key={cantina.slug}
-              href={`/cerca?vendor=${encodeURIComponent(cantina.name)}`}
-              className="group rounded-2xl border border-gray-200 bg-white overflow-hidden hover:border-[#d9c39a] hover:shadow-md transition-all"
+              href={`/cantine/${cantina.slug}`}
+              className="group rounded-xl border border-[#e8e4dc] bg-white overflow-hidden hover:border-[#d9c39a] hover:shadow-md transition-all"
             >
               {/* Image */}
-              <div className="relative aspect-[4/3] bg-[#f8f7f5] overflow-hidden">
+              <div className="relative aspect-[4/3] bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden">
                 {cantina.image ? (
                   <Image
                     src={cantina.image}
@@ -140,12 +136,9 @@ export default function CantineClient() {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
-                    </svg>
+                    <span className="text-2xl font-bold text-[#005667]/20">{cantina.name.charAt(0)}</span>
                   </div>
                 )}
-                {/* Product count badge */}
                 <div className="absolute top-2 right-2 bg-[#005667] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {cantina.productCount} {cantina.productCount === 1 ? 'vino' : 'vini'}
                 </div>
@@ -153,11 +146,11 @@ export default function CantineClient() {
 
               {/* Info */}
               <div className="p-3">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#005667] transition-colors line-clamp-1">
+                <h3 className="text-[13px] font-semibold text-[#1a1a1a] group-hover:text-[#005667] transition-colors line-clamp-1">
                   {cantina.name}
                 </h3>
                 {cantina.regions.length > 0 && (
-                  <p className="text-[11px] text-[#d9c39a] font-medium mt-0.5 line-clamp-1">
+                  <p className="text-[11px] text-[#888] mt-0.5 line-clamp-1">
                     {cantina.regions.join(', ')}
                   </p>
                 )}
@@ -170,9 +163,6 @@ export default function CantineClient() {
       {/* Empty state */}
       {ready && filtered.length === 0 && (
         <div className="text-center py-16">
-          <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
           <p className="text-sm font-semibold text-gray-700">Nessuna cantina trovata</p>
           <p className="text-xs text-gray-500 mt-1">Prova con un altro termine</p>
         </div>
