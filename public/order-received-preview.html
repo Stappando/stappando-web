@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ordine confermato — Stappando</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#f8f6f1;color:#1a1a1a;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.container{max-width:680px;margin:0 auto;padding:24px 16px 40px}
+
+/* Hero */
+.hero{text-align:center;padding:48px 20px 36px}
+.check-circle{width:72px;height:72px;border-radius:50%;background:#e8f4f1;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.check-circle svg{width:36px;height:36px;color:#005667}
+.hero h1{font-size:26px;font-weight:700;margin-bottom:6px}
+.hero .order-num{font-size:14px;color:#999;margin-bottom:4px}
+.hero .email-note{font-size:13px;color:#888}
+
+/* POP Box */
+.pop-box{background:#1a1a1a;border:1.5px solid #d9c39a;border-radius:14px;padding:20px 24px;margin:0 0 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.pop-box .pop-left .pop-label{font-size:10px;color:#d9c39a;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.pop-box .pop-left .pop-value{font-size:22px;font-weight:700;color:#fff}
+.pop-box .pop-left .pop-value span{color:#d9c39a}
+.pop-box .pop-right{text-align:right}
+.pop-box .pop-right .pop-balance{font-size:12px;color:#999}
+.pop-box .pop-right .pop-balance strong{color:#d9c39a;font-weight:600}
+.pop-box .pop-right .pop-equiv{font-size:11px;color:#666;margin-top:2px}
+
+/* Order summary */
+.summary-box{background:#fff;border:1px solid #e8e4dc;border-radius:14px;padding:20px 22px;margin-bottom:24px}
+.summary-box h2{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.04em}
+.order-item{display:flex;gap:14px;padding:12px 0;border-bottom:0.5px solid #f0f0f0}
+.order-item:last-of-type{border-bottom:none}
+.order-item .item-img{width:48px;height:64px;background:linear-gradient(160deg,#f5f1ea,#e8e0d2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.order-item .item-info{flex:1;min-width:0}
+.order-item .item-name{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:2px}
+.order-item .item-vendor{font-size:11px;color:#999}
+.order-item .item-right{text-align:right;flex-shrink:0}
+.order-item .item-qty{font-size:11px;color:#999;margin-bottom:2px}
+.order-item .item-price{font-size:14px;font-weight:700;color:#005667}
+
+.summary-totals{padding-top:14px;border-top:1px solid #f0f0f0}
+.summary-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+.summary-row .label{color:#888}
+.summary-row.total{font-size:17px;font-weight:700;color:#005667;padding-top:10px;border-top:1px solid #f0f0f0;margin-top:6px}
+
+/* Shipping info */
+.shipping-box{background:#fff;border:1px solid #e8e4dc;border-radius:14px;padding:20px 22px;margin-bottom:24px}
+.shipping-box h2{font-size:14px;font-weight:700;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.04em}
+.ship-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ship-col .ship-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.ship-col p{font-size:13px;line-height:1.5;color:#444}
+
+/* Steps */
+.steps-box{background:#fff;border:1px solid #e8e4dc;border-radius:14px;padding:20px 22px;margin-bottom:28px}
+.steps-box h2{font-size:14px;font-weight:700;margin-bottom:18px;text-transform:uppercase;letter-spacing:0.04em}
+.step{display:flex;gap:14px;align-items:flex-start;padding:10px 0}
+.step-dot{width:32px;height:32px;border-radius:50%;background:#e8f4f1;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#005667}
+.step-dot.active{background:#005667;color:#fff}
+.step-text .step-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.step-text .step-desc{font-size:12px;color:#888;line-height:1.4}
+
+/* App banner */
+.app-banner{background:#005667;border-radius:14px;padding:28px 24px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.app-banner .app-left .app-label{font-size:10px;color:#d9c39a;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.app-banner .app-left h3{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+.app-banner .app-left p{font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5}
+.app-btns{display:flex;gap:8px;margin-top:14px}
+.app-btn{background:#000;color:#fff;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+.app-banner .app-right{font-size:56px;opacity:0.3}
+
+/* Related products */
+.related{margin-bottom:28px}
+.related h2{font-size:18px;font-weight:600;margin-bottom:16px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.related-grid{grid-template-columns:repeat(2,1fr)}}
+.rcard{background:#fff;border:0.5px solid #e8e4dc;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s}
+.rcard:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+.rcard .rcard-img{height:140px;background:linear-gradient(160deg,#f5f1ea,#e8e0d2);display:flex;align-items:center;justify-content:center;font-size:40px;padding:12px}
+.rcard .rcard-body{padding:12px 14px}
+.rcard .rcard-vendor{font-size:10px;color:#d9c39a;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px}
+.rcard .rcard-name{font-size:12px;font-weight:600;line-height:1.35;margin-bottom:8px;color:#1a1a1a}
+.rcard .rcard-price{font-size:16px;font-weight:700;color:#005667;margin-bottom:8px}
+.rcard .rcard-btn{display:block;width:100%;padding:9px;background:#005667;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;text-align:center}
+
+/* Circuito card */
+.rcard.circuito{background:#1a1a1a;border:1.5px solid #d9c39a}
+.rcard.circuito .rcard-body{background:#1a1a1a}
+.rcard.circuito .rcard-name{color:#fff}
+.rcard.circuito .rcard-price{color:#d9c39a}
+.rcard.circuito .rcard-btn{background:#d9c39a;color:#1a1a1a}
+.rcard.circuito .rcard-badge{position:absolute;top:8px;left:8px;background:#d9c39a;color:#1a1a1a;font-size:9px;font-weight:700;padding:3px 9px;border-radius:999px}
+.rcard.circuito .rcard-img{position:relative}
+
+/* CTAs */
+.cta-section{text-align:center;padding:8px 0 20px}
+.cta-primary{display:inline-block;background:#005667;color:#fff;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:700;margin-bottom:12px}
+.cta-secondary{display:inline-block;border:1.5px solid #e5e5e5;color:#1a1a1a;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:600;margin-left:10px}
+
+@media(max-width:640px){
+  .hero h1{font-size:22px}
+  .pop-box{flex-direction:column;text-align:center}
+  .pop-box .pop-right{text-align:center}
+  .ship-grid{grid-template-columns:1fr}
+  .app-banner{flex-direction:column;text-align:center}
+  .app-banner .app-right{display:none}
+  .app-btns{justify-content:center}
+  .cta-section .cta-secondary{display:block;margin:0 auto;margin-top:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="check-circle">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <h1>Ordine confermato!</h1>
+    <p class="order-num">Ordine #STK-4821</p>
+    <p class="email-note">Conferma inviata a roberto@email.com</p>
+  </div>
+
+  <!-- POP Box -->
+  <div class="pop-box">
+    <div class="pop-left">
+      <div class="pop-label">Punti POP guadagnati</div>
+      <div class="pop-value">+<span>79</span> Punti POP</div>
+    </div>
+    <div class="pop-right">
+      <div class="pop-balance">Saldo totale: <strong>454 punti</strong></div>
+      <div class="pop-equiv">vale 4,54 &euro; di sconto</div>
+    </div>
+  </div>
+
+  <!-- Order summary -->
+  <div class="summary-box">
+    <h2>Riepilogo ordine</h2>
+    <div class="order-item">
+      <div class="item-img">&#127863;</div>
+      <div class="item-info">
+        <div class="item-name">Barolo DOCG 2019 - Marchesi di Barolo</div>
+        <div class="item-vendor">Marchesi di Barolo</div>
+      </div>
+      <div class="item-right">
+        <div class="item-qty">x1</div>
+        <div class="item-price">39,90 &euro;</div>
+      </div>
+    </div>
+    <div class="order-item">
+      <div class="item-img">&#127862;</div>
+      <div class="item-info">
+        <div class="item-name">Prosecco Superiore DOCG Brut - Col Vetoraz</div>
+        <div class="item-vendor">Col Vetoraz</div>
+      </div>
+      <div class="item-right">
+        <div class="item-qty">x2</div>
+        <div class="item-price">25,80 &euro;</div>
+      </div>
+    </div>
+    <div class="order-item">
+      <div class="item-img">&#127870;</div>
+      <div class="item-info">
+        <div class="item-name">Scatola Regalo Premium 3 Bottiglie</div>
+        <div class="item-vendor">Stappando Enoteca</div>
+      </div>
+      <div class="item-right">
+        <div class="item-qty">x1</div>
+        <div class="item-price">8,90 &euro;</div>
+      </div>
+    </div>
+
+    <div class="summary-totals">
+      <div class="summary-row"><span class="label">Subtotale</span><span>74,60 &euro;</span></div>
+      <div class="summary-row"><span class="label">Spedizione</span><span style="color:#005667;font-weight:600">Gratuita</span></div>
+      <div class="summary-row"><span class="label">Sconto (BENVENUTO-ROBERTO-X8K2)</span><span style="color:#c0392b">-3,73 &euro;</span></div>
+      <div class="summary-row total"><span>Totale pagato</span><span>70,87 &euro;</span></div>
+    </div>
+  </div>
+
+  <!-- Shipping -->
+  <div class="shipping-box">
+    <h2>Spedizione</h2>
+    <div class="ship-grid">
+      <div class="ship-col">
+        <div class="ship-label">Indirizzo</div>
+        <p>Roberto Buffa<br>Via Roma 42<br>00185 Roma (RM)</p>
+      </div>
+      <div class="ship-col">
+        <div class="ship-label">Consegna stimata</div>
+        <p><strong>27-28 marzo 2026</strong><br>Corriere espresso 24-48h<br>Tracking via email</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps-box">
+    <h2>Cosa succede ora</h2>
+    <div class="step">
+      <div class="step-dot active">1</div>
+      <div class="step-text">
+        <div class="step-title">Ordine ricevuto</div>
+        <div class="step-desc">Il tuo ordine &egrave; stato confermato e pagato</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-text">
+        <div class="step-title">Preparazione</div>
+        <div class="step-desc">Il vino viene preparato e imballato con cura</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-text">
+        <div class="step-title">Spedizione</div>
+        <div class="step-desc">Riceverai il tracking via email entro 24h</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">4</div>
+      <div class="step-text">
+        <div class="step-title">Consegnato</div>
+        <div class="step-desc">Lascia una recensione e guadagna 100 Punti POP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App banner -->
+  <div class="app-banner">
+    <div class="app-left">
+      <div class="app-label">Scarica l&rsquo;app</div>
+      <h3>Stappando nel tuo telefono</h3>
+      <p>Riordina in un tap &middot; Tracking live &middot; Punti POP</p>
+      <div class="app-btns">
+        <div class="app-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83z"/></svg>
+          App Store
+        </div>
+        <div class="app-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.54c.55.55 1.46.45 2.75-.32l12.95-7.48-3.22-3.22L3.18 23.54zm-.78-1.42L13.04 12 2.4 1.88c-.34.5-.4 1.1-.4 1.7v16.84c0 .6.06 1.2.4 1.7zm18.14-11.57l-2.92-1.69-3.46 3.46 3.46 3.14 2.92-1.69c.94-.54 1.46-1.24 1.46-2.11s-.52-1.57-1.46-2.11zM5.93.78L18.88 8.3l-3.22 3.22L3.18.46C4.47-.31 5.38-.41 5.93.78z"/></svg>
+          Google Play
+        </div>
+      </div>
+    </div>
+    <div class="app-right">&#128241;</div>
+  </div>
+
+  <!-- Related products -->
+  <div class="related">
+    <h2>Ti potrebbe piacere</h2>
+    <div class="related-grid">
+      <div class="rcard circuito">
+        <div class="rcard-img" style="position:relative">
+          <span class="rcard-badge">&#9733; Sommelier</span>
+          &#127863;
+        </div>
+        <div class="rcard-body">
+          <div class="rcard-vendor">Planeta</div>
+          <div class="rcard-name">Etna Bianco DOC 2023 - Planeta</div>
+          <div class="rcard-price">18,90 &euro;</div>
+          <button class="rcard-btn">Aggiungi al carrello</button>
+        </div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-img">&#127863;</div>
+        <div class="rcard-body">
+          <div class="rcard-vendor">Antinori</div>
+          <div class="rcard-name">Tignanello IGT 2020 - Antinori</div>
+          <div class="rcard-price">89,00 &euro;</div>
+          <button class="rcard-btn">Aggiungi al carrello</button>
+        </div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-img">&#127862;</div>
+        <div class="rcard-body">
+          <div class="rcard-vendor">Ferrari</div>
+          <div class="rcard-name">Ferrari Brut Trentodoc - Ferrari</div>
+          <div class="rcard-price">22,50 &euro;</div>
+          <button class="rcard-btn">Aggiungi al carrello</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTAs -->
+  <div class="cta-section">
+    <a href="/" class="cta-primary">Continua a esplorare</a>
+    <a href="/account" class="cta-secondary">I miei ordini</a>
+  </div>
+
+</div>
+
+</body>
+</html>
