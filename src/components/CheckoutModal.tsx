@@ -239,7 +239,9 @@ function Step1Cart() {
             <div className="px-6 pb-5">
               <div className="space-y-2.5">
                 <div className="flex justify-between text-[13px]"><span className="text-[#888]">Subtotale</span><span>{formatPrice(subtotal)} €</span></div>
-                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vendorShipping.length} vendor</span><span>{totalShipping === 0 ? 'Gratuita' : `${formatPrice(totalShipping)} €`}</span></div>
+                {vendorShipping.map(vs => (
+                  <div key={vs.vendorId} className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vs.vendorName}</span><span>{vs.isFree ? 'Gratuita' : `${formatPrice(vs.shippingCost)} €`}</span></div>
+                ))}
                 <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
               </div>
               <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-4 hover:bg-[#004555] transition-colors hidden sm:block">
@@ -398,6 +400,16 @@ function Step2Shipping() {
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-7">
           {/* Form */}
           <div className="space-y-3.5">
+            {/* Guest: login prompt at top */}
+            {!isLogged && (
+              <div className="flex items-center justify-between bg-[#f8f6f1] rounded-lg px-4 py-3 mb-2">
+                <span className="text-[13px] text-[#444]">Hai già un account?</span>
+                <button onClick={() => setAuthOpen(true)} className="text-[13px] text-[#005667] font-semibold hover:underline">
+                  Accedi
+                </button>
+              </div>
+            )}
+
             {/* Logged user greeting */}
             {isLogged && (
               <div className="bg-[#f8f6f1] rounded-lg px-4 py-2.5 mb-1">
@@ -447,15 +459,6 @@ function Step2Shipping() {
               </div>
             )}
 
-            {/* Login prompt for guests */}
-            {!isLogged && (
-              <div className="flex items-center justify-between bg-[#f8f6f1] rounded-lg px-4 py-3 mt-1">
-                <span className="text-[13px] text-[#444]">Hai già un account?</span>
-                <button onClick={() => setAuthOpen(true)} className="text-[13px] text-[#005667] font-semibold hover:underline">
-                  Accedi
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Desktop sidebar */}
