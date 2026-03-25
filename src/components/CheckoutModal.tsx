@@ -363,20 +363,24 @@ function Step2Shipping() {
   const isLogged = !!token && !!user;
   const [authOpen, setAuthOpen] = useState(false);
 
-  const [form, setForm] = useState<ShippingForm>({
-    firstName: '', lastName: '', email: '', address: '', zip: '', city: '', phone: '',
-    notes: '', needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
-  });
-  const [prefilled, setPrefilled] = useState(false);
+  const savedShipping = useCartStore(s => s.shippingData);
+  const [form, setForm] = useState<ShippingForm>(() => ({
+    firstName: savedShipping?.firstName || '', lastName: savedShipping?.lastName || '',
+    email: savedShipping?.email || '', address: savedShipping?.address || '',
+    zip: savedShipping?.zip || '', city: savedShipping?.city || '',
+    phone: savedShipping?.phone || '', notes: savedShipping?.notes || '',
+    needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
+  }));
+  const [prefilled, setPrefilled] = useState(!!savedShipping);
 
-  // Pre-fill from logged user
+  // Pre-fill from logged user (only if no saved data)
   useEffect(() => {
     if (isLogged && user && !prefilled) {
       setForm(f => ({
         ...f,
-        firstName: user.firstName || f.firstName,
-        lastName: user.lastName || f.lastName,
-        email: user.email || f.email,
+        firstName: f.firstName || user.firstName || '',
+        lastName: f.lastName || user.lastName || '',
+        email: f.email || user.email || '',
       }));
       setPrefilled(true);
     }
@@ -400,11 +404,11 @@ function Step2Shipping() {
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-7">
           {/* Form */}
           <div className="space-y-3.5">
-            {/* Guest: login prompt at top */}
+            {/* Guest: login prompt at top — visible */}
             {!isLogged && (
-              <div className="flex items-center justify-between bg-[#f8f6f1] rounded-lg px-4 py-3 mb-2">
-                <span className="text-[13px] text-[#444]">Hai già un account?</span>
-                <button onClick={() => setAuthOpen(true)} className="text-[13px] text-[#005667] font-semibold hover:underline">
+              <div className="flex items-center justify-between border-2 border-[#005667]/20 bg-[#f5fafa] rounded-xl px-5 py-3.5 mb-3">
+                <span className="text-[14px] text-[#333]">Hai già un account?</span>
+                <button onClick={() => setAuthOpen(true)} className="text-[14px] text-white bg-[#005667] font-semibold px-5 py-2 rounded-lg hover:bg-[#004555] transition-colors">
                   Accedi
                 </button>
               </div>
@@ -625,15 +629,30 @@ function StripeForm({ total, popPoints }: { total: number; popPoints: number }) 
     }
   };
 
+  const [ready, setReady] = useState(false);
+
   return (
     <form onSubmit={handleSubmit}>
-      <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
+      {!ready && (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+          <span className="ml-3 text-[13px] text-[#888]">Caricamento metodi di pagamento...</span>
+        </div>
+      )}
+      <div className={ready ? '' : 'h-0 overflow-hidden'}>
+        <PaymentElement
+          onReady={() => setReady(true)}
+          options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }}
+        />
+      </div>
       {error && <p className="mt-3 text-[13px] text-red-500">{error}</p>}
 
-      {/* CTA — visible on both desktop and mobile */}
-      <button type="submit" disabled={!stripe || paying} className="w-full mt-5 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
-        {paying ? 'Pagamento in corso...' : `Ordina ora · ${formatPrice(total)} €`}
-      </button>
+      {/* CTA — visible only when payment methods loaded */}
+      {ready && (
+        <button type="submit" disabled={!stripe || paying} className="w-full mt-5 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
+          {paying ? 'Pagamento in corso...' : `Ordina ora · ${formatPrice(total)} €`}
+        </button>
+      )}
     </form>
   );
 }
