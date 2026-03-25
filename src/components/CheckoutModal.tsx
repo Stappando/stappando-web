@@ -845,9 +845,12 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
 
       {useCardFallback && (
         <div className="flex items-center justify-center gap-3 mt-3">
-          {['Visa', 'Mastercard', 'Amex'].map(b => (
-            <span key={b} className="text-[9px] font-bold text-[#999] bg-[#f5f5f5] px-2 py-1 rounded">{b}</span>
-          ))}
+          {/* Visa */}
+          <svg className="h-6" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#fff" stroke="#e5e5e5" strokeWidth="1"/><path d="M19.5 10.2l-3.8 11.6h-3.1l-1.9-9.3c-.1-.5-.3-.8-.7-1-.7-.4-1.8-.7-2.8-.9l.1-.4h5c.6 0 1.2.4 1.3 1.2l1.2 6.6 3.1-7.8h3.1zm12.3 7.8c0-3-4.2-3.2-4.2-4.6 0-.4.4-.8 1.3-.9.4-.1 1.6-.1 2.9.5l.5-2.4c-.7-.3-1.6-.5-2.8-.5-2.9 0-5 1.6-5 3.8 0 1.7 1.5 2.6 2.6 3.1 1.1.6 1.5.9 1.5 1.4 0 .8-.9 1.1-1.7 1.1-1.4 0-2.2-.4-2.9-.7l-.5 2.5c.7.3 1.9.6 3.1.6 3.1 0 5.1-1.5 5.2-3.9zm7.7 3.8h2.7l-2.4-11.6h-2.5c-.6 0-1 .3-1.2.8l-4.3 10.8h3.1l.6-1.7h3.7l.3 1.7zm-3.2-4l1.5-4.3.9 4.3h-2.4zm-12.4-7.6l-2.4 11.6h-2.9l2.4-11.6h2.9z" fill="#1A1F71"/></svg>
+          {/* Mastercard */}
+          <svg className="h-6" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#fff" stroke="#e5e5e5" strokeWidth="1"/><circle cx="18" cy="16" r="8" fill="#EB001B"/><circle cx="30" cy="16" r="8" fill="#F79E1B"/><path d="M24 10a8 8 0 010 12 8 8 0 000-12z" fill="#FF5F00"/></svg>
+          {/* Amex */}
+          <svg className="h-6" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#006FCF"/><path d="M7 15.5h2.4l1.2-2.8 1.2 2.8H14l-2-2.5 2-2.5h-2.3l-1.2 2.7-1.2-2.7H7l2 2.5-2 2.5zm8.5 0h5.8v-1.3h-4.2v-1h4.1v-1.2h-4.1v-.8h4.2v-1.2h-5.8v5.5zm6.7 0h1.7l1.8-4.2v4.2h1.6v-5.5h-2.5l-1.5 3.5-1.5-3.5h-2.5v5.5h1.6v-4.2l1.8 4.2zm8 0h1.6v-2h1.4l1.5 2h1.9l-1.7-2.2c.8-.3 1.3-1 1.3-1.8 0-1.2-.9-1.9-2.3-1.9h-3.7v5.9zm1.6-3.2v-1.2h1.9c.5 0 .8.2.8.6s-.3.6-.8.6h-1.9zM7 22h2.1l.5-1.2h3l.5 1.2h2.2l-2.9-6h-2.4L7 22zm3.4-2.5l.7-1.8.7 1.8h-1.4zM15.8 22h1.5v-3.6l2.3 3.6h1.8v-6h-1.5v3.5l-2.2-3.5h-1.9v6z" fill="#fff"/></svg>
         </div>
       )}
     </form>
