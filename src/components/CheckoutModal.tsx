@@ -17,7 +17,22 @@ interface ShippingForm {
   firstName: string; lastName: string; email: string;
   address: string; zip: string; city: string; phone: string;
   needsInvoice: boolean;
+  ragioneSociale: string; piva: string; codFiscale: string; sdi: string;
 }
+
+const GIFT_BOX_CATEGORIES = [
+  { id: 'box-1', label: 'Scatola 1 bottiglia', price: 3.50 },
+  { id: 'box-2', label: 'Scatola 2 bottiglie', price: 5.00 },
+  { id: 'box-3', label: 'Scatola 3 bottiglie', price: 7.00 },
+  { id: 'box-6', label: 'Scatola 6 bottiglie', price: 10.00 },
+];
+
+const GREETING_CARDS = [
+  { id: 'card-compleanno', label: 'Buon compleanno' },
+  { id: 'card-auguri', label: 'Auguri' },
+  { id: 'card-grazie', label: 'Grazie' },
+  { id: 'card-custom', label: 'Messaggio personalizzato' },
+];
 
 const STEPS = ['Carrello', 'Spedizione', 'Pagamento', 'Conferma'];
 
@@ -88,7 +103,9 @@ function Step1Cart() {
   const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep } = useCartStore();
   const [coupon, setCoupon] = useState('');
   const [giftBox, setGiftBox] = useState(false);
+  const [selectedBox, setSelectedBox] = useState('');
   const [giftNote, setGiftNote] = useState(false);
+  const [selectedCard, setSelectedCard] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
 
   const subtotal = getSubtotal();
@@ -164,20 +181,55 @@ function Step1Cart() {
               />
               <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
             </div>
+            {/* Gift box */}
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={giftBox} onChange={e => setGiftBox(e.target.checked)} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
+              <input type="checkbox" checked={giftBox} onChange={e => { setGiftBox(e.target.checked); if (!e.target.checked) setSelectedBox(''); }} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
               <span className="text-[13px] text-[#444]">Scatola regalo</span>
             </label>
+            {giftBox && (
+              <div className="pl-8 space-y-1.5">
+                {GIFT_BOX_CATEGORIES.map(box => (
+                  <label key={box.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${selectedBox === box.id ? 'border-[#005667] bg-[#f5fafa]' : 'border-[#eee] hover:border-[#ccc]'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <input type="radio" name="giftBox" value={box.id} checked={selectedBox === box.id} onChange={() => setSelectedBox(box.id)} className="sr-only" />
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${selectedBox === box.id ? 'border-[#005667]' : 'border-[#ccc]'}`}>
+                        {selectedBox === box.id && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+                      </div>
+                      <span className="text-[12px] text-[#444]">{box.label}</span>
+                    </div>
+                    <span className="text-[12px] font-medium text-[#005667]">+{formatPrice(box.price)} €</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Greeting card */}
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={giftNote} onChange={e => setGiftNote(e.target.checked)} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
+              <input type="checkbox" checked={giftNote} onChange={e => { setGiftNote(e.target.checked); if (!e.target.checked) { setSelectedCard(''); setGiftMessage(''); } }} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
               <span className="text-[13px] text-[#444]">Biglietto di auguri</span>
             </label>
             {giftNote && (
-              <textarea
-                value={giftMessage} onChange={e => setGiftMessage(e.target.value)}
-                placeholder="Il tuo messaggio..."
-                className="w-full h-20 px-3.5 py-2.5 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667]"
-              />
+              <div className="pl-8 space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {GREETING_CARDS.map(card => (
+                    <button
+                      key={card.id}
+                      type="button"
+                      onClick={() => setSelectedCard(card.id)}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-colors ${selectedCard === card.id ? 'border-[#005667] bg-[#005667] text-white' : 'border-[#e5e5e5] text-[#666] hover:border-[#005667]'}`}
+                    >
+                      {card.label}
+                    </button>
+                  ))}
+                </div>
+                {(selectedCard === 'card-custom' || selectedCard) && (
+                  <textarea
+                    value={giftMessage} onChange={e => setGiftMessage(e.target.value)}
+                    placeholder="Scrivi il tuo messaggio..."
+                    className="w-full h-20 px-3.5 py-2.5 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667]"
+                  />
+                )}
+              </div>
             )}
           </div>
 
@@ -222,7 +274,8 @@ function Step2Shipping() {
   const [authOpen, setAuthOpen] = useState(false);
 
   const [form, setForm] = useState<ShippingForm>({
-    firstName: '', lastName: '', email: '', address: '', zip: '', city: '', phone: '', needsInvoice: false,
+    firstName: '', lastName: '', email: '', address: '', zip: '', city: '', phone: '',
+    needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   });
   const [prefilled, setPrefilled] = useState(false);
 
@@ -258,9 +311,8 @@ function Step2Shipping() {
           <div className="space-y-3.5">
             {/* Logged user greeting */}
             {isLogged && (
-              <div className="flex items-center justify-between bg-[#f8f6f1] rounded-lg px-4 py-2.5 mb-1">
+              <div className="bg-[#f8f6f1] rounded-lg px-4 py-2.5 mb-1">
                 <span className="text-[13px] text-[#444]">Ciao <strong>{user?.firstName}</strong>, dati pre-compilati</span>
-                <button onClick={() => setPrefilled(false)} className="text-[11px] text-[#005667] font-medium hover:underline">Modifica</button>
               </div>
             )}
 
@@ -284,6 +336,19 @@ function Step2Shipping() {
                 <p className="text-[11px] text-[#aaa] mt-0.5">La fattura viene inviata via email, non è inclusa nel pacco</p>
               </div>
             </label>
+
+            {/* Invoice fields */}
+            {form.needsInvoice && (
+              <div className="space-y-3 pl-0 mt-2 p-4 bg-[#faf9f7] rounded-lg border border-[#eee]">
+                <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider">Dati fatturazione</p>
+                <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" className={`w-full ${inputClass}`} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" maxLength={11} className={`${inputClass}`} />
+                  <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale" maxLength={16} className={`${inputClass} uppercase`} />
+                </div>
+                <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
+              </div>
+            )}
 
             {/* Login link for guests */}
             {!isLogged && (

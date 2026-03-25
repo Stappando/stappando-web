@@ -141,15 +141,8 @@ export default function HeroSection({ circuitoProducts }: Props) {
               ★ Scelti dal Sommelier
             </p>
 
-            {/* Desktop: 2 cols × 2 rows = 4 cards */}
-            <div className="hidden lg:grid grid-cols-2 gap-3">
-              {circuitoProducts.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-
-            {/* Mobile: 2 cards */}
-            <div className="grid grid-cols-2 gap-3 lg:hidden">
+            {/* 2 cards everywhere — desktop and mobile */}
+            <div className="grid grid-cols-2 gap-3">
               {circuitoProducts.slice(0, 2).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
