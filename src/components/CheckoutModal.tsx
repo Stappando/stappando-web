@@ -20,19 +20,13 @@ interface ShippingForm {
   ragioneSociale: string; piva: string; codFiscale: string; sdi: string;
 }
 
-const GIFT_BOX_CATEGORIES = [
-  { id: 'box-1', label: 'Scatola 1 bottiglia', price: 3.50 },
-  { id: 'box-2', label: 'Scatola 2 bottiglie', price: 5.00 },
-  { id: 'box-3', label: 'Scatola 3 bottiglie', price: 7.00 },
-  { id: 'box-6', label: 'Scatola 6 bottiglie', price: 10.00 },
-];
-
-const GREETING_CARDS = [
-  { id: 'card-compleanno', label: 'Buon compleanno' },
-  { id: 'card-auguri', label: 'Auguri' },
-  { id: 'card-grazie', label: 'Grazie' },
-  { id: 'card-custom', label: 'Messaggio personalizzato' },
-];
+interface GiftProduct {
+  id: number;
+  name: string;
+  price: string;
+  image: string | null;
+  slug: string;
+}
 
 const STEPS = ['Carrello', 'Spedizione', 'Pagamento', 'Conferma'];
 
@@ -100,13 +94,13 @@ export default function CheckoutModal() {
 /* ═══════════════════════════════════════════════════════ */
 
 function Step1Cart() {
-  const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep } = useCartStore();
+  const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep, addItem } = useCartStore();
+  const [tab, setTab] = useState<'cart' | 'gifts'>('cart');
   const [coupon, setCoupon] = useState('');
-  const [giftBox, setGiftBox] = useState(false);
-  const [selectedBox, setSelectedBox] = useState('');
-  const [giftNote, setGiftNote] = useState(false);
-  const [selectedCard, setSelectedCard] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
+  const [giftProducts, setGiftProducts] = useState<GiftProduct[]>([]);
+  const [giftCards, setGiftCards] = useState<GiftProduct[]>([]);
+  const [loadingGifts, setLoadingGifts] = useState(false);
 
   const subtotal = getSubtotal();
   const vendorShipping = getVendorShipping();
@@ -116,6 +110,38 @@ function Step1Cart() {
   const freeShippingThreshold = 69;
   const remaining = Math.max(0, freeShippingThreshold - subtotal);
   const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+  // Fetch gift products when switching to gifts tab
+  useEffect(() => {
+    if (tab === 'gifts' && giftProducts.length === 0 && !loadingGifts) {
+      setLoadingGifts(true);
+      Promise.all([
+        fetch('/api/search?q=scatola+regalo&limit=8').then(r => r.json()),
+        fetch('/api/search?q=biglietto+auguri&limit=4').then(r => r.json()),
+      ])
+        .then(([boxes, cards]) => {
+          setGiftProducts(boxes.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
+            id: p.id, name: p.name, price: p.price, image: p.image, slug: p.slug,
+          })));
+          setGiftCards(cards.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
+            id: p.id, name: p.name, price: p.price, image: p.image, slug: p.slug,
+          })));
+        })
+        .catch(() => {})
+        .finally(() => setLoadingGifts(false));
+    }
+  }, [tab, giftProducts.length, loadingGifts]);
+
+  const handleAddGift = (p: GiftProduct) => {
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: parseFloat(p.price),
+      image: p.image || '',
+      vendorId: 'default',
+      vendorName: 'Stappando Enoteca',
+    });
+  };
 
   if (items.length === 0) {
     return (
@@ -130,123 +156,193 @@ function Step1Cart() {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
-        {/* Items */}
-        <div className="px-6 py-4 space-y-4">
-          {items.map((item) => (
-            <div key={item.id} className="flex gap-3.5">
-              <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
-                {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="36px" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium text-[#1a1a1a] leading-[1.4]">{item.name}</p>
-                <p className="text-[11px] text-[#bbb] mt-0.5">{item.vendorName}</p>
-                <div className="flex items-center gap-4 mt-2">
-                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-[18px] text-[#005667] leading-none font-light">−</button>
-                  <span className="text-[13px] font-medium min-w-[14px] text-center">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-[18px] text-[#005667] leading-none font-light">+</button>
-                  <span className="text-[13px] font-semibold text-[#1a1a1a] ml-auto">{formatPrice(item.price * item.quantity)} €</span>
-                </div>
-              </div>
-              <button onClick={() => removeItem(item.id)} className="self-start p-1 text-[#ddd] hover:text-[#999]">
-                <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </button>
-            </div>
-          ))}
+        {/* Tab bar: Carrello / Regali */}
+        <div className="flex border-b border-[#f0f0f0] px-6">
+          <button
+            onClick={() => setTab('cart')}
+            className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'cart' ? 'border-[#005667] text-[#005667]' : 'border-transparent text-[#aaa] hover:text-[#666]'}`}
+          >
+            Carrello ({items.length})
+          </button>
+          <button
+            onClick={() => setTab('gifts')}
+            className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'gifts' ? 'border-[#005667] text-[#005667]' : 'border-transparent text-[#aaa] hover:text-[#666]'}`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+              Regali
+            </span>
+          </button>
         </div>
 
-        {/* Shipping progress */}
-        <div className="mx-6 p-3 bg-[#f8f6f1] rounded-lg mb-5">
-          <div className="flex items-center justify-between text-[12px] mb-2">
-            <span className="text-[#666]">Spedizione gratuita da €{freeShippingThreshold}</span>
-            {remaining > 0 ? (
-              <span className="text-[#005667] font-semibold">−{formatPrice(remaining)} €</span>
-            ) : (
-              <span className="text-green-600 font-semibold">Gratuita!</span>
-            )}
-          </div>
-          <div className="h-1 bg-[#ede9e0] rounded-full overflow-hidden">
-            <div className="h-full bg-[#005667] rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-
-        {/* 2 columns: left = coupon/gift, right = summary */}
-        <div className="px-6 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Left */}
-          <div className="space-y-3.5">
-            <div className="flex gap-2.5">
-              <input
-                type="text" value={coupon} onChange={e => setCoupon(e.target.value)}
-                placeholder="Codice sconto"
-                className="flex-1 h-10 px-3.5 text-[13px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667]"
-              />
-              <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
-            </div>
-            {/* Gift box */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={giftBox} onChange={e => { setGiftBox(e.target.checked); if (!e.target.checked) setSelectedBox(''); }} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
-              <span className="text-[13px] text-[#444]">Scatola regalo</span>
-            </label>
-            {giftBox && (
-              <div className="pl-8 space-y-1.5">
-                {GIFT_BOX_CATEGORIES.map(box => (
-                  <label key={box.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${selectedBox === box.id ? 'border-[#005667] bg-[#f5fafa]' : 'border-[#eee] hover:border-[#ccc]'}`}>
-                    <div className="flex items-center gap-2.5">
-                      <input type="radio" name="giftBox" value={box.id} checked={selectedBox === box.id} onChange={() => setSelectedBox(box.id)} className="sr-only" />
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${selectedBox === box.id ? 'border-[#005667]' : 'border-[#ccc]'}`}>
-                        {selectedBox === box.id && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
-                      </div>
-                      <span className="text-[12px] text-[#444]">{box.label}</span>
+        {/* TAB 1: CART */}
+        {tab === 'cart' && (
+          <>
+            {/* Items */}
+            <div className="px-6 py-4 space-y-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex gap-3.5">
+                  <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
+                    {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="36px" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[#1a1a1a] leading-[1.4]">{item.name}</p>
+                    <p className="text-[11px] text-[#bbb] mt-0.5">{item.vendorName}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-[18px] text-[#005667] leading-none font-light">−</button>
+                      <span className="text-[13px] font-medium min-w-[14px] text-center">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-[18px] text-[#005667] leading-none font-light">+</button>
+                      <span className="text-[13px] font-semibold text-[#1a1a1a] ml-auto">{formatPrice(item.price * item.quantity)} €</span>
                     </div>
-                    <span className="text-[12px] font-medium text-[#005667]">+{formatPrice(box.price)} €</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {/* Greeting card */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={giftNote} onChange={e => { setGiftNote(e.target.checked); if (!e.target.checked) { setSelectedCard(''); setGiftMessage(''); } }} className="w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
-              <span className="text-[13px] text-[#444]">Biglietto di auguri</span>
-            </label>
-            {giftNote && (
-              <div className="pl-8 space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {GREETING_CARDS.map(card => (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => setSelectedCard(card.id)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-colors ${selectedCard === card.id ? 'border-[#005667] bg-[#005667] text-white' : 'border-[#e5e5e5] text-[#666] hover:border-[#005667]'}`}
-                    >
-                      {card.label}
-                    </button>
-                  ))}
+                  </div>
+                  <button onClick={() => removeItem(item.id)} className="self-start p-1 text-[#ddd] hover:text-[#999]">
+                    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
                 </div>
-                {(selectedCard === 'card-custom' || selectedCard) && (
-                  <textarea
-                    value={giftMessage} onChange={e => setGiftMessage(e.target.value)}
-                    placeholder="Scrivi il tuo messaggio..."
-                    className="w-full h-20 px-3.5 py-2.5 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667]"
-                  />
+              ))}
+            </div>
+
+            {/* Shipping progress */}
+            <div className="mx-6 p-3 bg-[#f8f6f1] rounded-lg mb-5">
+              <div className="flex items-center justify-between text-[12px] mb-2">
+                <span className="text-[#666]">Spedizione gratuita da €{freeShippingThreshold}</span>
+                {remaining > 0 ? (
+                  <span className="text-[#005667] font-semibold">−{formatPrice(remaining)} €</span>
+                ) : (
+                  <span className="text-green-600 font-semibold">Gratuita!</span>
                 )}
               </div>
+              <div className="h-1 bg-[#ede9e0] rounded-full overflow-hidden">
+                <div className="h-full bg-[#005667] rounded-full transition-all" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+
+            {/* Coupon + summary */}
+            <div className="px-6 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-3.5">
+                <div className="flex gap-2.5">
+                  <input
+                    type="text" value={coupon} onChange={e => setCoupon(e.target.value)}
+                    placeholder="Codice sconto"
+                    className="flex-1 h-10 px-3.5 text-[13px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667]"
+                  />
+                  <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
+                </div>
+                {/* Gift message */}
+                <textarea
+                  value={giftMessage} onChange={e => setGiftMessage(e.target.value)}
+                  placeholder="Note per l'ordine o messaggio regalo..."
+                  className="w-full h-16 px-3.5 py-2.5 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667]"
+                />
+              </div>
+
+              {/* Right — summary desktop */}
+              <div className="hidden sm:block space-y-2.5">
+                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Subtotale</span><span>{formatPrice(subtotal)} €</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vendorShipping.length} vendor</span><span>{totalShipping === 0 ? 'Gratuita' : `${formatPrice(totalShipping)} €`}</span></div>
+                <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
+                <div className="flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-full px-3.5 py-2 mt-3">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span className="text-[11px] font-medium">Guadagnerai {popPoints} Punti POP</span>
+                </div>
+                <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors">
+                  Continua →
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* TAB 2: GIFTS */}
+        {tab === 'gifts' && (
+          <div className="px-6 py-5">
+            {loadingGifts ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="animate-pulse rounded-xl bg-[#f5f3ef] h-48" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Gift boxes */}
+                {giftProducts.length > 0 && (
+                  <>
+                    <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                        Scatole regalo
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      {giftProducts.map(p => (
+                        <div key={p.id} className="border border-[#eae6e0] rounded-xl overflow-hidden bg-white">
+                          <div className="relative aspect-square bg-white">
+                            {p.image && <Image src={p.image} alt={p.name} fill className="object-contain p-2" sizes="150px" />}
+                          </div>
+                          <div className="p-3">
+                            <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-2 mb-1.5">{p.name}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[15px] font-bold text-[#005667]">{formatPrice(p.price)} €</span>
+                              <button
+                                onClick={() => handleAddGift(p)}
+                                className="text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors"
+                              >
+                                + Aggiungi
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Greeting cards */}
+                {giftCards.length > 0 && (
+                  <>
+                    <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                        Biglietti di auguri
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {giftCards.map(p => (
+                        <div key={p.id} className="border border-[#eae6e0] rounded-xl overflow-hidden bg-white">
+                          <div className="relative aspect-[4/3] bg-white">
+                            {p.image && <Image src={p.image} alt={p.name} fill className="object-contain p-2" sizes="150px" />}
+                          </div>
+                          <div className="p-3">
+                            <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-2 mb-1.5">{p.name}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[15px] font-bold text-[#005667]">{formatPrice(p.price)} €</span>
+                              <button
+                                onClick={() => handleAddGift(p)}
+                                className="text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors"
+                              >
+                                + Aggiungi
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {giftProducts.length === 0 && giftCards.length === 0 && (
+                  <div className="text-center py-10">
+                    <p className="text-[14px] text-[#999]">Nessun prodotto regalo disponibile al momento</p>
+                  </div>
+                )}
+
+                <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
+                  ← Torna al carrello
+                </button>
+              </>
             )}
           </div>
-
-          {/* Right — summary desktop */}
-          <div className="hidden sm:block space-y-2.5">
-            <div className="flex justify-between text-[13px]"><span className="text-[#888]">Subtotale</span><span>{formatPrice(subtotal)} €</span></div>
-            <div className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vendorShipping.length} vendor</span><span>{totalShipping === 0 ? 'Gratuita' : `${formatPrice(totalShipping)} €`}</span></div>
-            <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-            <div className="flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-full px-3.5 py-2 mt-3">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-              <span className="text-[11px] font-medium">Guadagnerai {popPoints} Punti POP</span>
-            </div>
-            <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors">
-              Continua →
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Mobile footer */}
@@ -255,8 +351,8 @@ function Step1Cart() {
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
           <span className="text-[10px] font-medium">+{popPoints} POP</span>
         </div>
-        <button onClick={() => setCheckoutStep(2)} className="flex-1 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
-          {formatPrice(total)} € · Continua →
+        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="flex-1 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+          {tab === 'gifts' ? '← Torna al carrello' : `${formatPrice(total)} € · Continua →`}
         </button>
       </div>
     </>
