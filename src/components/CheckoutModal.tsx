@@ -394,7 +394,8 @@ function Step2Shipping() {
   };
 
   const invoiceValid = !form.needsInvoice || (form.ragioneSociale.trim() && form.piva.trim().length >= 11);
-  const isValid = form.firstName.trim() && form.lastName.trim() && form.email.includes('@') && form.address.trim() && form.zip.trim().length >= 4 && form.city.trim() && form.phone.trim().length >= 6 && invoiceValid;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+  const isValid = form.firstName.trim() && form.lastName.trim() && emailValid && form.address.trim() && form.zip.trim().length >= 4 && form.city.trim() && form.phone.trim().length >= 6 && invoiceValid;
 
   const inputClass = "h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20";
 
@@ -506,39 +507,53 @@ function Step3Payment() {
   const popPoints = Math.round(total);
 
   // Create payment intent on mount — use shipping form data (guest or logged)
-  useEffect(() => {
-    (async () => {
-      try {
-        const sd = shippingData;
-        const res = await fetch('/api/payments/create-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-            shipping: getTotalShipping(),
-            customer: {
-              email: sd?.email || user?.email || '',
-              firstName: sd?.firstName || user?.firstName || '',
-              lastName: sd?.lastName || user?.lastName || '',
-              phone: sd?.phone || '',
-              address: sd?.address || '',
-              city: sd?.city || '',
-              province: '',
-              zip: sd?.zip || '',
-              notes: sd?.notes || '',
-            },
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        setClientSecret(data.clientSecret);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Errore');
-      } finally {
-        setLoading(false);
+  const createIntent = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const sd = shippingData;
+      const email = sd?.email || user?.email || '';
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        throw new Error('Email non valida — torna alla spedizione e verifica');
       }
-    })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+          shipping: getTotalShipping(),
+          customer: {
+            email,
+            firstName: sd?.firstName || user?.firstName || '',
+            lastName: sd?.lastName || user?.lastName || '',
+            phone: sd?.phone || '',
+            address: sd?.address || '',
+            city: sd?.city || '',
+            province: '',
+            zip: sd?.zip || '',
+            notes: sd?.notes || '',
+          },
+        }),
+      });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Errore creazione pagamento');
+      setClientSecret(data.clientSecret);
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        setError('Timeout — il server non risponde. Riprova.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Errore');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [shippingData, user, items, getTotalShipping]);
+
+  useEffect(() => { createIntent(); }, [createIntent]);
 
   return (
     <>
@@ -554,7 +569,7 @@ function Step3Payment() {
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
                 <p className="text-[13px] text-red-700 mb-2">{error}</p>
-                <button onClick={() => { setError(null); setLoading(true); window.location.reload(); }} className="text-[12px] text-[#005667] font-medium hover:underline">Riprova</button>
+                <button onClick={createIntent} className="text-[12px] text-[#005667] font-medium hover:underline">Riprova</button>
               </div>
             )}
 
