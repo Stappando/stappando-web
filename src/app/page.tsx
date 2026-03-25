@@ -74,18 +74,9 @@ async function BestSellers() {
           Vedi tutti →
         </Link>
       </div>
-      {/* Desktop: 4-col grid */}
-      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {products.slice(0, 8).map((p) => (
           <ProductCard key={p.id} product={p} />
-        ))}
-      </div>
-      {/* Mobile: horizontal scroll */}
-      <div className="flex gap-3 overflow-x-auto no-scrollbar sm:hidden -mx-4 px-4">
-        {products.slice(0, 8).map((p) => (
-          <div key={p.id} className="w-[170px] shrink-0">
-            <ProductCard product={p} />
-          </div>
         ))}
       </div>
     </section>
@@ -95,7 +86,6 @@ async function BestSellers() {
 /* ── 2. Dai piccoli produttori ─────────────────────────── */
 
 async function PiccoliProduttori() {
-  // Fetch best sellers to exclude them
   const [bestSellers, allRecent] = await Promise.all([
     getCachedProducts({
       per_page: 8,
@@ -111,7 +101,6 @@ async function PiccoliProduttori() {
 
   const bestSellerIds = new Set(bestSellers.map(p => p.id));
 
-  // Filter: not Stappando Enoteca, not in best sellers
   const products = allRecent
     .filter(p => {
       const vendor = p._vendorName || p.store?.name || DEFAULT_VENDOR_NAME;
@@ -129,16 +118,9 @@ async function PiccoliProduttori() {
           Scopri tutte le cantine →
         </Link>
       </div>
-      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {products.map((p) => (
           <ProductCard key={p.id} product={p} />
-        ))}
-      </div>
-      <div className="flex gap-3 overflow-x-auto no-scrollbar sm:hidden -mx-4 px-4">
-        {products.map((p) => (
-          <div key={p.id} className="w-[170px] shrink-0">
-            <ProductCard product={p} />
-          </div>
         ))}
       </div>
     </section>

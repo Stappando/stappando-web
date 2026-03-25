@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { type WCCategory, decodeHtml, formatPrice } from '@/lib/api';
+import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 
 const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
@@ -36,6 +35,23 @@ interface SearchResult {
   on_sale: boolean;
   is_circuito: boolean;
   circuito_badge: string;
+}
+
+function toWCProduct(r: SearchResult): WCProduct {
+  return {
+    id: r.id, slug: r.slug, name: r.name, price: r.price,
+    regular_price: r.regular_price, sale_price: r.sale_price, on_sale: r.on_sale,
+    images: r.image ? [{ id: 0, src: r.image, alt: r.name }] : [],
+    attributes: [
+      ...(r.vendor ? [{ id: 0, name: 'Produttore', options: [r.vendor] }] : []),
+      ...(r.region ? [{ id: 0, name: 'Regione', options: [r.region] }] : []),
+    ],
+    tags: r.is_circuito ? [{ id: 21993, name: 'circuito', slug: 'circuito' }] : [],
+    meta_data: r.circuito_badge ? [{ key: '_circuito_badge', value: r.circuito_badge }] : [],
+    _vendorName: r.vendor, _vendorId: 'search',
+    store: { id: 0, name: r.vendor, url: '' },
+    categories: [], description: '', short_description: '', status: 'publish',
+  } as unknown as WCProduct;
 }
 
 interface Props {
@@ -180,9 +196,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
       {/* Results grid */}
       {!loading && results.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {results.map(r => (
-            <SearchResultCard key={r.id} result={r} />
+            <ProductCard key={r.id} product={toWCProduct(r)} />
           ))}
         </div>
       )}
@@ -208,52 +224,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   );
 }
 
-/* ── Search Result Card (uses API data format) ─────────── */
-
-function SearchResultCard({ result }: { result: SearchResult }) {
-  return (
-    <Link href={`/prodotto/${result.slug}`} className={`group rounded-2xl bg-white overflow-hidden border transition-all hover:shadow-md ${result.is_circuito ? 'border-[#d9c39a]' : 'border-gray-200'}`}>
-      <div className="relative aspect-square bg-[#f8f7f5] overflow-hidden">
-        {result.image && (
-          <Image
-            src={result.image}
-            alt={decodeHtml(result.name)}
-            fill
-            className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          />
-        )}
-        {result.is_circuito && (
-          <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#d9c39a] text-[#5a4200] text-[9px] font-bold rounded">
-            {result.circuito_badge || 'Sommelier'}
-          </div>
-        )}
-        {result.on_sale && result.regular_price && (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded">
-            -{Math.round((1 - parseFloat(result.price) / parseFloat(result.regular_price)) * 100)}%
-          </div>
-        )}
-      </div>
-      <div className="p-3">
-        {result.vendor && (
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#b8973f] mb-0.5 line-clamp-1">{result.vendor}</p>
-        )}
-        <p className="text-sm text-gray-900 line-clamp-2 mb-1.5 min-h-[2.5rem]">{decodeHtml(result.name)}</p>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-sm font-bold text-[#005667]">{formatPrice(result.price)} €</span>
-          {result.on_sale && result.regular_price && (
-            <span className="text-[11px] text-gray-400 line-through">{formatPrice(result.regular_price)} €</span>
-          )}
-        </div>
-        {result.region && (
-          <p className="text-[10px] text-gray-400 mt-1">{result.region}</p>
-        )}
-      </div>
-    </Link>
-  );
-}
-
-/* ── Macro dropdown (same as before) ───────────────────── */
+/* ── Macro dropdown ────────────────────────────────────── */
 
 function MacroDropdown({ mc, activeCategory, onSelect }: { mc: { label: string; subs?: string[] }; activeCategory: string; onSelect: (c: string) => void }) {
   const [open, setOpen] = useState(false);

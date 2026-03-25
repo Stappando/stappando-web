@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { type WCProduct, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
-import { DEFAULT_VENDOR_NAME } from '@/lib/config';
-import { useCartStore } from '@/store/cart';
+import { type WCProduct } from '@/lib/api';
+import ProductCard from '@/components/ProductCard';
 
 interface Props {
   circuitoProducts: WCProduct[];
@@ -57,7 +54,7 @@ export default function HeroSection({ circuitoProducts }: Props) {
   return (
     <section className="bg-[#f8f6f1]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 lg:py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10">
 
           {/* ── Left column ── */}
           <div>
@@ -144,17 +141,17 @@ export default function HeroSection({ circuitoProducts }: Props) {
               ★ Scelti dal Sommelier
             </p>
 
-            {/* Desktop: 3 cols × 2 rows = 6 cards */}
-            <div className="hidden lg:grid grid-cols-3 gap-2">
-              {circuitoProducts.slice(0, 6).map((product) => (
-                <CircuitoCardVertical key={product.id} product={product} imgHeight="h-[120px]" />
+            {/* Desktop: 2 cols × 2 rows = 4 cards */}
+            <div className="hidden lg:grid grid-cols-2 gap-3">
+              {circuitoProducts.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
 
-            {/* Mobile: 2 cards side by side */}
-            <div className="grid grid-cols-2 gap-2 lg:hidden">
+            {/* Mobile: 2 cards */}
+            <div className="grid grid-cols-2 gap-3 lg:hidden">
               {circuitoProducts.slice(0, 2).map((product) => (
-                <CircuitoCardVertical key={product.id} product={product} imgHeight="h-[100px]" />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
 
@@ -168,89 +165,5 @@ export default function HeroSection({ circuitoProducts }: Props) {
         </div>
       </div>
     </section>
-  );
-}
-
-/* ── Vertical Circuito Card ─────────────────────────────── */
-
-function CircuitoCardVertical({ product, imgHeight }: { product: WCProduct; imgHeight: string }) {
-  const addItem = useCartStore((s) => s.addItem);
-  const [added, setAdded] = useState(false);
-
-  const produttore = getProduttore(product);
-  const region = product.attributes?.find(a => a.name === 'Regione')?.options?.[0] || '';
-  const vendorName = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
-  const meta = (product.meta_data || []) as { key: string; value: string }[];
-  const badgeText = meta.find(m => m.key === '_circuito_badge')?.value || '★ Top';
-
-  const handleAdd = useCallback(() => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.price),
-      image: product.images[0]?.src || '',
-      vendorId: product._vendorId || String(product.store?.id || 'default'),
-      vendorName,
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
-  }, [addItem, product, vendorName]);
-
-  return (
-    <div className="rounded-xl border-[1.5px] border-[#d9c39a] overflow-hidden bg-white flex flex-col">
-      {/* Image section */}
-      <Link href={`/prodotto/${product.slug}`} className={`relative ${imgHeight} bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center`}>
-        {product.images[0]?.src && (
-          <Image
-            src={product.images[0].src}
-            alt={decodeHtml(product.name)}
-            fill
-            className="object-contain p-2"
-            sizes="130px"
-          />
-        )}
-        {/* Badge */}
-        <span className="absolute top-1.5 left-1.5 bg-[#d9c39a] text-[#5a4200] text-[9px] font-bold px-[7px] py-[2px] rounded-full">
-          {badgeText}
-        </span>
-      </Link>
-
-      {/* Body */}
-      <div className="p-[10px] pt-[8px] flex flex-col flex-1">
-        <Link href={`/prodotto/${product.slug}`}>
-          <p className="text-[11px] font-semibold text-[#1a1a1a] leading-[1.3] line-clamp-2">{decodeHtml(product.name)}</p>
-        </Link>
-        {(produttore || region) && (
-          <p className="text-[9px] text-[#999] mt-0.5 line-clamp-1">
-            {[produttore, region].filter(Boolean).join(' · ')}
-          </p>
-        )}
-        <p className="text-[9px] text-[#005667] mt-[1px]">Da {vendorName}</p>
-
-        <div className="mt-auto pt-1">
-          <div className="flex items-baseline gap-1 flex-wrap">
-            {product.on_sale && product.regular_price ? (
-              <>
-                <span className="text-[10px] text-[#bbb] line-through">{formatPrice(product.regular_price)} €</span>
-                <span className="bg-[#c0392b] text-white text-[8px] font-semibold px-1 py-[1px] rounded">-{getDiscount(product)}% SCONTO</span>
-                <span className="text-[14px] font-bold text-[#005667]">{formatPrice(product.price)} €</span>
-              </>
-            ) : (
-              <span className="text-[14px] font-bold text-[#005667]">{formatPrice(product.price)} €</span>
-            )}
-          </div>
-          <button
-            onClick={handleAdd}
-            className={`w-full mt-[5px] py-[7px] rounded-[6px] text-[10px] font-semibold transition-all ${
-              added
-                ? 'bg-green-500 text-white'
-                : 'bg-[#005667] text-white hover:bg-[#004555]'
-            }`}
-          >
-            {added ? '✓ Aggiunto' : '+ Aggiungi'}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
