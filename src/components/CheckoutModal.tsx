@@ -11,7 +11,14 @@ import AuthModal from '@/components/AuthModal';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
 const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
-const stripePromise = STRIPE_VALID ? loadStripe(STRIPE_KEY) : null;
+// Lazy singleton — loadStripe only called once, on first access
+let _stripePromise: ReturnType<typeof loadStripe> | null = null;
+function getStripePromise() {
+  if (!_stripePromise && STRIPE_VALID) {
+    _stripePromise = loadStripe(STRIPE_KEY);
+  }
+  return _stripePromise;
+}
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -590,7 +597,7 @@ function Step3Payment() {
             {/* Stripe Elements — shows all automatic methods */}
             {clientSecret && (
               <Elements
-                stripe={stripePromise}
+                stripe={getStripePromise()}
                 options={{
                   clientSecret,
                   appearance: {
@@ -636,7 +643,20 @@ function StripeForm({ total, popPoints }: { total: number; popPoints: number }) 
   const elements = useElements();
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const { setCheckoutStep, clearCart } = useCartStore();
+
+  // Fallback: if Elements doesn't fire onReady in 10s, show it anyway
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!ready) {
+        console.warn('Stripe PaymentElement onReady timeout — forcing display');
+        setTimedOut(true);
+      }
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [ready]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -658,26 +678,27 @@ function StripeForm({ total, popPoints }: { total: number; popPoints: number }) 
     }
   };
 
-  const [ready, setReady] = useState(false);
+  const showForm = ready || timedOut;
 
   return (
     <form onSubmit={handleSubmit}>
-      {!ready && (
+      {!showForm && (
         <div className="flex items-center justify-center py-8">
           <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
           <span className="ml-3 text-[13px] text-[#888]">Caricamento metodi di pagamento...</span>
         </div>
       )}
-      <div className={ready ? '' : 'h-0 overflow-hidden'}>
+      <div className={showForm ? '' : 'h-0 overflow-hidden'}>
         <PaymentElement
           onReady={() => setReady(true)}
+          onLoadError={(e) => { console.error('PaymentElement loadError:', e); setError('Errore caricamento metodi di pagamento. Riprova.'); }}
           options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }}
         />
       </div>
       {error && <p className="mt-3 text-[13px] text-red-500">{error}</p>}
 
-      {/* CTA — visible only when payment methods loaded */}
-      {ready && (
+      {/* CTA — visible when payment methods loaded or timed out */}
+      {showForm && (
         <button type="submit" disabled={!stripe || paying} className="w-full mt-5 py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
           {paying ? 'Pagamento in corso...' : `Ordina ora · ${formatPrice(total)} €`}
         </button>
