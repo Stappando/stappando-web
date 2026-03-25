@@ -18,11 +18,16 @@ function baseLayout(content: string, preheader?: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
     <tr><td align="center" style="padding:32px 16px;">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
-        <!-- Header — white bg, centered logo -->
-        <tr><td style="padding:28px 32px 20px;text-align:center;border-bottom:1px solid #f0ece4;">
+        <!-- Header — clean white, logo + rating -->
+        <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
           <a href="https://stappando.it" style="text-decoration:none;">
-            <img src="https://stappando.it/wp-content/uploads/2021/06/logo-stappando.png" alt="Stappando" width="140" style="display:inline-block;max-width:140px;height:auto;" />
+            <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
           </a>
+          <p style="margin:10px 0 0;font-size:11px;color:#999;">
+            <span style="color:#d9c39a;letter-spacing:1px;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+            <span style="color:#005667;font-weight:600;margin-left:4px;">4.6/5</span>
+            <span style="color:#bbb;margin-left:2px;">&middot; 1000+ recensioni</span>
+          </p>
         </td></tr>
         <!-- Content -->
         <tr><td style="padding:36px 36px 28px;">
@@ -497,9 +502,10 @@ export function reviewRequest(data: ReviewRequestData): { subject: string; html:
             ${item.image ? `<img src="${item.image}" width="56" height="56" style="border-radius:10px;object-fit:cover;display:block;" />` : `<div style="width:56px;height:56px;background:#f5f5f0;border-radius:10px;"></div>`}
           </td>
           <td style="padding-left:14px;vertical-align:middle;">
-            <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1a1a1a;">${item.name}</p>
-            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:8px 18px;background:#d9c39a;color:#5a4200;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">
-              Recensisci — +100 POP
+            <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#1a1a1a;">${item.name}</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#d9c39a;letter-spacing:2px;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <a href="https://stappando.it/prodotto/${item.slug}#recensioni" style="display:inline-block;padding:8px 20px;background:#d9c39a;color:#5a4200;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">
+              Lascia una recensione &rarr; +100 POP
             </a>
           </td>
         </tr></table>
