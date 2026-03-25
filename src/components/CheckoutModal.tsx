@@ -506,7 +506,7 @@ function Step2Shipping() {
 /* ═══════════════════════════════════════════════════════ */
 
 function Step3Payment() {
-  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping, shippingData, clearCart } = useCartStore();
+  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping, shippingData, completeOrder } = useCartStore();
   const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -615,7 +615,7 @@ function Step3Payment() {
             throw new Error(result.error || 'Errore cattura pagamento');
           }
 
-          clearCart();
+          completeOrder();
           setCheckoutStep(4);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Errore pagamento');
@@ -633,7 +633,7 @@ function Step3Payment() {
     }).render(container);
 
     setPaypalReady(true);
-  }, [items, getTotalShipping, getCustomerData, clearCart, setCheckoutStep]);
+  }, [items, getTotalShipping, getCustomerData, completeOrder, setCheckoutStep]);
 
   // Also try Stripe as secondary option
   const [stripeSecret, setStripeSecret] = useState<string | null>(null);
@@ -762,7 +762,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [useCardFallback, setUseCardFallback] = useState(false);
-  const { setCheckoutStep, clearCart } = useCartStore();
+  const { setCheckoutStep, completeOrder } = useCartStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -781,7 +781,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setError(result.error.message || 'Errore pagamento');
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
-        clearCart();
+        completeOrder();
         setCheckoutStep(4);
       }
     } else {
@@ -794,7 +794,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setError(result.error.message || 'Errore pagamento');
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
-        clearCart();
+        completeOrder();
         setCheckoutStep(4);
       }
     }
@@ -862,28 +862,122 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
 /* ═══════════════════════════════════════════════════════ */
 
 function Step4Confirmation() {
-  const { closeCheckout } = useCartStore();
+  const { closeCheckout, lastOrder, shippingData } = useCartStore();
+  const { user } = useAuthStore();
+
+  const order = lastOrder;
+  const sd = shippingData || order?.shippingData;
+  const email = sd?.email || user?.email || '';
+  const firstName = sd?.firstName || user?.firstName || '';
+  const popPoints = order?.popPoints || 0;
+
+  // Delivery estimate
+  const now = new Date();
+  const d1 = new Date(now); d1.setDate(d1.getDate() + 1);
+  const d2 = new Date(now); d2.setDate(d2.getDate() + 2);
+  const fmt = (d: Date) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  const deliveryEst = `${fmt(d1)} – ${fmt(d2)}`;
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-8 py-12 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#e8f4f1] flex items-center justify-center mb-6">
-        <svg className="w-8 h-8 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-6 py-6 max-w-lg mx-auto">
+
+        {/* Hero */}
+        <div className="text-center mb-6">
+          <div className="w-[72px] h-[72px] rounded-full bg-[#e8f4f1] flex items-center justify-center mx-auto mb-5">
+            <svg className="w-9 h-9 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <h2 className="text-[24px] font-bold text-[#1a1a1a] mb-1.5">Ordine confermato!</h2>
+          <p className="text-[13px] text-[#999]">Conferma inviata a {email || 'la tua email'}</p>
+        </div>
+
+        {/* POP Box */}
+        {popPoints > 0 && (
+          <div className="bg-[#1a1a1a] border-[1.5px] border-[#d9c39a] rounded-[14px] p-5 mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] text-[#d9c39a] font-bold uppercase tracking-widest mb-1">Punti POP guadagnati</p>
+              <p className="text-[22px] font-bold text-white">+<span className="text-[#d9c39a]">{popPoints}</span> Punti POP</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-[#666]">vale <strong className="text-[#d9c39a]">{formatPrice(popPoints / 100)} &euro;</strong> di sconto</p>
+            </div>
+          </div>
+        )}
+
+        {/* Order summary */}
+        {order && order.items.length > 0 && (
+          <div className="bg-white border border-[#e8e4dc] rounded-[14px] p-5 mb-5">
+            <h3 className="text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wide mb-4">Riepilogo ordine</h3>
+            {order.items.map((item) => (
+              <div key={item.id} className="flex gap-3 py-3 border-b border-[#f0f0f0] last:border-0">
+                <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center shrink-0 overflow-hidden">
+                  {item.image && <Image src={item.image} alt={item.name} width={48} height={64} className="object-contain" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold leading-tight">{item.name}</p>
+                  <p className="text-[11px] text-[#999] mt-0.5">{item.vendorName}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[11px] text-[#999]">x{item.quantity}</p>
+                  <p className="text-[14px] font-bold text-[#005667]">{formatPrice(item.price * item.quantity)} &euro;</p>
+                </div>
+              </div>
+            ))}
+            <div className="pt-3 mt-2 border-t border-[#f0f0f0] space-y-1.5">
+              <div className="flex justify-between text-[13px]"><span className="text-[#888]">Subtotale</span><span>{formatPrice(order.subtotal)} &euro;</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione</span><span className={order.shipping === 0 ? 'text-[#005667] font-semibold' : ''}>{order.shipping === 0 ? 'Gratuita' : `${formatPrice(order.shipping)} \u20AC`}</span></div>
+              <div className="flex justify-between text-[17px] font-bold text-[#005667] pt-2 border-t border-[#f0f0f0] mt-2"><span>Totale pagato</span><span>{formatPrice(order.total)} &euro;</span></div>
+            </div>
+          </div>
+        )}
+
+        {/* Shipping info */}
+        {sd && (
+          <div className="bg-white border border-[#e8e4dc] rounded-[14px] p-5 mb-5">
+            <h3 className="text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wide mb-3">Spedizione</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] text-[#888] uppercase tracking-wider mb-1">Indirizzo</p>
+                <p className="text-[13px] text-[#444] leading-relaxed">{firstName} {sd.lastName}<br/>{sd.address}<br/>{sd.zip} {sd.city}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[#888] uppercase tracking-wider mb-1">Consegna stimata</p>
+                <p className="text-[13px] text-[#444] leading-relaxed"><strong>{deliveryEst}</strong><br/>Corriere espresso 24-48h<br/>Tracking via email</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Steps */}
+        <div className="bg-white border border-[#e8e4dc] rounded-[14px] p-5 mb-6">
+          <h3 className="text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wide mb-4">Cosa succede ora</h3>
+          {[
+            { n: '1', title: 'Ordine ricevuto', desc: 'Il tuo ordine è stato confermato e pagato', active: true },
+            { n: '2', title: 'Preparazione', desc: 'Il vino viene preparato e imballato con cura', active: false },
+            { n: '3', title: 'Spedizione', desc: 'Riceverai il tracking via email entro 24h', active: false },
+            { n: '4', title: 'Consegnato', desc: 'Lascia una recensione e guadagna 100 Punti POP', active: false },
+          ].map((step) => (
+            <div key={step.n} className="flex gap-3.5 items-start py-2.5">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold ${step.active ? 'bg-[#005667] text-white' : 'bg-[#e8f4f1] text-[#005667]'}`}>{step.n}</div>
+              <div>
+                <p className="text-[13px] font-semibold">{step.title}</p>
+                <p className="text-[12px] text-[#888]">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTAs */}
+        <div className="space-y-3 text-center">
+          <button onClick={closeCheckout} className="w-full bg-[#005667] text-white rounded-xl py-3.5 text-[15px] font-bold hover:bg-[#004555] transition-colors">
+            Continua a esplorare
+          </button>
+          <a href="/account" onClick={closeCheckout} className="block w-full border-[1.5px] border-[#e5e5e5] text-[#1a1a1a] rounded-xl py-3 text-[13px] font-semibold hover:bg-[#f8f6f1] transition-colors">
+            I miei ordini
+          </a>
+        </div>
+
       </div>
-
-      <h2 className="text-[22px] font-semibold text-[#1a1a1a] mb-1.5">Ordine confermato</h2>
-      <p className="text-[14px] text-[#999] mb-6">Conferma inviata via email</p>
-
-      <div className="bg-[#f8f6f1] rounded-xl p-5 w-full max-w-sm mb-5">
-        <p className="text-[13px] text-[#888]">Consegna stimata <strong className="text-[#1a1a1a]">24–48h</strong></p>
-      </div>
-
-      <div className="bg-[#f0f9f5] rounded-full px-5 py-2.5 mb-8">
-        <span className="text-[13px] text-[#005667] font-medium">Punti POP accreditati al completamento</span>
-      </div>
-
-      <button onClick={closeCheckout} className="bg-[#005667] text-white rounded-lg px-10 py-3.5 text-[15px] font-semibold hover:bg-[#004555] transition-colors">
-        Continua a esplorare
-      </button>
     </div>
   );
 }

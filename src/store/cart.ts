@@ -36,6 +36,16 @@ export interface RecentlyViewed {
   timestamp: number;
 }
 
+export interface LastOrder {
+  items: CartItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  popPoints: number;
+  shippingData: ShippingData | null;
+  vendorCount: number;
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
@@ -43,6 +53,7 @@ interface CartState {
   checkoutStep: number;
   shippingData: ShippingData | null;
   recentlyViewed: RecentlyViewed[];
+  lastOrder: LastOrder | null;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -54,6 +65,7 @@ interface CartState {
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
+  completeOrder: () => void;
   trackView: (id: number, slug: string) => void;
   getRecentlyViewedIds: () => number[];
   getSubtotal: () => number;
@@ -68,6 +80,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       recentlyViewed: [],
+      lastOrder: null,
       isOpen: false,
       checkoutOpen: false,
       checkoutStep: 1,
@@ -101,6 +114,26 @@ export const useCartStore = create<CartState>()(
         }),
 
       clearCart: () => set({ items: [] }),
+
+      completeOrder: () => {
+        const s = get();
+        const subtotal = s.getSubtotal();
+        const shipping = s.getTotalShipping();
+        const total = s.getTotal();
+        const vendors = new Set(s.items.map(i => i.vendorName));
+        set({
+          lastOrder: {
+            items: [...s.items],
+            subtotal,
+            shipping,
+            total,
+            popPoints: Math.round(total),
+            shippingData: s.shippingData,
+            vendorCount: vendors.size,
+          },
+          items: [],
+        });
+      },
 
       trackView: (id: number, slug: string) => {
         const rv = get().recentlyViewed.filter(v => v.id !== id);
