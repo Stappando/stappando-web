@@ -16,7 +16,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '');
 interface ShippingForm {
   firstName: string; lastName: string; email: string;
   address: string; zip: string; city: string; phone: string;
-  needsInvoice: boolean;
+  notes: string; needsInvoice: boolean;
   ragioneSociale: string; piva: string; codFiscale: string; sdi: string;
 }
 
@@ -116,8 +116,8 @@ function Step1Cart() {
     if (tab === 'gifts' && giftProducts.length === 0 && !loadingGifts) {
       setLoadingGifts(true);
       Promise.all([
-        fetch('/api/search?q=scatola+regalo&limit=8').then(r => r.json()),
-        fetch('/api/search?q=biglietto+auguri&limit=4').then(r => r.json()),
+        fetch('/api/products?category=scatole-regalo&limit=8').then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch('/api/products?category=biglietti&limit=4').then(r => r.ok ? r.json() : []).catch(() => []),
       ])
         .then(([boxes, cards]) => {
           setGiftProducts(boxes.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
@@ -228,12 +228,6 @@ function Step1Cart() {
                   />
                   <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
                 </div>
-                {/* Gift message */}
-                <textarea
-                  value={giftMessage} onChange={e => setGiftMessage(e.target.value)}
-                  placeholder="Note per l'ordine o messaggio regalo..."
-                  className="w-full h-16 px-3.5 py-2.5 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667]"
-                />
               </div>
 
               {/* Right — summary desktop */}
@@ -371,7 +365,7 @@ function Step2Shipping() {
 
   const [form, setForm] = useState<ShippingForm>({
     firstName: '', lastName: '', email: '', address: '', zip: '', city: '', phone: '',
-    needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
+    notes: '', needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   });
   const [prefilled, setPrefilled] = useState(false);
 
@@ -395,7 +389,8 @@ function Step2Shipping() {
     setForm({ ...form, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   };
 
-  const isValid = form.firstName.trim() && form.lastName.trim() && form.email.includes('@') && form.address.trim() && form.zip.trim().length >= 4 && form.city.trim();
+  const invoiceValid = !form.needsInvoice || (form.ragioneSociale.trim() && form.piva.trim().length >= 11);
+  const isValid = form.firstName.trim() && form.lastName.trim() && form.email.includes('@') && form.address.trim() && form.zip.trim().length >= 4 && form.city.trim() && form.phone.trim().length >= 6 && invoiceValid;
 
   const inputClass = "h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20";
 
@@ -422,7 +417,15 @@ function Step2Shipping() {
               <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} className={`${inputClass}`} />
               <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" className={`${inputClass}`} />
             </div>
-            <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono" type="tel" className={`w-full ${inputClass}`} />
+            <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
+
+            {/* Notes */}
+            <textarea
+              name="notes" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Note per l'ordine o messaggio regalo..."
+              rows={2}
+              className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
+            />
 
             {/* Invoice checkbox */}
             <label className="flex items-start gap-3 cursor-pointer mt-1">
@@ -435,12 +438,12 @@ function Step2Shipping() {
 
             {/* Invoice fields */}
             {form.needsInvoice && (
-              <div className="space-y-3 pl-0 mt-2 p-4 bg-[#faf9f7] rounded-lg border border-[#eee]">
+              <div className="space-y-4 mt-3 pt-4 border-t border-[#f0f0f0]">
                 <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider">Dati fatturazione</p>
-                <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" className={`w-full ${inputClass}`} />
-                <div className="grid grid-cols-2 gap-3">
-                  <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" maxLength={11} className={`${inputClass}`} />
-                  <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale" maxLength={16} className={`${inputClass} uppercase`} />
+                <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass}`} />
+                <div className="grid grid-cols-2 gap-3.5">
+                  <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`${inputClass}`} />
+                  <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale *" required maxLength={16} className={`${inputClass} uppercase`} />
                 </div>
                 <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
               </div>
@@ -486,6 +489,9 @@ function Step2Shipping() {
 
 function Step3Payment() {
   const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping } = useCartStore();
+  const { token, user } = useAuthStore();
+  const isLogged = !!token && !!user;
+  const [authOpen, setAuthOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -493,8 +499,9 @@ function Step3Payment() {
   const total = getTotal();
   const popPoints = Math.round(total);
 
-  // Create payment intent on mount
+  // Create payment intent on mount — use logged user data
   useEffect(() => {
+    if (!isLogged) { setLoading(false); return; }
     (async () => {
       try {
         const res = await fetch('/api/payments/create-intent', {
@@ -503,7 +510,12 @@ function Step3Payment() {
           body: JSON.stringify({
             items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
             shipping: getTotalShipping(),
-            customer: { email: '', firstName: '', lastName: '', phone: '', address: '', city: '', province: '', zip: '', notes: '' },
+            customer: {
+              email: user?.email || '',
+              firstName: user?.firstName || '',
+              lastName: user?.lastName || '',
+              phone: '', address: '', city: '', province: '', zip: '', notes: '',
+            },
           }),
         });
         const data = await res.json();
@@ -515,7 +527,28 @@ function Step3Payment() {
         setLoading(false);
       }
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLogged]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guest: show login prompt
+  if (!isLogged) {
+    return (
+      <>
+        <div className="flex-1 flex flex-col items-center justify-center py-12 px-8 text-center">
+          <svg className="w-16 h-16 text-[#005667]/20 mb-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <h3 className="text-[18px] font-semibold text-[#1a1a1a] mb-2">Accedi per completare l&apos;ordine</h3>
+          <p className="text-[13px] text-[#888] mb-6">Per procedere al pagamento devi accedere o registrarti.</p>
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="bg-[#005667] text-white rounded-lg px-8 py-3.5 text-[14px] font-semibold hover:bg-[#004555] transition-colors"
+          >
+            Accedi o Registrati
+          </button>
+          <button onClick={() => setCheckoutStep(2)} className="text-[12px] text-[#aaa] hover:text-[#666] mt-4">← Torna alla spedizione</button>
+        </div>
+        <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      </>
+    );
+  }
 
   return (
     <>
