@@ -124,7 +124,7 @@ function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
    Slide da sinistra, overlay 0.4, search autofocus
    5 voci nav, account in fondo
    ══════════════════════════════════════════════════════════ */
-function MobileDrawer({ isOpen, onClose, onOpenAuth }: { isOpen: boolean; onClose: () => void; onOpenAuth: () => void }) {
+function MobileDrawer({ isOpen, onClose, onOpenAuth, onOpenVendorAuth }: { isOpen: boolean; onClose: () => void; onOpenAuth: () => void; onOpenVendorAuth: () => void }) {
   const isAuth = useAuthStore(s => s.isAuthenticated());
   const user = useAuthStore(s => s.user);
   const pathname = usePathname();
@@ -223,7 +223,7 @@ function MobileDrawer({ isOpen, onClose, onOpenAuth }: { isOpen: boolean; onClos
           <>
             <div className="h-px bg-gray-100 mx-4" />
             <div className="px-4 py-2">
-              <button onClick={() => { onClose(); onOpenAuth(); }} className="w-full text-left py-3 px-4 text-[13px] text-[#888] hover:text-[#005667] transition-colors">
+              <button onClick={() => { onClose(); onOpenVendorAuth(); }} className="w-full text-left py-3 px-4 text-[13px] text-[#888] hover:text-[#005667] transition-colors">
                 Vendi con noi
               </button>
             </div>
@@ -258,6 +258,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authVendorMode, setAuthVendorMode] = useState(false);
   const isAuth = useAuthStore(s => s.isAuthenticated());
   const [scrolled, setScrolled] = useState(false);
   const [topBarVisible, setTopBarVisible] = useState(true);
@@ -365,7 +366,7 @@ export default function Header() {
 
               {/* Vendi con noi — pill after cart, md+ only */}
               {!isAuth && (
-                <button onClick={() => setAuthModalOpen(true)} className="hidden md:flex items-center px-3.5 py-1.5 ml-2 border border-[#005667] text-[#005667] text-[12px] font-semibold rounded-full hover:bg-[#005667] hover:text-white transition-colors whitespace-nowrap">
+                <button onClick={() => { setAuthVendorMode(true); setAuthModalOpen(true); }} className="hidden md:flex items-center px-3.5 py-1.5 ml-2 border border-[#005667] text-[#005667] text-[12px] font-semibold rounded-full hover:bg-[#005667] hover:text-white transition-colors whitespace-nowrap">
                   Vendi con noi
                 </button>
               )}
@@ -387,10 +388,10 @@ export default function Header() {
       </header>
 
       {/* Mobile drawer */}
-      <MobileDrawer isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} />
+      <MobileDrawer isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} onOpenVendorAuth={() => { setAuthVendorMode(true); setAuthModalOpen(true); }} />
 
       {/* Auth modal */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal isOpen={authModalOpen} onClose={() => { setAuthModalOpen(false); setAuthVendorMode(false); }} vendorMode={authVendorMode} />
 
       {/* Mobile search — fullscreen overlay */}
       {mobileSearchOpen && <SearchOverlay onClose={() => setMobileSearchOpen(false)} isMobile />}

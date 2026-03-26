@@ -10,18 +10,16 @@ export async function POST(req: NextRequest) {
 
     const email = sanitize(body.email, 254);
     const password = sanitize(body.password, 128);
-    const cantina = sanitize(body.cantina, 200);
-    const regione = sanitize(body.regione, 100);
-    const piva = sanitize(body.piva, 20);
-    const telefono = sanitize(body.telefono, 30);
+    const firstName = sanitize(body.firstName || '', 100);
+    const lastName = sanitize(body.lastName || '', 100);
+    const cantina = sanitize(body.cantina || firstName || '', 200);
+    const regione = sanitize(body.regione || '', 100);
+    const piva = sanitize(body.piva || '', 20);
+    const telefono = sanitize(body.telefono || '', 30);
     const sito = sanitize(body.sito || '', 300);
 
     if (!isValidEmail(email)) return NextResponse.json({ message: 'Email non valida' }, { status: 400 });
     if (!isNonEmptyString(password) || password.length < 6) return NextResponse.json({ message: 'Password minimo 6 caratteri' }, { status: 400 });
-    if (!isNonEmptyString(cantina)) return NextResponse.json({ message: 'Nome cantina obbligatorio' }, { status: 400 });
-    if (!isNonEmptyString(regione)) return NextResponse.json({ message: 'Regione obbligatoria' }, { status: 400 });
-    if (!isNonEmptyString(piva) || piva.length < 11) return NextResponse.json({ message: 'P.IVA non valida' }, { status: 400 });
-    if (!isNonEmptyString(telefono)) return NextResponse.json({ message: 'Telefono obbligatorio' }, { status: 400 });
 
     const wc = getWCSecrets();
     const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
@@ -33,8 +31,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email,
         password,
-        first_name: cantina,
-        last_name: '',
+        first_name: firstName || cantina,
+        last_name: lastName || '',
         username: email,
         role: 'vendor',
         meta_data: [
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
           { key: '_vendor_piva', value: piva },
           { key: '_vendor_telefono', value: telefono },
           { key: '_vendor_sito', value: sito },
-          { key: '_vendor_status', value: 'active' },
+          { key: '_vendor_status', value: 'pending_contract' },
           { key: '_vendor_registered_at', value: new Date().toISOString() },
         ],
       }),
@@ -65,10 +63,10 @@ export async function POST(req: NextRequest) {
             <h1 style="font-size:24px;color:#1a1a1a;margin:0 0 12px;">Benvenuto ${cantina}!</h1>
             <p style="font-size:15px;color:#666;line-height:1.6;margin:0 0 24px;">
               Il tuo account cantina su Stappando è stato creato.<br/>
-              Puoi iniziare subito ad aggiungere i tuoi vini.
+              Per completare la registrazione, firma il contratto di adesione.
             </p>
-            <a href="https://stappando-web.vercel.app/vendor/dashboard" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
-              Vai alla Dashboard →
+            <a href="https://stappando-web.vercel.app/vendor/contratto" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+              Firma il contratto →
             </a>
           </div>
         </div>`,

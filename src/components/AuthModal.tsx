@@ -7,9 +7,10 @@ import { useAuthStore } from '@/store/auth';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  vendorMode?: boolean;
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthModalProps) {
   const [step, setStep] = useState<'initial' | 'password' | 'register'>('initial');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,6 +55,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const state = useAuthStore.getState();
       if (state.token) {
         onClose();
+        // Redirect vendors to dashboard
+        if (vendorMode || state.role === 'vendor') {
+          window.location.href = '/vendor/dashboard';
+        }
       }
     } catch {
       // Login failed — switch to registration automatically
@@ -67,6 +72,30 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
+
+    if (vendorMode) {
+      // Vendor registration: call vendor register API then auto-login
+      try {
+        const res = await fetch('/api/vendor/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, firstName, lastName }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Errore registrazione');
+        // Auto-login
+        await login(email, password);
+        const state = useAuthStore.getState();
+        if (state.token) {
+          onClose();
+          window.location.href = '/vendor/dashboard';
+        }
+      } catch (err) {
+        setLocalError(err instanceof Error ? err.message : 'Errore registrazione');
+      }
+      return;
+    }
+
     await register(email, password, firstName, lastName, newsletter);
     const state = useAuthStore.getState();
     if (state.token) {
