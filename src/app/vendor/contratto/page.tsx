@@ -110,6 +110,8 @@ export default function VendorContractPage() {
       }
 
       setDone(true);
+      // Update store — no more WC calls needed
+      useAuthStore.getState().setVendorStatus('pending_approval');
       setTimeout(() => router.push('/vendor/dashboard'), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore imprevisto');

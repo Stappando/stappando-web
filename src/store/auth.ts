@@ -62,6 +62,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   role: string;
+  vendorStatus: string | null; // 'pending_contract' | 'pending_approval' | 'approved'
   isLoading: boolean;
   error: string | null;
 
@@ -71,6 +72,7 @@ interface AuthState {
   clearError: () => void;
   isAuthenticated: () => boolean;
   isVendor: () => boolean;
+  setVendorStatus: (status: string) => void;
 }
 
 /* ── Store ─────────────────────────────────────────────── */
@@ -81,6 +83,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       role: 'customer',
+      vendorStatus: null,
       isLoading: false,
       error: null,
 
@@ -128,13 +131,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        set({ user: null, token: null, role: 'customer', error: null });
+        set({ user: null, token: null, role: 'customer', vendorStatus: null, error: null });
       },
 
       clearError: () => set({ error: null }),
 
       isAuthenticated: () => !!get().token && !!get().user,
       isVendor: () => { const r = get().role; return r === 'vendor' || r === 'wcfm_vendor' || r === 'dc_vendor'; },
+      setVendorStatus: (status: string) => set({ vendorStatus: status }),
     }),
     {
       name: 'stappando-auth',

@@ -7,54 +7,16 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function VendorDashboard() {
-  const { user, isAuthenticated, isVendor } = useAuthStore();
+  const { user, isAuthenticated, isVendor, vendorStatus } = useAuthStore();
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
-  const [vendorStatus, setVendorStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => { setHydrated(true); }, []);
 
-  // Get vendor status — localStorage cache first, then WC API in background
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated() || !user?.id) return;
-    if (!isVendor()) { setLoading(false); return; }
-
-    // 1. Check localStorage cache first (instant)
-    const cached = localStorage.getItem(`vendor_status_${user.id}`);
-    if (cached) {
-      setVendorStatus(cached);
-      setLoading(false);
-    } else {
-      // Default to pending_contract for new vendors (no loading wait)
-      setVendorStatus('pending_contract');
-      setLoading(false);
-    }
-
-    // 2. Refresh from WC in background (don't block UI)
-    const controller = new AbortController();
-    fetch(`/api/customers?id=${user.id}`, { signal: controller.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.meta_data) {
-          const statusMeta = data.meta_data.find((m: { key: string }) => m.key === '_vendor_status');
-          const status = statusMeta?.value || 'pending_contract';
-          setVendorStatus(status);
-          localStorage.setItem(`vendor_status_${user.id}`, status);
-        }
-      })
-      .catch(() => { /* background refresh failed, cached value used */ });
-
-    // Timeout: if WC doesn't respond in 10s, abort silently
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    return () => { clearTimeout(timeout); controller.abort(); };
-  }, [hydrated, isAuthenticated, isVendor, user]);
-
-  if (!hydrated || loading) {
+  if (!hydrated) {
     return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  // Not authenticated
   if (!isAuthenticated()) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
@@ -65,7 +27,6 @@ export default function VendorDashboard() {
     );
   }
 
-  // Not a vendor role
   if (!isVendor()) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
@@ -76,17 +37,16 @@ export default function VendorDashboard() {
     );
   }
 
-  // STATE 1: pending_contract → redirect to contract page
+  // pending_contract → go to contract page
   if (vendorStatus === 'pending_contract') {
     router.push('/vendor/contratto');
     return null;
   }
 
-  // STATE 2: pending_approval → blurred dashboard with overlay
-  if (vendorStatus === 'pending_approval') {
+  // pending_approval → blurred overlay
+  if (vendorStatus === 'pending_approval' || vendorStatus === null) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
-        {/* Blurred fake dashboard background */}
         <div className="fixed inset-0 z-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-[#f8f6f1] to-[#e8e0d2]" />
           <div className="max-w-7xl mx-auto px-4 py-8 opacity-30" style={{ filter: 'blur(6px)' }}>
@@ -94,13 +54,9 @@ export default function VendorDashboard() {
             <div className="grid grid-cols-4 gap-4 mb-8">
               {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-white rounded-xl border border-[#e8e4dc]" />)}
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => <div key={i} className="h-20 bg-white rounded-xl border border-[#e8e4dc]" />)}
-            </div>
           </div>
         </div>
 
-        {/* Overlay modal */}
         <div className="relative z-10 bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
           <div className="flex justify-center mb-6">
             <Image src="/logo.png" alt="Stappando" width={140} height={35} className="h-8 w-auto" />
@@ -115,26 +71,22 @@ export default function VendorDashboard() {
           <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Stiamo preparando il tuo negozio</h1>
 
           <p className="text-[15px] text-[#666] leading-relaxed mb-6">
-            Grazie per aver firmato il contratto, <strong className="text-[#1a1a1a]">{user?.firstName || ''}</strong>!<br />
+            Grazie, <strong className="text-[#1a1a1a]">{user?.firstName || user?.email?.split('@')[0] || ''}</strong>!<br />
             Il nostro team sta verificando i tuoi dati.<br />
-            Riceverai una email di conferma entro <strong className="text-[#005667]">24-48 ore</strong>.
+            Riceverai una email entro <strong className="text-[#005667]">24-48 ore</strong>.
           </p>
 
           <div className="bg-[#f8f6f1] rounded-xl p-5 mb-6 text-left">
             <p className="text-[10px] text-[#888] uppercase tracking-wider font-semibold mb-3">Cosa succede ora</p>
             {[
               { n: '1', text: 'Registrazione completata', done: true },
-              { n: '2', text: 'Contratto firmato', done: true },
+              { n: '2', text: 'Contratto firmato', done: vendorStatus === 'pending_approval' },
               { n: '3', text: 'Verifica e approvazione', done: false },
               { n: '4', text: 'Il tuo negozio è live!', done: false },
             ].map(step => (
               <div key={step.n} className="flex items-center gap-3 py-2">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                  step.done ? 'bg-[#005667] text-white' : 'bg-[#e8e4dc] text-[#888]'
-                }`}>
-                  {step.done ? (
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  ) : step.n}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${step.done ? 'bg-[#005667] text-white' : 'bg-[#e8e4dc] text-[#888]'}`}>
+                  {step.done ? <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : step.n}
                 </div>
                 <span className={`text-[13px] ${step.done ? 'text-[#005667] font-medium' : 'text-[#888]'}`}>{step.text}</span>
               </div>
@@ -142,19 +94,15 @@ export default function VendorDashboard() {
           </div>
 
           <div className="space-y-3">
-            <Link href="/" className="block w-full py-3 bg-[#005667] text-white rounded-xl text-[15px] font-semibold hover:bg-[#004555] transition-colors">
-              Torna alla homepage
-            </Link>
-            <a href="mailto:assistenza@stappando.it" className="block text-[13px] text-[#888] hover:text-[#005667] transition-colors">
-              Hai domande? Scrivici
-            </a>
+            <Link href="/" className="block w-full py-3 bg-[#005667] text-white rounded-xl text-[15px] font-semibold hover:bg-[#004555] transition-colors">Torna alla homepage</Link>
+            <a href="mailto:assistenza@stappando.it" className="block text-[13px] text-[#888] hover:text-[#005667] transition-colors">Hai domande? Scrivici</a>
           </div>
         </div>
       </div>
     );
   }
 
-  // STATE 3: approved → full dashboard
+  // approved → full dashboard
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
