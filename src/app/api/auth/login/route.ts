@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
           custFirstName = customers[0].first_name || custFirstName;
           custLastName = customers[0].last_name || custLastName;
           custId = customers[0].id || custId;
-          custRole = customers[0].role || 'customer';
+          const isVendorMeta = customers[0].meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
+          custRole = isVendorMeta ? 'vendor' : (customers[0].role || 'customer');
         }
       }
     } catch { /* use JWT data */ }

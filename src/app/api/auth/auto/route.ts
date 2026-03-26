@@ -35,6 +35,8 @@ export async function POST(req: NextRequest) {
       if (token) {
         // Fetch customer to get role + name
         const customer = await fetchCustomer(wc.baseUrl, auth, email);
+        const isVendorMeta = customer?.meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
+        const effectiveRole = isVendorMeta ? 'vendor' : (customer?.role || 'customer');
         return NextResponse.json({
           action: 'login',
           user: {
@@ -45,13 +47,14 @@ export async function POST(req: NextRequest) {
             username: tokenData.data?.nicename || email,
           },
           token,
-          role: customer?.role || 'customer',
+          role: effectiveRole,
+          isVendor: isVendorMeta || false,
         });
       }
     }
 
     // ─── STEP 2: Login failed → Register ────────────────
-    const role = vendorMode ? 'wcfm_vendor' : 'customer';
+    const role = 'customer'; // Always create as customer — vendor detected via meta
     const regRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers?${auth}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,12 +66,11 @@ export async function POST(req: NextRequest) {
         last_name: '',
         username: email,
         role,
-        ...(vendorMode ? {
-          meta_data: [
-            { key: '_vendor_status', value: 'pending_contract' },
-            { key: '_vendor_registered_at', value: new Date().toISOString() },
-          ],
-        } : {}),
+        meta_data: vendorMode ? [
+          { key: '_is_vendor', value: 'true' },
+          { key: '_vendor_status', value: 'pending_contract' },
+          { key: '_vendor_registered_at', value: new Date().toISOString() },
+        ] : [],
       }),
     });
 
@@ -112,7 +114,8 @@ export async function POST(req: NextRequest) {
         username: email,
       },
       token: token || null,
-      role,
+      role: vendorMode ? 'vendor' : 'customer',
+      isVendor: vendorMode,
     });
   } catch (err) {
     console.error('Auth auto error:', err);

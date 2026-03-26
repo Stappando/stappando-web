@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
         first_name: firstName || cantina,
         last_name: lastName || '',
         username: email,
-        role: 'wcfm_vendor',
         meta_data: [
+          { key: '_is_vendor', value: 'true' },
           { key: '_vendor_cantina', value: cantina },
           { key: '_vendor_regione', value: regione },
           { key: '_vendor_piva', value: piva },
