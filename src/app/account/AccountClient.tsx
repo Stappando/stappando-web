@@ -605,26 +605,151 @@ function SectionCard({ title, children }: { title: string; children: React.React
 /* ── Profile ───────────────────────────────────────────── */
 
 function ProfileSection({ user }: { user: { id: number; email: string; firstName: string; lastName: string; username: string } }) {
+  const [customer, setCustomer] = useState<WCCustomer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dob: '' });
+  const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [nlChecked, setNlChecked] = useState(false);
+  const [nlSaving, setNlSaving] = useState(false);
+
+  useEffect(() => {
+    fetchCustomer(user.id).then((c) => {
+      setCustomer(c);
+      setForm({
+        firstName: c.first_name || user.firstName,
+        lastName: c.last_name || user.lastName,
+        email: c.email || user.email,
+        phone: c.billing?.phone || '',
+        dob: '',
+      });
+      setLoading(false);
+    });
+  }, [user.id, user.firstName, user.lastName, user.email]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setMsg('');
+    try {
+      await updateCustomer(user.id, {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        email: form.email,
+        billing: { ...customer?.billing, phone: form.phone, first_name: form.firstName, last_name: form.lastName, email: form.email } as Address,
+      });
+      setMsg('Profilo aggiornato');
+      setTimeout(() => setMsg(''), 3000);
+    } catch { setMsg('Errore nel salvataggio'); }
+    setSaving(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.newPw !== pwForm.confirm) { setPwMsg('Le password non corrispondono'); return; }
+    if (pwForm.newPw.length < 6) { setPwMsg('Minimo 6 caratteri'); return; }
+    setPwSaving(true); setPwMsg('');
+    try {
+      await changePassword(user.id, pwForm.newPw);
+      setPwMsg('Password aggiornata');
+      setPwForm({ current: '', newPw: '', confirm: '' });
+      setTimeout(() => setPwMsg(''), 3000);
+    } catch { setPwMsg('Errore — password attuale errata?'); }
+    setPwSaving(false);
+  };
+
+  const handleNewsletter = async () => {
+    setNlSaving(true);
+    try {
+      await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, firstName: form.firstName, lastName: form.lastName }),
+      });
+      setNlChecked(true);
+    } catch {}
+    setNlSaving(false);
+  };
+
+  if (loading) return <LoadingSpinner />;
+
   return (
-    <SectionCard title="Il mio profilo">
-      <div className="grid sm:grid-cols-2 gap-6">
-        <div className="flex items-center gap-4 sm:col-span-2">
-          <div className="w-16 h-16 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary text-2xl font-bold">
-            {(user.firstName?.[0] || user.username[0] || '?').toUpperCase()}
+    <div className="space-y-6">
+      <SectionCard title="Profilo & sicurezza">
+        {/* Avatar + name */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[#d9c39a] text-2xl font-bold">
+            {(form.firstName?.[0] || '?').toUpperCase()}
           </div>
           <div>
-            <p className="text-lg font-semibold text-brand-text">
-              {user.firstName} {user.lastName}
-            </p>
-            <p className="text-sm text-brand-muted">{user.email}</p>
+            <p className="text-[18px] font-semibold text-[#1a1a1a]">{form.firstName} {form.lastName}</p>
+            <p className="text-[13px] text-[#888]">{form.email}</p>
           </div>
         </div>
-        <InfoRow label="Nome" value={user.firstName || '---'} />
-        <InfoRow label="Cognome" value={user.lastName || '---'} />
-        <InfoRow label="Email" value={user.email} />
-        <InfoRow label="Username" value={user.username} />
-      </div>
-    </SectionCard>
+
+        {msg && <div className={`p-3 rounded-lg text-[13px] mb-4 ${msg.includes('Errore') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>{msg}</div>}
+
+        <form onSubmit={handleSaveProfile} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Nome</label>
+              <input type="text" value={form.firstName} onChange={(e) => setForm({...form, firstName: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+            </div>
+            <div>
+              <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Cognome</label>
+              <input type="text" value={form.lastName} onChange={(e) => setForm({...form, lastName: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Email</label>
+            <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+          </div>
+          <div>
+            <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Telefono</label>
+            <input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+          </div>
+          {/* Newsletter */}
+          <div className="flex items-center justify-between py-3 border-t border-[#f0f0f0]">
+            <div>
+              <p className="text-[13px] font-semibold text-[#1a1a1a]">Newsletter</p>
+              <p className="text-[11px] text-[#888]">Ricevi offerte e novità dal mondo del vino</p>
+            </div>
+            <button type="button" onClick={handleNewsletter} disabled={nlSaving || nlChecked}
+              className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors ${nlChecked ? 'bg-green-100 text-green-700' : 'bg-[#005667] text-white hover:bg-[#004555]'} disabled:opacity-60`}>
+              {nlSaving ? '...' : nlChecked ? 'Iscritto' : 'Iscriviti'}
+            </button>
+          </div>
+          <button type="submit" disabled={saving} className="w-full sm:w-auto px-8 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-60">
+            {saving ? 'Salvataggio...' : 'Salva modifiche'}
+          </button>
+        </form>
+      </SectionCard>
+
+      {/* Password */}
+      <SectionCard title="Cambio password">
+        {pwMsg && <div className={`p-3 rounded-lg text-[13px] mb-4 ${pwMsg.includes('Errore') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>{pwMsg}</div>}
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+          <div>
+            <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Password attuale</label>
+            <input type="password" value={pwForm.current} onChange={(e) => setPwForm({...pwForm, current: e.target.value})} required className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+          </div>
+          <div>
+            <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Nuova password</label>
+            <input type="password" value={pwForm.newPw} onChange={(e) => setPwForm({...pwForm, newPw: e.target.value})} required minLength={6} className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+          </div>
+          <div>
+            <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Conferma password</label>
+            <input type="password" value={pwForm.confirm} onChange={(e) => setPwForm({...pwForm, confirm: e.target.value})} required className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]" />
+          </div>
+          <button type="submit" disabled={pwSaving} className="px-8 py-3 bg-[#1a1a1a] text-white rounded-lg text-[14px] font-semibold hover:bg-[#333] transition-colors disabled:opacity-60">
+            {pwSaving ? 'Aggiornamento...' : 'Cambia password'}
+          </button>
+        </form>
+      </SectionCard>
+    </div>
   );
 }
 
@@ -1255,27 +1380,35 @@ function TrackingSection({ userId }: { userId: number }) {
 function PaymentMethodsSection() {
   return (
     <SectionCard title="Metodi di pagamento">
-      <div className="space-y-4">
+      <div className="space-y-5">
         <p className="text-[14px] text-[#888]">I metodi di pagamento accettati su Stappando:</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { name: 'Carta di credito/debito', desc: 'Visa, Mastercard, Amex', icon: '💳' },
-            { name: 'PayPal', desc: 'Account PayPal o carta', icon: '🅿️' },
-            { name: 'Satispay', desc: 'Pagamento mobile', icon: '📱' },
-            { name: 'Klarna', desc: 'Paga in 3 rate', icon: '🔄' },
-            { name: 'Google Pay', desc: 'Dal tuo telefono', icon: '📲' },
-            { name: 'Apple Pay', desc: 'Solo dispositivi Apple', icon: '🍎' },
+            { name: 'Carta di credito', desc: 'Visa, Mastercard, Amex' },
+            { name: 'PayPal', desc: 'Account PayPal o carta' },
+            { name: 'Satispay', desc: 'Pagamento mobile' },
+            { name: 'Klarna', desc: 'Paga in 3 rate' },
+            { name: 'Google Pay', desc: 'Dal tuo telefono' },
+            { name: 'Apple Pay', desc: 'Solo dispositivi Apple' },
           ].map((m) => (
-            <div key={m.name} className="border border-[#e8e4dc] rounded-xl p-4 text-center">
-              <p className="text-2xl mb-2">{m.icon}</p>
+            <div key={m.name} className="border border-[#e8e4dc] rounded-xl p-4">
+              <svg className="w-6 h-6 text-[#005667] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+              </svg>
               <p className="text-[13px] font-semibold text-[#1a1a1a]">{m.name}</p>
               <p className="text-[11px] text-[#888]">{m.desc}</p>
             </div>
           ))}
         </div>
-        <p className="text-[12px] text-[#888] mt-4">
-          I dati di pagamento non vengono mai salvati sui nostri server. Tutti i pagamenti sono processati in modo sicuro da Stripe e PayPal.
-        </p>
+        <div className="bg-[#f8f6f1] rounded-xl p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-[#005667] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+          </svg>
+          <div>
+            <p className="text-[13px] font-semibold text-[#1a1a1a]">Pagamento sicuro</p>
+            <p className="text-[12px] text-[#888]">I dati di pagamento non vengono mai salvati sui nostri server. Tutti i pagamenti sono processati da Stripe e PayPal con crittografia SSL 256-bit.</p>
+          </div>
+        </div>
       </div>
     </SectionCard>
   );
@@ -1286,22 +1419,55 @@ function PaymentMethodsSection() {
    ══════════════════════════════════════════════════════════ */
 
 function ReviewsSection({ userId }: { userId: number }) {
+  const { user } = useAuthStore();
   const [orders, setOrders] = useState<WCOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewed, setReviewed] = useState<Set<number>>(new Set());
+  const [activeReview, setActiveReview] = useState<number | null>(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [successId, setSuccessId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders(userId).then((o) => { setOrders(o); setLoading(false); }).catch(() => setLoading(false));
   }, [userId]);
 
+  const handleSubmitReview = async (productId: number) => {
+    if (rating === 0) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          rating,
+          review: reviewText,
+          reviewer: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+          reviewerEmail: user?.email || '',
+        }),
+      });
+      if (res.ok) {
+        setReviewed(new Set([...reviewed, productId]));
+        setSuccessId(productId);
+        setActiveReview(null);
+        setRating(0);
+        setReviewText('');
+        setTimeout(() => setSuccessId(null), 4000);
+      }
+    } catch {}
+    setSubmitting(false);
+  };
+
   if (loading) return <LoadingSpinner />;
 
   const completedOrders = orders.filter(o => o.status === 'completed');
   const allProducts = completedOrders.flatMap(o => o.line_items || []);
-
-  // Deduplicate by product_id
   const seen = new Set<number>();
   const uniqueProducts = allProducts.filter(p => {
-    if (seen.has(p.product_id)) return false;
+    if (seen.has(p.product_id) || reviewed.has(p.product_id)) return false;
     seen.add(p.product_id);
     return true;
   });
@@ -1309,34 +1475,76 @@ function ReviewsSection({ userId }: { userId: number }) {
   return (
     <SectionCard title="Lascia una recensione">
       <p className="text-[14px] text-[#888] mb-6">
-        Ogni recensione ti fa guadagnare <strong className="text-[#005667]">100 Punti POP</strong>. Aiuta la community!
+        Ogni recensione ti fa guadagnare <strong className="text-[#005667]">100 Punti POP</strong>
       </p>
+
+      {successId && (
+        <div className="p-4 mb-4 bg-green-50 border border-green-200 rounded-xl text-[13px] text-green-700 flex items-center gap-2">
+          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          Recensione inviata! +100 Punti POP accreditati
+        </div>
+      )}
+
       {uniqueProducts.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-[14px] text-[#888] mb-4">Nessun prodotto da recensire ancora.</p>
-          <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">
-            Scopri i vini
-          </a>
+          <p className="text-[14px] text-[#888] mb-4">{reviewed.size > 0 ? 'Hai recensito tutti i prodotti!' : 'Nessun prodotto da recensire.'}</p>
+          <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Scopri i vini</a>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {uniqueProducts.slice(0, 20).map((product) => (
-            <div key={product.product_id} className="flex items-center gap-4 border border-[#e8e4dc] rounded-xl p-4">
-              <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center shrink-0 overflow-hidden">
-                {product.image?.src && (
-                  <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />
-                )}
+            <div key={product.product_id} className="border border-[#e8e4dc] rounded-xl overflow-hidden">
+              <div className="flex items-center gap-4 p-4">
+                <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center shrink-0 overflow-hidden">
+                  {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{product.name}</p>
+                  <p className="text-[11px] text-[#888]">+100 Punti POP per la recensione</p>
+                </div>
+                <button
+                  onClick={() => { setActiveReview(activeReview === product.product_id ? null : product.product_id); setRating(0); setReviewText(''); }}
+                  className="shrink-0 bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[12px] font-semibold hover:bg-[#004555] transition-colors"
+                >
+                  {activeReview === product.product_id ? 'Chiudi' : 'Recensisci'}
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{product.name}</p>
-                <p className="text-[11px] text-[#888]">+100 Punti POP per la recensione</p>
-              </div>
-              <a
-                href={`/prodotto/${product.product_id}#recensioni`}
-                className="shrink-0 bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[12px] font-semibold hover:bg-[#004555] transition-colors"
-              >
-                Recensisci
-              </a>
+
+              {activeReview === product.product_id && (
+                <div className="border-t border-[#e8e4dc] p-4 bg-[#f8f6f1]">
+                  {/* Stars */}
+                  <div className="flex items-center gap-1 mb-3">
+                    <span className="text-[12px] text-[#888] mr-2">Voto:</span>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button key={s} type="button"
+                        onMouseEnter={() => setHoverRating(s)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        onClick={() => setRating(s)}
+                        className="p-0.5"
+                      >
+                        <svg className={`w-7 h-7 transition-colors ${s <= (hoverRating || rating) ? 'text-[#d9c39a]' : 'text-[#ddd]'}`}
+                          viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                      </button>
+                    ))}
+                    {rating > 0 && <span className="text-[12px] text-[#005667] font-semibold ml-2">{rating}/5</span>}
+                  </div>
+                  {/* Text */}
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    rows={3}
+                    placeholder="Racconta la tua esperienza con questo vino..."
+                    className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] bg-white text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667] resize-none mb-3"
+                  />
+                  <button
+                    onClick={() => handleSubmitReview(product.product_id)}
+                    disabled={submitting || rating === 0}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-[#005667] text-white rounded-lg text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Invio...' : `Invia recensione${rating > 0 ? ` (${rating}★)` : ''}`}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
