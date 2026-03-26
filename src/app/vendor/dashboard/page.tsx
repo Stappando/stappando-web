@@ -74,12 +74,12 @@ export default function VendorDashboard() {
             </svg>
           </div>
 
-          <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Stiamo preparando il tuo negozio</h1>
+          <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Stiamo lavorando al tuo negozio</h1>
 
           <p className="text-[15px] text-[#666] leading-relaxed mb-6">
             Grazie, <strong className="text-[#1a1a1a]">{user?.firstName || user?.email?.split('@')[0] || ''}</strong>!<br />
-            Il nostro team sta verificando i tuoi dati.<br />
-            Riceverai una email entro <strong className="text-[#005667]">24-48 ore</strong>.
+            Il tuo contratto è stato ricevuto.<br />
+            Riceverai una <strong className="text-[#005667]">email di conferma</strong> appena il negozio sarà approvato.
           </p>
 
           <div className="bg-[#f8f6f1] rounded-xl p-5 mb-6 text-left">

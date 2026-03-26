@@ -34,7 +34,14 @@ export async function POST(req: NextRequest) {
         // Check if vendor by fetching customer meta (with short timeout)
         const customer = await fetchCustomer(wc.baseUrl, auth, email);
         const isVendorMeta = customer?.meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
-        const vendorStatusMeta = customer?.meta_data?.find((m: { key: string }) => m.key === '_vendor_status')?.value || null;
+        const wpRole = customer?.role || 'customer';
+        const isWcfmVendor = wpRole === 'wcfm_vendor' || wpRole === 'dc_vendor' || wpRole === 'vendor';
+        const isVendor = isVendorMeta || isWcfmVendor;
+
+        // If WP role is wcfm_vendor → automatically approved
+        const vendorStatus = isWcfmVendor ? 'approved' : (
+          customer?.meta_data?.find((m: { key: string }) => m.key === '_vendor_status')?.value || null
+        );
 
         return NextResponse.json({
           action: 'login',
@@ -46,9 +53,9 @@ export async function POST(req: NextRequest) {
             username: tokenData.data?.nicename || email,
           },
           token,
-          role: isVendorMeta ? 'vendor' : (customer?.role || 'customer'),
-          isVendor: isVendorMeta || false,
-          vendorStatus: vendorStatusMeta,
+          role: isVendor ? 'vendor' : 'customer',
+          isVendor,
+          vendorStatus,
         });
       }
     }
