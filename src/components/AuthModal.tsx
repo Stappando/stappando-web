@@ -94,11 +94,19 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       }
 
       setLoading(false);
-      onClose();
 
+      // Redirect BEFORE closing modal (onClose may reset state)
       if (vendorMode || isVendorRole(data.role || '')) {
+        // Force vendor state in store regardless of WC role
+        useAuthStore.setState({
+          role: 'vendor',
+          vendorStatus: data.vendorStatus || 'pending_contract',
+        });
         window.location.href = '/vendor/dashboard';
+        return;
       }
+
+      onClose();
     } catch (err) {
       clearTimeout(patienceTimer);
       if (err instanceof DOMException && err.name === 'AbortError') {
