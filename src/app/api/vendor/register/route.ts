@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         first_name: firstName || cantina,
         last_name: lastName || '',
         username: email,
-        role: 'vendor',
+        role: 'wcfm_vendor',
         meta_data: [
           { key: '_vendor_cantina', value: cantina },
           { key: '_vendor_regione', value: regione },

@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function VendorDashboard() {
-  const { user, isAuthenticated, role } = useAuthStore();
+  const { user, isAuthenticated, isVendor } = useAuthStore();
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   const [vendorStatus, setVendorStatus] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export default function VendorDashboard() {
   // Fetch vendor status from WC customer meta
   useEffect(() => {
     if (!hydrated || !isAuthenticated() || !user?.id) return;
-    if (role !== 'vendor') { setLoading(false); return; }
+    if (!isVendor()) { setLoading(false); return; }
 
     fetch(`/api/customers?id=${user.id}`)
       .then(r => r.ok ? r.json() : null)
@@ -30,7 +30,7 @@ export default function VendorDashboard() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [hydrated, isAuthenticated, user, role]);
+  }, [hydrated, isAuthenticated, isVendor, user]);
 
   if (!hydrated || loading) {
     return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /></div>;
@@ -48,7 +48,7 @@ export default function VendorDashboard() {
   }
 
   // Not a vendor role
-  if (role !== 'vendor') {
+  if (!isVendor()) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Area venditori</h1>

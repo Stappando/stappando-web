@@ -56,7 +56,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       if (state.token) {
         onClose();
         // Redirect vendors to dashboard
-        if (vendorMode || state.role === 'vendor') {
+        if (vendorMode || state.role === 'vendor' || state.role === 'wcfm_vendor' || state.role === 'dc_vendor') {
           window.location.href = '/vendor/dashboard';
         }
       }
