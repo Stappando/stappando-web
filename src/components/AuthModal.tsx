@@ -48,14 +48,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
-    await login(email, password);
-    const state = useAuthStore.getState();
-    if (state.token) {
-      onClose();
-    } else if (state.error) {
-      // If login fails, offer registration
+    clearError();
+    try {
+      await login(email, password);
+      const state = useAuthStore.getState();
+      if (state.token) {
+        onClose();
+      }
+    } catch {
+      // Login failed — switch to registration automatically
+      clearError();
       setPassword('');
-      setLocalError('Credenziali non valide. Sei nuovo? Registrati qui sotto.');
+      setLocalError('Email non registrata — completa la registrazione qui sotto.');
       setStep('register');
     }
   };
