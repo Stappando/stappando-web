@@ -198,20 +198,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
               placeholder="Password"
             />
 
-            {(
-              <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={newsletter}
-                  onChange={(e) => setNewsletter(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#055667] focus:ring-[#055667] shrink-0"
-                />
-                <span className="text-xs text-gray-600 leading-relaxed">
-                  Voglio ricevere offerte e novità da Stappando
-                </span>
-              </label>
-            )}
-
+  
             <button
               type="submit"
               disabled={loading}
