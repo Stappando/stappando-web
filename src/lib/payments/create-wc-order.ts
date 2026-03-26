@@ -5,6 +5,7 @@ import type { OrderCustomer, OrderLineItem, PaymentProvider } from './types';
 const PROVIDER_TITLES: Record<PaymentProvider, string> = {
   stripe: 'Carta di credito (Stripe)',
   paypal: 'PayPal',
+  cod: 'Contrassegno (Test)',
 };
 
 interface CustomerPreferences {
