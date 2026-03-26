@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import AuthModal from '@/components/AuthModal';
+import VendorAuthModal from '@/components/VendorAuthModal';
 import SearchOverlay from '@/components/SearchOverlay';
 
 /* ══════════════════════════════════════════════════════════
@@ -86,6 +87,7 @@ function CartIcon() {
 function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [mounted, setMounted] = useState(false);
   const isAuth = useAuthStore(s => s.isAuthenticated());
+  const isVendorUser = useAuthStore(s => s.isVendor());
   const user = useAuthStore(s => s.user);
   useEffect(() => setMounted(true), []);
 
@@ -98,14 +100,14 @@ function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
   }
 
   if (isAuth) {
+    const accountHref = isVendorUser ? '/vendor/dashboard' : '/account';
     return (
-      <Link href="/account" className="relative flex items-center justify-center w-11 h-11 rounded-lg hover:bg-gray-50 transition-colors" aria-label="Account">
+      <Link href={accountHref} className="relative flex items-center justify-center w-11 h-11 rounded-lg hover:bg-gray-50 transition-colors" aria-label="Account">
         <div className="w-7 h-7 rounded-full bg-[#005667] text-white text-[11px] font-bold flex items-center justify-center">
           {user?.firstName?.[0]?.toUpperCase() || 'U'}
         </div>
-        {/* POP badge */}
         <span className="absolute top-0.5 right-0 min-w-[22px] h-[14px] flex items-center justify-center bg-[#d9c39a] text-[#005667] text-[8px] font-bold rounded-full px-1 leading-none">
-          POP
+          {isVendorUser ? 'V' : 'POP'}
         </span>
       </Link>
     );
@@ -123,7 +125,7 @@ function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
    Slide da sinistra, overlay 0.4, search autofocus
    5 voci nav, account in fondo
    ══════════════════════════════════════════════════════════ */
-function MobileDrawer({ isOpen, onClose, onOpenAuth }: { isOpen: boolean; onClose: () => void; onOpenAuth: () => void }) {
+function MobileDrawer({ isOpen, onClose, onOpenAuth, onOpenVendorAuth }: { isOpen: boolean; onClose: () => void; onOpenAuth: () => void; onOpenVendorAuth: () => void }) {
   const isAuth = useAuthStore(s => s.isAuthenticated());
   const user = useAuthStore(s => s.user);
   const pathname = usePathname();
@@ -217,13 +219,25 @@ function MobileDrawer({ isOpen, onClose, onOpenAuth }: { isOpen: boolean; onClos
           })}
         </nav>
 
+        {/* Vendi con noi — only if not logged in */}
+        {!isAuth && (
+          <>
+            <div className="h-px bg-gray-100 mx-4" />
+            <div className="px-4 py-2">
+              <button onClick={() => { onClose(); onOpenVendorAuth(); }} className="w-full text-left py-3 px-4 text-[13px] text-[#888] hover:text-[#005667] transition-colors">
+                Vendi con noi
+              </button>
+            </div>
+          </>
+        )}
+
         {/* Divider */}
         <div className="h-px bg-gray-100 mx-4" />
 
         {/* Account — in fondo, font-size 13px */}
         <div className="p-4">
           <button
-            onClick={() => { onClose(); isAuth ? (window.location.href = '/account') : onOpenAuth(); }}
+            onClick={() => { onClose(); isAuth ? (window.location.href = useAuthStore.getState().isVendor() ? '/vendor/dashboard' : '/account') : onOpenAuth(); }}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 text-[13px] font-medium text-gray-700 hover:border-[#005667] hover:text-[#005667] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
@@ -245,6 +259,8 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [vendorAuthOpen, setVendorAuthOpen] = useState(false);
+  const isAuth = useAuthStore(s => s.isAuthenticated());
   const [scrolled, setScrolled] = useState(false);
   const [topBarVisible, setTopBarVisible] = useState(true);
   const pathname = usePathname();
@@ -319,6 +335,12 @@ export default function Header() {
                   </Link>
                 );
               })}
+              {/* Vendi con noi — only if not logged in */}
+              {!isAuth && (
+                <button onClick={() => setVendorAuthOpen(true)} className="px-3 py-1.5 text-[13px] text-[#888] hover:text-[#005667] transition-colors whitespace-nowrap ml-1">
+                  Vendi con noi
+                </button>
+              )}
             </nav>
 
             {/* Spacer */}
@@ -366,10 +388,11 @@ export default function Header() {
       </header>
 
       {/* Mobile drawer */}
-      <MobileDrawer isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} />
+      <MobileDrawer isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} onOpenVendorAuth={() => setVendorAuthOpen(true)} />
 
       {/* Auth modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <VendorAuthModal isOpen={vendorAuthOpen} onClose={() => setVendorAuthOpen(false)} />
 
       {/* Mobile search — fullscreen overlay */}
       {mobileSearchOpen && <SearchOverlay onClose={() => setMobileSearchOpen(false)} isMobile />}
