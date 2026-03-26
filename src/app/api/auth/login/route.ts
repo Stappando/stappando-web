@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     let custFirstName = firstName;
     let custLastName = lastName;
     let custId = userId;
+    let custRole = 'customer';
     try {
       const custUrl = `${wc.baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
       const custRes = await fetch(custUrl);
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
           custFirstName = customers[0].first_name || custFirstName;
           custLastName = customers[0].last_name || custLastName;
           custId = customers[0].id || custId;
+          custRole = customers[0].role || 'customer';
         }
       }
     } catch { /* use JWT data */ }
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
         username: nicename,
       },
       token,
+      role: custRole,
     });
   } catch {
     return NextResponse.json({ message: 'Errore del server' }, { status: 500 });

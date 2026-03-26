@@ -61,6 +61,7 @@ export interface WCOrder {
 interface AuthState {
   user: User | null;
   token: string | null;
+  role: string;
   isLoading: boolean;
   error: string | null;
 
@@ -69,6 +70,7 @@ interface AuthState {
   logout: () => void;
   clearError: () => void;
   isAuthenticated: () => boolean;
+  isVendor: () => boolean;
 }
 
 /* ── Store ─────────────────────────────────────────────── */
@@ -78,6 +80,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       token: null,
+      role: 'customer',
       isLoading: false,
       error: null,
 
@@ -94,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(data.message || 'Credenziali non valide');
           }
 
-          set({ user: data.user, token: data.token, isLoading: false, error: null });
+          set({ user: data.user, token: data.token, role: data.role || 'customer', isLoading: false, error: null });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Errore durante il login';
           set({ isLoading: false, error: message });
@@ -125,12 +128,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        set({ user: null, token: null, error: null });
+        set({ user: null, token: null, role: 'customer', error: null });
       },
 
       clearError: () => set({ error: null }),
 
       isAuthenticated: () => !!get().token && !!get().user,
+      isVendor: () => { const r = get().role; return r === 'vendor' || r === 'wcfm_vendor' || r === 'dc_vendor'; },
     }),
     {
       name: 'stappando-auth',
