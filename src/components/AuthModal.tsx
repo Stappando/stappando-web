@@ -192,9 +192,22 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
             </button>
 
             {showPatience && loading && (
-              <div className="mt-3 p-3 rounded-lg bg-[#f0f7f5] border border-[#005667]/20 text-center">
-                <p className="text-[12px] text-[#005667] font-medium">Non chiudere la finestra</p>
-                <p className="text-[11px] text-[#888] mt-0.5">Stiamo configurando il tuo account...</p>
+              <div className="mt-4 p-4 rounded-xl bg-[#005667] text-center">
+                <p className="text-[14px] text-white font-bold mb-1">Non chiudere la finestra</p>
+                <p className="text-[12px] text-white/70 mb-3">Stiamo configurando il tuo account...</p>
+                <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#d9c39a] rounded-full animate-[progress_20s_ease-in-out_forwards]" />
+                </div>
+                <style jsx>{`
+                  @keyframes progress {
+                    0% { width: 5%; }
+                    30% { width: 40%; }
+                    60% { width: 65%; }
+                    80% { width: 82%; }
+                    95% { width: 95%; }
+                    100% { width: 98%; }
+                  }
+                `}</style>
               </div>
             )}
           </form>
