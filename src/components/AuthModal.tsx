@@ -11,14 +11,12 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthModalProps) {
-  const [step, setStep] = useState<'initial' | 'password' | 'register'>('initial');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [newsletter, setNewsletter] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, register, isLoading, error, clearError } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+  const { login, register } = useAuthStore();
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
@@ -28,78 +26,67 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
   useEffect(() => {
     if (!isOpen) {
-      setStep('initial');
       setEmail('');
       setPassword('');
-      setFirstName('');
-      setLastName('');
       setNewsletter(false);
       setLocalError('');
-      clearError();
+      setLoading(false);
     }
-  }, [isOpen, clearError]);
+  }, [isOpen]);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    // Try login first — if it fails with invalid credentials, show register
-    setStep('password');
-  };
+  const isVendorRole = (role: string) => role === 'vendor' || role === 'wcfm_vendor' || role === 'dc_vendor';
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+    if (password.length < 6) { setLocalError('Password minimo 6 caratteri'); return; }
+
+    setLoading(true);
     setLocalError('');
-    clearError();
+
+    // Step 1: Try login
     try {
       await login(email, password);
       const state = useAuthStore.getState();
       if (state.token) {
         onClose();
-        // Redirect vendors to dashboard
-        if (vendorMode || state.role === 'vendor' || state.role === 'wcfm_vendor' || state.role === 'dc_vendor') {
+        if (vendorMode || isVendorRole(state.role)) {
           window.location.href = '/vendor/dashboard';
         }
+        return;
       }
     } catch {
-      // Login failed — switch to registration automatically
-      clearError();
-      setPassword('');
-      setLocalError('Email non registrata — completa la registrazione qui sotto.');
-      setStep('register');
+      // Login failed — try registration
     }
-  };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError('');
-
-    if (vendorMode) {
-      // Vendor registration: call vendor register API then auto-login
-      try {
+    // Step 2: Auto-register
+    try {
+      if (vendorMode) {
         const res = await fetch('/api/vendor/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, firstName, lastName }),
+          body: JSON.stringify({ email, password }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Errore registrazione');
-        // Auto-login
-        await login(email, password);
-        const state = useAuthStore.getState();
-        if (state.token) {
-          onClose();
+      } else {
+        await register(email, password, '', '', newsletter);
+      }
+
+      // Auto-login after registration
+      await login(email, password);
+      const state = useAuthStore.getState();
+      if (state.token) {
+        onClose();
+        if (vendorMode || isVendorRole(state.role)) {
           window.location.href = '/vendor/dashboard';
         }
-      } catch (err) {
-        setLocalError(err instanceof Error ? err.message : 'Errore registrazione');
+        return;
       }
-      return;
-    }
-
-    await register(email, password, firstName, lastName, newsletter);
-    const state = useAuthStore.getState();
-    if (state.token) {
-      onClose();
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Errore. Riprova.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,26 +97,24 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
-        {/* Close */}
         <button onClick={onClose} className="absolute top-3 right-3 z-10 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
         <div className="p-6">
-          {/* Logo */}
           <div className="flex justify-center mb-5">
             <Image src="/logo.png" alt="Stappando" width={120} height={30} className="h-7 w-auto" />
           </div>
 
           <h2 className="text-lg font-bold text-center text-gray-900 mb-1">
-            {step === 'register' ? 'Crea il tuo account' : 'Accedi o registrati'}
+            {vendorMode ? 'Accedi come venditore' : 'Accedi o registrati'}
           </h2>
           <p className="text-center text-xs text-gray-500 mb-5">
-            {step === 'register' ? 'Completa i dati per registrarti' : 'Per ordinare, salvare preferiti e accumulare Punti POP'}
+            {vendorMode ? 'Inserisci email e password per iniziare' : 'Per ordinare, salvare preferiti e accumulare Punti POP'}
           </p>
 
-          {/* Social login — always visible on initial + password step */}
-          {step !== 'register' && (
+          {/* Social login */}
+          {!vendorMode && (
             <>
               <div className="space-y-2.5 mb-4">
                 <a
@@ -162,70 +147,34 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
           )}
 
           {/* Error */}
-          {(error || localError) && (
+          {localError && (
             <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
-              {localError || error}
+              {localError}
             </div>
           )}
 
-          {/* Step: initial — email only */}
-          {step === 'initial' && (
-            <form onSubmit={handleEmailSubmit}>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3"
-                placeholder="Email o nome utente"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-[#055667] text-white font-bold text-sm hover:bg-[#044556] transition-colors"
-              >
-                Continua
-              </button>
-            </form>
-          )}
+          {/* Single form: email + password */}
+          <form onSubmit={handleSubmit}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-2.5"
+              placeholder="Email"
+              autoFocus
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3"
+              placeholder="Password"
+            />
 
-          {/* Step: password */}
-          {step === 'password' && (
-            <form onSubmit={handleLogin}>
-              <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-gray-50 border border-gray-200">
-                <span className="text-sm text-gray-700 truncate flex-1">{email}</span>
-                <button type="button" onClick={() => { setStep('initial'); clearError(); setLocalError(''); }} className="text-xs text-[#055667] font-medium hover:underline shrink-0">Cambia</button>
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3"
-                placeholder="Password"
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-[#055667] text-white font-bold text-sm hover:bg-[#044556] transition-colors disabled:opacity-50"
-              >
-                {isLoading ? 'Accesso...' : 'Accedi'}
-              </button>
-              <div className="flex justify-center mt-3">
-                <a href="https://stappando.it/my-account/lost-password/" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-[#055667]">Password dimenticata?</a>
-              </div>
-            </form>
-          )}
-
-          {/* Step: register — solo email + password, zero frizioni */}
-          {step === 'register' && (
-            <form onSubmit={handleRegister}>
-              <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-gray-50 border border-gray-200">
-                <span className="text-sm text-gray-700 truncate flex-1">{email}</span>
-                <button type="button" onClick={() => { setStep('initial'); clearError(); setLocalError(''); }} className="text-xs text-[#055667] font-medium hover:underline shrink-0">Cambia</button>
-              </div>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3" placeholder="Scegli una password (min 6 caratteri)" autoFocus />
+            {!vendorMode && (
               <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -237,18 +186,31 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
                   Voglio ricevere offerte e novità da Stappando
                 </span>
               </label>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-[#055667] text-white font-bold text-sm hover:bg-[#044556] transition-colors disabled:opacity-50"
-              >
-                {isLoading ? 'Registrazione...' : 'Crea account'}
-              </button>
-              <p className="text-[9px] text-gray-400 text-center mt-3">
-                Registrandoti accetti i <a href="https://stappando.it/termini-e-condizioni/" target="_blank" rel="noopener noreferrer" className="underline">Termini</a> e la <a href="https://stappando.it/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
-              </p>
-            </form>
-          )}
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-[#055667] text-white font-bold text-sm hover:bg-[#044556] transition-colors disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Accesso in corso...
+                </span>
+              ) : (
+                'Continua'
+              )}
+            </button>
+          </form>
+
+          <div className="flex justify-center mt-3">
+            <a href="https://stappando.it/my-account/lost-password/" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-[#055667]">Password dimenticata?</a>
+          </div>
+
+          <p className="text-[9px] text-gray-400 text-center mt-3">
+            Continuando accetti i <a href="https://stappando.it/termini-e-condizioni/" target="_blank" rel="noopener noreferrer" className="underline">Termini</a> e la <a href="https://stappando.it/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
+          </p>
         </div>
       </div>
     </div>
