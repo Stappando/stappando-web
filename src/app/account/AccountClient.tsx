@@ -807,6 +807,18 @@ function OrdersSection({ userId }: { userId: number }) {
   const trackingSteps = ['Ordinato', 'Preparazione', 'Spedito', 'In consegna', 'Consegnato'];
   const getStep = (status: string) => { if (status === 'completed') return 4; if (status === 'processing') return 1; return 0; };
 
+  const getReturnStatus = (order: WCOrder): string | null => {
+    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+    const rs = meta.find(m => m.key === '_return_status');
+    return rs?.value || null;
+  };
+
+  const returnLabels: Record<string, { label: string; css: string }> = {
+    requested: { label: 'Reso richiesto', css: 'bg-orange-100 text-orange-700' },
+    approved: { label: 'Reso approvato', css: 'bg-blue-100 text-blue-700' },
+    completed: { label: 'Reso completato', css: 'bg-green-100 text-green-700' },
+  };
+
   const filters: { key: OrderFilter; label: string }[] = [
     { key: 'all', label: 'Tutti' }, { key: 'processing', label: 'In corso' },
     { key: 'completed', label: 'Completati' }, { key: 'cancelled', label: 'Annullati' },
@@ -862,11 +874,12 @@ function OrdersSection({ userId }: { userId: number }) {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[14px] font-bold text-[#1a1a1a]">#{order.number}</span>
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                             {statusLabels[order.status] || order.status}
                           </span>
+                          {(() => { const rs = getReturnStatus(order); return rs && returnLabels[rs] ? <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${returnLabels[rs].css}`}>{returnLabels[rs].label}</span> : null; })()}
                         </div>
                         <p className="text-[11px] text-[#888] mt-0.5">{safeDate(order.date_created)} · {formatPrice(order.total)} €</p>
                       </div>
@@ -877,7 +890,7 @@ function OrdersSection({ userId }: { userId: number }) {
                         {trackNum && (
                           <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="px-3 py-1.5 border border-[#005667] text-[#005667] rounded-md text-[11px] font-semibold hover:bg-[#005667]/5 transition-colors">Traccia</button>
                         )}
-                        {order.status === 'completed' && (
+                        {order.status === 'completed' && !getReturnStatus(order) && (
                           <button onClick={() => setResoOrder(order)} className="px-3 py-1.5 border border-[#e8e4dc] text-[#888] rounded-md text-[11px] font-semibold hover:bg-[#f8f6f1] transition-colors">Reso</button>
                         )}
                       </div>
@@ -934,7 +947,7 @@ function OrdersSection({ userId }: { userId: number }) {
                         <div className="sm:hidden px-6 pb-4 flex gap-2">
                           <button onClick={() => handleReorder(order)} className="flex-1 py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold">Riordina</button>
                           {trackNum && <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="flex-1 py-2.5 border border-[#005667] text-[#005667] rounded-lg text-[12px] font-semibold">Traccia</button>}
-                          {order.status === 'completed' && <button onClick={() => setResoOrder(order)} className="py-2.5 px-4 border border-[#e8e4dc] text-[#888] rounded-lg text-[12px] font-semibold">Reso</button>}
+                          {order.status === 'completed' && !getReturnStatus(order) && <button onClick={() => setResoOrder(order)} className="py-2.5 px-4 border border-[#e8e4dc] text-[#888] rounded-lg text-[12px] font-semibold">Reso</button>}
                         </div>
                       </div>
                     )}
@@ -1001,6 +1014,10 @@ function ResoModal({ order, onClose }: { order: WCOrder; onClose: () => void }) 
           orderId: order.id,
           orderNumber: order.number,
           items: selectedItems,
+          productNames: order.line_items.filter(i => selectedItems.includes(i.id)).map(i => i.name),
+          productQtys: order.line_items.filter(i => selectedItems.includes(i.id)).map(i => i.quantity),
+          customerName: `${(order as unknown as { billing?: { first_name?: string; last_name?: string } }).billing?.first_name || ''} ${(order as unknown as { billing?: { last_name?: string } }).billing?.last_name || ''}`.trim(),
+          customerEmail: (order as unknown as { billing?: { email?: string } }).billing?.email || '',
           reason: reason === 'Altro' ? otherText : reason,
           pickup,
           pickupDate: pickup === 'home' ? pickupDate : null,
