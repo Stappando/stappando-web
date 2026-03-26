@@ -33,44 +33,6 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
   const isVendorRole = (role: string) => ['vendor', 'wcfm_vendor', 'dc_vendor'].includes(role);
 
-  /** Direct fetch login — bypasses store to avoid re-render loops */
-  const tryLogin = async (em: string, pw: string): Promise<{ ok: boolean; role: string }> => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: em, password: pw }),
-    });
-    if (!res.ok) return { ok: false, role: '' };
-    const data = await res.json();
-    if (!data.token) return { ok: false, role: '' };
-    // Write to store directly
-    useAuthStore.setState({
-      user: data.user,
-      token: data.token,
-      role: data.role || 'customer',
-      isLoading: false,
-      error: null,
-    });
-    return { ok: true, role: data.role || 'customer' };
-  };
-
-  /** Direct fetch register */
-  const tryRegister = async (em: string, pw: string): Promise<{ ok: boolean; error: string }> => {
-    const url = vendorMode ? '/api/vendor/register' : '/api/auth/register';
-    const body = vendorMode
-      ? { email: em, password: pw }
-      : { email: em, password: pw, firstName: '', lastName: '', newsletter: false };
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.message || 'Errore registrazione' };
-    return { ok: true, error: '' };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const em = email.trim();
@@ -81,41 +43,41 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
     setLoading(true);
     setLocalError('');
 
-    // 1. Try login
-    const loginResult = await tryLogin(em, pw);
-    if (loginResult.ok) {
+    try {
+      const res = await fetch('/api/auth/auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: em, password: pw, vendorMode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setLocalError(data.message || 'Errore. Riprova.');
+        setLoading(false);
+        return;
+      }
+
+      // Write to store
+      if (data.token) {
+        useAuthStore.setState({
+          user: data.user,
+          token: data.token,
+          role: data.role || 'customer',
+          isLoading: false,
+          error: null,
+        });
+      }
+
       setLoading(false);
       onClose();
-      if (vendorMode || isVendorRole(loginResult.role)) {
+
+      if (vendorMode || isVendorRole(data.role || '')) {
         window.location.href = '/vendor/dashboard';
       }
-      return;
-    }
-
-    // 2. Login failed → try register
-    const regResult = await tryRegister(em, pw);
-    if (!regResult.ok) {
-      // Registration failed — email exists with different password
-      const msg = regResult.error.toLowerCase();
-      if (msg.includes('già') || msg.includes('exist') || msg.includes('already') || msg.includes('registration')) {
-        setLocalError('Email già registrata. Controlla la password o usa "Password dimenticata".');
-      } else {
-        setLocalError(regResult.error);
-      }
+    } catch {
+      setLocalError('Errore di connessione. Riprova.');
       setLoading(false);
-      return;
-    }
-
-    // 3. Registration ok → login
-    const loginAfterReg = await tryLogin(em, pw);
-    setLoading(false);
-    if (loginAfterReg.ok) {
-      onClose();
-      if (vendorMode || isVendorRole(loginAfterReg.role)) {
-        window.location.href = '/vendor/dashboard';
-      }
-    } else {
-      setLocalError('Account creato. Chiudi e riprova ad accedere.');
     }
   };
 
