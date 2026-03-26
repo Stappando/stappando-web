@@ -126,7 +126,6 @@ function IconLogout() {
 
 type Section =
   | 'ordini'
-  | 'tracking'
   | 'punti'
   | 'buoni'
   | 'preferiti'
@@ -146,7 +145,6 @@ const sectionGroups: SectionGroup[] = [
     label: 'ORDINI',
     items: [
       { key: 'ordini', label: 'I miei ordini', icon: IconBox },
-      { key: 'tracking', label: 'Tracciamento spedizioni', icon: IconTruck },
     ],
   },
   {
@@ -574,7 +572,6 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeSection === 'ordini' && <OrdersSection userId={user.id} />}
-          {activeSection === 'tracking' && <TrackingSection userId={user.id} />}
           {activeSection === 'punti' && <PointsSection userId={user.id} />}
           {activeSection === 'buoni' && <GiftCardsSection />}
           {activeSection === 'preferiti' && <FavoritesSection />}
@@ -762,12 +759,17 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* ── Orders ────────────────────────────────────────────── */
+/* ── Orders (unified with tracking + reso) ─────────────── */
+
+type OrderFilter = 'all' | 'processing' | 'completed' | 'cancelled';
 
 function OrdersSection({ userId }: { userId: number }) {
   const [orders, setOrders] = useState<WCOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [filter, setFilter] = useState<OrderFilter>('all');
+  const [resoOrder, setResoOrder] = useState<WCOrder | null>(null);
+  const [trackingModal, setTrackingModal] = useState<{ trackingNumber: string; zipCode: string } | null>(null);
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
@@ -776,77 +778,397 @@ function OrdersSection({ userId }: { userId: number }) {
 
   const handleReorder = (order: WCOrder) => {
     order.line_items.forEach(item => {
-      addItem({
-        id: item.product_id,
-        name: item.name,
-        price: parseFloat(item.price),
-        image: item.image?.src || '',
-        vendorId: 'default',
-        vendorName: DEFAULT_VENDOR_NAME,
-      });
+      addItem({ id: item.product_id, name: item.name, price: parseFloat(item.price), image: item.image?.src || '', vendorId: 'default', vendorName: DEFAULT_VENDOR_NAME });
     });
     alert('Prodotti aggiunti al carrello!');
   };
 
+  const getTrackingNumber = (order: WCOrder): string | null => {
+    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+    const t = meta.find(m => m.key === '_tracking_number' || m.key === 'tracking_number' || m.key === 'sp_tracking_number' || m.key === '_wc_shipment_tracking_items');
+    if (t?.value) { try { const p = JSON.parse(t.value); return p[0]?.tracking_number || t.value; } catch { return t.value; } }
+    return null;
+  };
+
+  const getZipCode = (order: WCOrder): string => (order as unknown as { shipping?: { postcode?: string } }).shipping?.postcode || '';
+
+  const trackingSteps = ['Ordinato', 'Preparazione', 'Spedito', 'In consegna', 'Consegnato'];
+  const getStep = (status: string) => { if (status === 'completed') return 4; if (status === 'processing') return 1; return 0; };
+
+  const filters: { key: OrderFilter; label: string }[] = [
+    { key: 'all', label: 'Tutti' }, { key: 'processing', label: 'In corso' },
+    { key: 'completed', label: 'Completati' }, { key: 'cancelled', label: 'Annullati' },
+  ];
+
+  const filtered = filter === 'all' ? orders : orders.filter(o => {
+    if (filter === 'processing') return ['processing', 'on-hold', 'pending'].includes(o.status);
+    return o.status === filter;
+  });
+
   if (loading) return <LoadingSpinner />;
 
   return (
-    <SectionCard title="I miei ordini">
-      {orders.length === 0 ? (
-        <EmptyState message="Non hai ancora effettuato nessun ordine." />
-      ) : (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <div key={order.id} className="border border-brand-border rounded-xl overflow-hidden hover:border-brand-primary/30 transition-colors">
-              {/* Header — sempre visibile */}
-              <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => setExpanded(expanded === order.id ? null : order.id)}>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-brand-text">#{order.number}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {statusLabels[order.status] || order.status}
-                  </span>
-                  <span className="text-xs text-brand-muted">{safeDate(order.date_created)}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-brand-primary">{formatPrice(order.total)} €</span>
-                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === order.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </div>
+    <>
+      <div className="bg-white rounded-2xl border border-[#e8e4dc] shadow-sm">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-[#e8e4dc] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-[17px] font-bold text-[#005667]">I miei ordini <span className="text-[13px] font-normal text-[#888]">({orders.length})</span></h2>
+          <div className="flex gap-2 flex-wrap">
+            {filters.map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${filter === f.key ? 'bg-[#005667] text-white' : 'bg-white border border-[#e8e4dc] text-[#888] hover:border-[#005667] hover:text-[#005667]'}`}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {filtered.length === 0 ? (
+            <EmptyState message="Nessun ordine trovato." />
+          ) : (
+            <div className="space-y-4">
+              {filtered.map((order) => {
+                const isOpen = expanded === order.id;
+                const currentStep = getStep(order.status);
+                const trackNum = getTrackingNumber(order);
+
+                return (
+                  <div key={order.id} className={`border rounded-xl overflow-hidden transition-colors ${isOpen ? 'border-[#005667]/30' : 'border-[#e8e4dc] hover:border-[#005667]/20'}`}>
+                    {/* Closed row */}
+                    <div className="flex items-center gap-3 p-4 cursor-pointer" onClick={() => setExpanded(isOpen ? null : order.id)}>
+                      {/* Stacked product images */}
+                      <div className="flex -space-x-2 shrink-0">
+                        {order.line_items.slice(0, 3).map((item, i) => (
+                          <div key={item.id} className="w-9 h-9 rounded-full border-2 border-white bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden" style={{ zIndex: 3 - i }}>
+                            {item.image?.src && <img src={item.image.src} alt="" className="w-full h-full object-cover" />}
+                          </div>
+                        ))}
+                        {order.line_items.length > 3 && (
+                          <div className="w-9 h-9 rounded-full border-2 border-white bg-[#e8e4dc] flex items-center justify-center text-[9px] font-bold text-[#888]">+{order.line_items.length - 3}</div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] font-bold text-[#1a1a1a]">#{order.number}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                            {statusLabels[order.status] || order.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#888] mt-0.5">{safeDate(order.date_created)} · {formatPrice(order.total)} €</p>
+                      </div>
+
+                      {/* Action buttons — desktop only */}
+                      <div className="hidden sm:flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => handleReorder(order)} className="px-3 py-1.5 bg-[#005667] text-white rounded-md text-[11px] font-semibold hover:bg-[#004555] transition-colors">Riordina</button>
+                        {trackNum && (
+                          <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="px-3 py-1.5 border border-[#005667] text-[#005667] rounded-md text-[11px] font-semibold hover:bg-[#005667]/5 transition-colors">Traccia</button>
+                        )}
+                        {order.status === 'completed' && (
+                          <button onClick={() => setResoOrder(order)} className="px-3 py-1.5 border border-[#e8e4dc] text-[#888] rounded-md text-[11px] font-semibold hover:bg-[#f8f6f1] transition-colors">Reso</button>
+                        )}
+                      </div>
+
+                      <svg className={`w-4 h-4 text-[#bbb] transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+
+                    {/* Expanded detail */}
+                    {isOpen && (
+                      <div className="border-t border-[#f0f0f0] bg-[#fafaf8]">
+                        {/* Timeline */}
+                        {['processing', 'completed'].includes(order.status) && (
+                          <div className="px-6 py-5">
+                            <div className="relative flex items-start justify-between">
+                              <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-[#e8e4dc]" />
+                              <div className="absolute top-4 left-[10%] h-0.5 bg-[#005667] transition-all" style={{ width: `${Math.min((currentStep / 4) * 80, 80)}%` }} />
+                              {trackingSteps.map((s, i) => (
+                                <div key={s} className="flex flex-col items-center relative z-10" style={{ width: '20%' }}>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                    i < currentStep ? 'bg-[#005667] text-white' : i === currentStep ? 'bg-[#005667] text-white animate-pulse' : 'bg-white border-2 border-[#e8e4dc] text-[#bbb]'
+                                  }`}>
+                                    {i < currentStep ? <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : i + 1}
+                                  </div>
+                                  <p className={`text-[8px] mt-1.5 text-center ${i <= currentStep ? 'text-[#005667] font-semibold' : 'text-[#bbb]'}`}>{s}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Products */}
+                        <div className="px-6 pb-4 space-y-2.5">
+                          {order.line_items.map((item) => (
+                            <div key={item.id} className="flex items-center gap-3">
+                              <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
+                                {item.image?.src && <img src={item.image.src} alt={item.name} className="w-full h-full object-contain" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">{item.name}</p>
+                                <p className="text-[11px] text-[#888]">x{item.quantity}</p>
+                              </div>
+                              <p className="text-[13px] font-bold text-[#005667] shrink-0">{formatPrice(item.price)} €</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Summary */}
+                        <div className="px-6 py-3 border-t border-[#f0f0f0] flex items-center justify-between">
+                          <p className="text-[13px] text-[#888]">Totale ordine</p>
+                          <p className="text-[16px] font-bold text-[#005667]">{formatPrice(order.total)} €</p>
+                        </div>
+
+                        {/* Mobile actions */}
+                        <div className="sm:hidden px-6 pb-4 flex gap-2">
+                          <button onClick={() => handleReorder(order)} className="flex-1 py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold">Riordina</button>
+                          {trackNum && <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="flex-1 py-2.5 border border-[#005667] text-[#005667] rounded-lg text-[12px] font-semibold">Traccia</button>}
+                          {order.status === 'completed' && <button onClick={() => setResoOrder(order)} className="py-2.5 px-4 border border-[#e8e4dc] text-[#888] rounded-lg text-[12px] font-semibold">Reso</button>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ShippyPro tracking modal */}
+      {trackingModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setTrackingModal(null)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f0f0]">
+              <h3 className="text-[15px] font-bold">Traccia la tua spedizione</h3>
+              <button onClick={() => setTrackingModal(null)} className="p-2 hover:bg-[#f0f0f0] rounded-lg"><svg className="w-5 h-5 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            <iframe src={`https://www.shippypro.com/tracking/?tracking=${encodeURIComponent(trackingModal.trackingNumber)}&zip=${encodeURIComponent(trackingModal.zipCode)}`} className="w-full h-[400px] border-0" title="Tracking" />
+          </div>
+        </div>
+      )}
+
+      {/* Reso modal */}
+      {resoOrder && <ResoModal order={resoOrder} onClose={() => setResoOrder(null)} />}
+    </>
+  );
+}
+
+/* ── Reso Modal (4 step) ──────────────────────────────── */
+
+function ResoModal({ order, onClose }: { order: WCOrder; onClose: () => void }) {
+  const [step, setStep] = useState(1);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [reason, setReason] = useState('');
+  const [otherText, setOtherText] = useState('');
+  const [pickup, setPickup] = useState<'self' | 'home'>('self');
+  const [pickupDate, setPickupDate] = useState('');
+  const [pickupSlot, setPickupSlot] = useState('9:00-13:00');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const toggleItem = (id: number) => setSelectedItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const selectedTotal = order.line_items.filter(i => selectedItems.includes(i.id)).reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+  const refundAmount = pickup === 'home' ? Math.max(selectedTotal - 2.5, 0) : selectedTotal;
+
+  const reasons = [
+    'Prodotto danneggiato alla consegna',
+    'Prodotto diverso da quanto ordinato',
+    'Ho cambiato idea',
+    'Altro',
+  ];
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await fetch('/api/support/reso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          orderNumber: order.number,
+          items: selectedItems,
+          reason: reason === 'Altro' ? otherText : reason,
+          pickup,
+          pickupDate: pickup === 'home' ? pickupDate : null,
+          pickupSlot: pickup === 'home' ? pickupSlot : null,
+          refundAmount,
+        }),
+      });
+    } catch {}
+    setDone(true);
+    setSubmitting(false);
+  };
+
+  const stepIndicator = (
+    <div className="flex items-center justify-center gap-2 mb-6">
+      {[1, 2, 3, 4].map(s => (
+        <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${
+          s < step ? 'bg-[#005667] text-white' : s === step ? 'bg-[#005667] text-white' : 'bg-[#e8e4dc] text-[#bbb]'
+        }`}>
+          {s < step ? <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : s}
+        </div>
+      ))}
+    </div>
+  );
+
+  if (done) {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#e8f4f1] flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <h3 className="text-[18px] font-bold text-[#1a1a1a] mb-2">Richiesta reso inviata</h3>
+          <p className="text-[13px] text-[#888] mb-6">Riceverai una mail di conferma con le istruzioni. Il rimborso verrà elaborato entro 5-7 giorni lavorativi.</p>
+          <button onClick={onClose} className="px-8 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">Chiudi</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white px-7 pt-6 pb-4 border-b border-[#f0f0f0] z-10">
+          <button onClick={onClose} className="absolute top-5 right-5 p-2 hover:bg-[#f0f0f0] rounded-lg">
+            <svg className="w-5 h-5 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <h3 className="text-[17px] font-bold text-[#1a1a1a]">Richiesta reso · Ordine #{order.number}</h3>
+        </div>
+
+        <div className="px-7 py-6">
+          {stepIndicator}
+
+          {/* Step 1 — Select products */}
+          {step === 1 && (
+            <>
+              <h4 className="text-[15px] font-semibold mb-4">Quale prodotto vuoi rendere?</h4>
+              <div className="space-y-2.5 mb-6">
+                {order.line_items.map(item => (
+                  <label key={item.id} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${selectedItems.includes(item.id) ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e8e4dc] hover:border-[#005667]/30'}`}>
+                    <input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => toggleItem(item.id)} className="w-4 h-4 rounded border-[#ccc] text-[#005667] focus:ring-[#005667] shrink-0" />
+                    <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0">
+                      {item.image?.src && <img src={item.image.src} alt="" className="w-full h-full object-contain" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold truncate">{item.name}</p>
+                      <p className="text-[11px] text-[#888]">x{item.quantity} · {formatPrice(item.price)} €</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <button onClick={() => setStep(2)} disabled={selectedItems.length === 0} className="w-full py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#004555] transition-colors">Continua →</button>
+            </>
+          )}
+
+          {/* Step 2 — Reason */}
+          {step === 2 && (
+            <>
+              <h4 className="text-[15px] font-semibold mb-4">Perché vuoi fare il reso?</h4>
+              <div className="space-y-2.5 mb-5">
+                {reasons.map(r => (
+                  <label key={r} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${reason === r ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e8e4dc]'}`}>
+                    <input type="radio" name="reason" checked={reason === r} onChange={() => setReason(r)} className="w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+                    <span className="text-[13px]">{r}</span>
+                  </label>
+                ))}
+                {reason === 'Altro' && (
+                  <textarea value={otherText} onChange={e => setOtherText(e.target.value)} rows={3} placeholder="Descrivi il motivo..." className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] text-[13px] focus:outline-none focus:border-[#005667] resize-none" />
+                )}
               </div>
 
-              {/* Dettagli — espandibile */}
-              {expanded === order.id && (
-                <div className="border-t border-brand-border p-3 bg-gray-50/50">
-                  {/* Prodotti */}
-                  <div className="space-y-2 mb-3">
-                    {order.line_items.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 text-sm">
-                        {item.image?.src && <img src={item.image.src} alt={item.name} className="w-8 h-8 rounded object-cover shrink-0" />}
-                        <span className="text-brand-text truncate flex-1">{item.name}</span>
-                        <span className="text-brand-muted text-xs">x{item.quantity}</span>
-                        <span className="text-brand-text font-medium text-xs">{formatPrice(item.price)} €</span>
-                      </div>
-                    ))}
+              {/* Warning box */}
+              <div className="p-4 mb-5 rounded-xl border border-[#c0392b] bg-[#fce4ec]">
+                <p className="text-[12px] text-[#c0392b] leading-relaxed">
+                  <strong>Attenzione:</strong> le bottiglie che arrivano rotte in magazzino non sono rimborsabili. Assicurati di imballare correttamente i prodotti prima della spedizione.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="flex-1 py-3 border border-[#e8e4dc] rounded-lg text-[13px] font-semibold hover:bg-[#f8f6f1] transition-colors">← Indietro</button>
+                <button onClick={() => setStep(3)} disabled={!reason || (reason === 'Altro' && !otherText.trim())} className="flex-1 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold disabled:opacity-40 hover:bg-[#004555] transition-colors">Continua →</button>
+              </div>
+            </>
+          )}
+
+          {/* Step 3 — Pickup method */}
+          {step === 3 && (
+            <>
+              <h4 className="text-[15px] font-semibold mb-4">Come vuoi restituire i prodotti?</h4>
+              <div className="space-y-3 mb-6">
+                <label className={`block p-4 rounded-xl border cursor-pointer transition-colors ${pickup === 'self' ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e8e4dc]'}`} onClick={() => setPickup('self')}>
+                  <div className="flex items-start gap-3">
+                    <input type="radio" checked={pickup === 'self'} readOnly className="mt-1 w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+                    <div>
+                      <p className="text-[14px] font-semibold">Porto il pacco alle Poste</p>
+                      <p className="text-[12px] text-[#888] mt-0.5">Gratuito · Entro 14 giorni</p>
+                    </div>
                   </div>
-                  {/* Azioni */}
-                  <div className="flex gap-2">
-                    <button onClick={() => handleReorder(order)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#055667] text-white text-xs font-semibold hover:bg-[#044556] transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      Riordina
-                    </button>
-                    {(order.status === 'completed' || order.status === 'processing') && (
-                      <a href={`https://stappando.it/tracking/?order_id=${order.id}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-                        Traccia
-                      </a>
-                    )}
+                </label>
+                <label className={`block p-4 rounded-xl border cursor-pointer transition-colors ${pickup === 'home' ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e8e4dc]'}`} onClick={() => setPickup('home')}>
+                  <div className="flex items-start gap-3">
+                    <input type="radio" checked={pickup === 'home'} readOnly className="mt-1 w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+                    <div>
+                      <p className="text-[14px] font-semibold">Ritiro a domicilio</p>
+                      <p className="text-[12px] text-[#888] mt-0.5">+2,50€ · Scegli data e fascia oraria</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {pickup === 'home' && (
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div>
+                    <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Data ritiro</label>
+                    <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-[#e5e5e5] text-[13px] focus:outline-none focus:border-[#005667]" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-1.5">Fascia oraria</label>
+                    <select value={pickupSlot} onChange={e => setPickupSlot(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-[#e5e5e5] text-[13px] focus:outline-none focus:border-[#005667]">
+                      <option value="9:00-13:00">9:00 – 13:00</option>
+                      <option value="13:00-18:00">13:00 – 18:00</option>
+                    </select>
                   </div>
                 </div>
               )}
-            </div>
-          ))}
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep(2)} className="flex-1 py-3 border border-[#e8e4dc] rounded-lg text-[13px] font-semibold hover:bg-[#f8f6f1] transition-colors">← Indietro</button>
+                <button onClick={() => setStep(4)} disabled={pickup === 'home' && !pickupDate} className="flex-1 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold disabled:opacity-40 hover:bg-[#004555] transition-colors">Continua →</button>
+              </div>
+            </>
+          )}
+
+          {/* Step 4 — Confirm */}
+          {step === 4 && (
+            <>
+              <h4 className="text-[15px] font-semibold mb-4">Conferma reso</h4>
+              <div className="bg-[#f8f6f1] rounded-xl p-4 mb-5 space-y-2.5">
+                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Prodotti</span><span className="font-semibold">{selectedItems.length}</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Motivo</span><span className="font-medium text-right max-w-[60%] truncate">{reason === 'Altro' ? otherText : reason}</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-[#888]">Modalità</span><span className="font-medium">{pickup === 'self' ? 'Porto alle Poste' : 'Ritiro a domicilio'}</span></div>
+                {pickup === 'home' && (
+                  <>
+                    <div className="flex justify-between text-[13px]"><span className="text-[#888]">Data ritiro</span><span className="font-medium">{safeDate(pickupDate)} · {pickupSlot}</span></div>
+                    <div className="flex justify-between text-[13px]"><span className="text-[#888]">Costo ritiro</span><span className="font-medium text-[#c0392b]">−2,50 €</span></div>
+                  </>
+                )}
+                <div className="flex justify-between text-[15px] pt-2 border-t border-[#e0dbd4]"><span className="font-semibold">Rimborso stimato</span><span className="font-bold text-[#005667]">{formatPrice(refundAmount)} €</span></div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStep(3)} className="flex-1 py-3 border border-[#e8e4dc] rounded-lg text-[13px] font-semibold hover:bg-[#f8f6f1] transition-colors">← Indietro</button>
+                <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold disabled:opacity-60 hover:bg-[#004555] transition-colors">{submitting ? 'Invio...' : 'Invia richiesta reso'}</button>
+              </div>
+            </>
+          )}
         </div>
-      )}
-    </SectionCard>
+      </div>
+    </div>
   );
 }
 
