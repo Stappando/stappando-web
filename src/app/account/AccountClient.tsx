@@ -2261,11 +2261,14 @@ function PreferencesSection({ userId }: { userId: number }) {
    REVIEWS SECTION
    ══════════════════════════════════════════════════════════ */
 
+interface ReviewData { id: number; rating: number; review: string; date: string }
+
 function ReviewsSection({ userId }: { userId: number }) {
   const { user } = useAuthStore();
   const [orders, setOrders] = useState<WCOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reviewed, setReviewed] = useState<Set<number>>(new Set());
+  const [reviewMap, setReviewMap] = useState<Record<number, ReviewData | null>>({});
+  const [justReviewed, setJustReviewed] = useState<Record<number, { rating: number; text: string }>>({});
   const [activeReview, setActiveReview] = useState<number | null>(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -2274,8 +2277,27 @@ function ReviewsSection({ userId }: { userId: number }) {
   const [successId, setSuccessId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchOrders(userId).then((o) => { setOrders(o); setLoading(false); }).catch(() => setLoading(false));
-  }, [userId]);
+    (async () => {
+      try {
+        const ordersData = await fetchOrders(userId);
+        setOrders(ordersData);
+
+        const completed = ordersData.filter(o => o.status === 'completed');
+        const allItems = completed.flatMap(o => o.line_items || []);
+        const seen = new Set<number>();
+        const uniqueIds = allItems.filter(p => { if (seen.has(p.product_id)) return false; seen.add(p.product_id); return true; }).map(p => p.product_id);
+
+        if (uniqueIds.length > 0 && user?.email) {
+          const checkRes = await fetch(`/api/reviews/check?email=${encodeURIComponent(user.email)}&productIds=${uniqueIds.join(',')}`);
+          if (checkRes.ok) {
+            const { reviewed } = await checkRes.json();
+            setReviewMap(reviewed);
+          }
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, [userId, user?.email]);
 
   const handleSubmitReview = async (productId: number) => {
     if (rating === 0) return;
@@ -2284,21 +2306,22 @@ function ReviewsSection({ userId }: { userId: number }) {
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId,
-          rating,
-          review: reviewText,
-          reviewer: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-          reviewerEmail: user?.email || '',
-        }),
+        body: JSON.stringify({ productId, rating, review: reviewText, reviewer: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(), reviewerEmail: user?.email || '' }),
       });
       if (res.ok) {
-        setReviewed(new Set([...reviewed, productId]));
+        setJustReviewed(prev => ({ ...prev, [productId]: { rating, text: reviewText } }));
         setSuccessId(productId);
         setActiveReview(null);
+        const savedRating = rating;
+        const savedText = reviewText;
         setRating(0);
         setReviewText('');
-        setTimeout(() => setSuccessId(null), 4000);
+        // After 3s move to reviewed
+        setTimeout(() => {
+          setSuccessId(null);
+          setReviewMap(prev => ({ ...prev, [productId]: { id: 0, rating: savedRating, review: savedText, date: new Date().toISOString() } }));
+          setJustReviewed(prev => { const n = { ...prev }; delete n[productId]; return n; });
+        }, 3000);
       }
     } catch {}
     setSubmitting(false);
@@ -2309,90 +2332,152 @@ function ReviewsSection({ userId }: { userId: number }) {
   const completedOrders = orders.filter(o => o.status === 'completed');
   const allProducts = completedOrders.flatMap(o => o.line_items || []);
   const seen = new Set<number>();
-  const uniqueProducts = allProducts.filter(p => {
-    if (seen.has(p.product_id) || reviewed.has(p.product_id)) return false;
-    seen.add(p.product_id);
-    return true;
-  });
+  const uniqueProducts = allProducts.filter(p => { if (seen.has(p.product_id)) return false; seen.add(p.product_id); return true; });
+
+  const toReview = uniqueProducts.filter(p => !reviewMap[p.product_id] && !justReviewed[p.product_id]);
+  const alreadyReviewed = uniqueProducts.filter(p => reviewMap[p.product_id] || justReviewed[p.product_id]);
+  const reviewCount = alreadyReviewed.length;
+  const earnedPop = reviewCount * 100;
+  const earnedEuro = (earnedPop / 100).toFixed(2).replace('.', ',');
+
+  // Stars component
+  const Stars = ({ count, size = 24, interactive = false, onRate, onHover }: { count: number; size?: number; interactive?: boolean; onRate?: (n: number) => void; onHover?: (n: number) => void }) => (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(s => (
+        <button key={s} type="button" disabled={!interactive}
+          onMouseEnter={() => onHover?.(s)} onMouseLeave={() => onHover?.(0)} onClick={() => onRate?.(s)}
+          className={`${interactive ? 'cursor-pointer' : 'cursor-default'} p-0`} style={{ width: size, height: size }}>
+          <svg className={`transition-colors ${s <= count ? 'text-[#d9c39a]' : 'text-[#ddd]'}`} viewBox="0 0 24 24" fill="currentColor" width={size} height={size}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <SectionCard title="Lascia una recensione">
-      <p className="text-[14px] text-[#888] mb-6">
-        Ogni recensione ti fa guadagnare <strong className="text-[#005667]">100 Punti POP</strong>
-      </p>
-
-      {successId && (
-        <div className="p-4 mb-4 bg-green-50 border border-green-200 rounded-xl text-[13px] text-green-700 flex items-center gap-2">
-          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-          Recensione inviata! +100 Punti POP accreditati
+    <div className="space-y-6">
+      {/* Banner punti guadagnati */}
+      {reviewCount > 0 && (
+        <div className="bg-[#1a1a1a] border-[1.5px] border-[#d9c39a] rounded-[14px] p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[13px] text-[#888]">Grazie alle tue recensioni hai guadagnato</p>
+            <p className="text-[28px] font-bold text-[#d9c39a] leading-tight">{earnedPop} Punti POP</p>
+            <p className="text-[11px] text-[#888]">= {earnedEuro}€ di sconto disponibile</p>
+          </div>
+          <a href="/account" onClick={() => { /* navigate to punti tab */ }} className="shrink-0 bg-[#d9c39a] text-[#1a1a1a] rounded-lg px-5 py-2.5 text-[13px] font-bold hover:bg-[#c9b38a] transition-colors">
+            Riscatta ora →
+          </a>
         </div>
       )}
 
-      {uniqueProducts.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-[14px] text-[#888] mb-4">{reviewed.size > 0 ? 'Hai recensito tutti i prodotti!' : 'Nessun prodotto da recensire.'}</p>
-          <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Scopri i vini</a>
-        </div>
+      {/* Section: Da recensire */}
+      {orders.length === 0 ? (
+        <SectionCard title="Le tue recensioni">
+          <div className="text-center py-8">
+            <p className="text-[14px] text-[#888] mb-4">Ancora nessun acquisto. Ogni bottiglia che acquisti potrà essere recensita dopo la consegna.</p>
+            <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Scopri i vini</a>
+          </div>
+        </SectionCard>
+      ) : completedOrders.length === 0 ? (
+        <SectionCard title="Le tue recensioni">
+          <div className="text-center py-8">
+            <p className="text-[14px] text-[#888] mb-2">I prodotti diventano recensibili dopo la consegna dell&apos;ordine.</p>
+            <p className="text-[12px] text-[#aaa]">Riceverai una notifica quando potrai lasciare la tua prima recensione.</p>
+          </div>
+        </SectionCard>
       ) : (
-        <div className="space-y-4">
-          {uniqueProducts.slice(0, 20).map((product) => (
-            <div key={product.product_id} className="border border-[#e8e4dc] rounded-xl overflow-hidden">
-              <div className="flex items-center gap-4 p-4">
-                <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] flex items-center justify-center shrink-0 overflow-hidden">
-                  {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{product.name}</p>
-                  <p className="text-[11px] text-[#888]">+100 Punti POP per la recensione</p>
-                </div>
-                <button
-                  onClick={() => { setActiveReview(activeReview === product.product_id ? null : product.product_id); setRating(0); setReviewText(''); }}
-                  className="shrink-0 bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[12px] font-semibold hover:bg-[#004555] transition-colors"
-                >
-                  {activeReview === product.product_id ? 'Chiudi' : 'Recensisci'}
-                </button>
-              </div>
+        <>
+          {/* Da recensire */}
+          {toReview.length > 0 ? (
+            <div>
+              <p className="text-[10px] text-[#888] uppercase tracking-[0.06em] font-semibold mb-3">Da recensire</p>
+              <div className="space-y-3">
+                {toReview.map(product => (
+                  <div key={product.product_id} className={`bg-white border border-[#e8e4dc] rounded-xl p-4 transition-all ${successId === product.product_id ? 'opacity-50 scale-[0.98]' : ''}`}>
+                    {/* Success alert */}
+                    {successId === product.product_id && (
+                      <div className="bg-[#f0f7f5] border-l-[3px] border-[#005667] rounded-lg p-3.5 mb-3">
+                        <p className="text-[13px] text-[#005667] font-medium">Grazie! Hai guadagnato +100 Punti POP — verranno accreditati entro 24h.</p>
+                      </div>
+                    )}
 
-              {activeReview === product.product_id && (
-                <div className="border-t border-[#e8e4dc] p-4 bg-[#f8f6f1]">
-                  {/* Stars */}
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className="text-[12px] text-[#888] mr-2">Voto:</span>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button key={s} type="button"
-                        onMouseEnter={() => setHoverRating(s)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        onClick={() => setRating(s)}
-                        className="p-0.5"
-                      >
-                        <svg className={`w-7 h-7 transition-colors ${s <= (hoverRating || rating) ? 'text-[#d9c39a]' : 'text-[#ddd]'}`}
-                          viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                      </button>
-                    ))}
-                    {rating > 0 && <span className="text-[12px] text-[#005667] font-semibold ml-2">{rating}/5</span>}
+                    {/* Product row */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
+                        {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1a1a1a]">{product.name}</p>
+                        <p className="text-[10px] text-[#bbb]">Ordine completato</p>
+                      </div>
+                    </div>
+
+                    {/* Stars */}
+                    <div className="mb-3">
+                      <Stars count={activeReview === product.product_id ? (hoverRating || rating) : 0} size={24} interactive onRate={(n) => { setActiveReview(product.product_id); setRating(n); }} onHover={setHoverRating} />
+                    </div>
+
+                    {/* Textarea (appears after first star click) */}
+                    {activeReview === product.product_id && rating > 0 && (
+                      <>
+                        <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} rows={3}
+                          placeholder="Raccontaci la tua esperienza con questo vino..."
+                          className="w-full px-3 py-3 rounded-lg border border-[#e8e4dc] bg-white text-[13px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667] resize-none mb-3" />
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => handleSubmitReview(product.product_id)} disabled={submitting}
+                            className="bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
+                            {submitting ? 'Invio...' : 'Invia recensione'}
+                          </button>
+                          <span className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-2.5 py-1 text-[11px] font-semibold">+100 POP</span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {/* Text */}
-                  <textarea
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    rows={3}
-                    placeholder="Racconta la tua esperienza con questo vino..."
-                    className="w-full px-4 py-3 rounded-lg border border-[#e5e5e5] bg-white text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667] resize-none mb-3"
-                  />
-                  <button
-                    onClick={() => handleSubmitReview(product.product_id)}
-                    disabled={submitting || rating === 0}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#005667] text-white rounded-lg text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? 'Invio...' : `Invia recensione${rating > 0 ? ` (${rating}★)` : ''}`}
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          ) : reviewCount > 0 ? (
+            <div className="text-center py-6">
+              <p className="text-[14px] text-[#888] mb-2">Hai recensito tutti i tuoi acquisti!</p>
+              <p className="text-[12px] text-[#aaa] mb-4">Continua a fare shopping per guadagnare altri Punti POP.</p>
+              <a href="/cerca" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Scopri i vini</a>
+            </div>
+          ) : null}
+
+          {/* Recensite */}
+          {alreadyReviewed.length > 0 && (
+            <div>
+              <p className="text-[10px] text-[#888] uppercase tracking-[0.06em] font-semibold mb-3">Le tue recensioni</p>
+              <div className="space-y-3">
+                {alreadyReviewed.map(product => {
+                  const rev = reviewMap[product.product_id] || (justReviewed[product.product_id] ? { rating: justReviewed[product.product_id].rating, review: justReviewed[product.product_id].text, date: new Date().toISOString(), id: 0 } : null);
+                  if (!rev) return null;
+                  return (
+                    <div key={product.product_id} className="bg-[#f8f6f1] border border-[#e8e4dc] rounded-xl p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
+                          {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-[#1a1a1a]">{product.name}</p>
+                          <p className="text-[10px] text-[#bbb]">{safeDate(rev.date)}</p>
+                        </div>
+                        <span className="bg-[#e8f5e9] text-[#2e7d32] rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">Recensione inviata ✓</span>
+                      </div>
+                      <div className="mb-2"><Stars count={rev.rating} size={20} /></div>
+                      {rev.review && (
+                        <div className="bg-white rounded-lg px-3 py-2.5">
+                          <p className="text-[13px] text-[#555] italic leading-relaxed">{rev.review}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
-    </SectionCard>
+    </div>
   );
 }
 
