@@ -137,7 +137,6 @@ type Section =
   | 'ordini'
   | 'punti'
   | 'buoni'
-  | 'preferiti'
   | 'profilo'
   | 'indirizzi'
   | 'pagamenti'
@@ -162,7 +161,6 @@ const sectionGroups: SectionGroup[] = [
     items: [
       { key: 'punti', label: 'Punti POP & storico', icon: IconStar },
       { key: 'buoni', label: 'Buoni regalo & coupon', icon: IconGift },
-      { key: 'preferiti', label: 'Preferiti', icon: IconHeart },
     ],
   },
   {
@@ -585,7 +583,6 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
           {activeSection === 'ordini' && <OrdersSection userId={user.id} />}
           {activeSection === 'punti' && <PointsSection userId={user.id} />}
           {activeSection === 'buoni' && <GiftCardsSection />}
-          {activeSection === 'preferiti' && <FavoritesSection />}
           {activeSection === 'profilo' && <ProfileSection user={user} />}
           {activeSection === 'indirizzi' && <AddressesSection userId={user.id} />}
           {activeSection === 'pagamenti' && <PaymentMethodsSection />}
@@ -1567,21 +1564,6 @@ function PointsSection({ userId }: { userId: number }) {
         </SectionCard>
       )}
     </div>
-  );
-}
-
-/* ── Favorites ─────────────────────────────────────────── */
-
-function FavoritesSection() {
-  return (
-    <SectionCard title="I miei preferiti">
-      <EmptyState message="Non hai ancora aggiunto prodotti ai preferiti. Esplora il nostro catalogo e salva i vini che ami." />
-      <div className="mt-4 text-center">
-        <a href="/shop" className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white text-sm font-semibold rounded-lg hover:bg-brand-primary/90 transition-colors">
-          Esplora i vini
-        </a>
-      </div>
-    </SectionCard>
   );
 }
 
