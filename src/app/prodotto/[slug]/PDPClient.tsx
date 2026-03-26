@@ -279,6 +279,9 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
         </div>
       )}
 
+      {/* ═══ REVIEWS SECTION ═══ */}
+      <ProductReviews productId={p.id} productName={p.name} />
+
       {/* ═══ MOBILE STICKY BAR ═══ */}
       {inStock && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#005667] px-4 py-3 flex items-center gap-3 z-50">
@@ -295,5 +298,81 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
       {/* Spacer for sticky bar on mobile */}
       {inStock && <div className="lg:hidden h-16" />}
     </>
+  );
+}
+
+/* ═══ Product Reviews ═══════════════════════════════════ */
+
+function ProductReviews({ productId, productName }: { productId: number; productName: string }) {
+  const [reviews, setReviews] = useState<{ id: number; reviewer: string; rating: number; review: string; date_created: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/reviews/product?productId=${productId}`)
+      .then(r => r.ok ? r.json() : { reviews: [] })
+      .then(d => { setReviews(d.reviews || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <div id="recensioni" className="mt-10 max-w-3xl">
+        <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-5">Recensioni</h2>
+        <div className="space-y-4">
+          {[1, 2].map(i => <div key={i} className="h-24 bg-[#f0f0f0] rounded-xl animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+
+  return (
+    <div id="recensioni" className="mt-10 max-w-3xl">
+      <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-1">Recensioni</h2>
+
+      {reviews.length > 0 ? (
+        <>
+          {/* Average */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map(s => (
+                <svg key={s} className={`w-5 h-5 ${s <= Math.round(avgRating) ? 'text-[#d9c39a]' : 'text-[#ddd]'}`} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+              ))}
+            </div>
+            <span className="text-[14px] font-semibold text-[#1a1a1a]">{avgRating.toFixed(1)}</span>
+            <span className="text-[13px] text-[#888]">· {reviews.length} recension{reviews.length === 1 ? 'e' : 'i'}</span>
+          </div>
+
+          {/* Reviews list */}
+          <div className="space-y-0">
+            {reviews.map(r => (
+              <div key={r.id} className="py-5 border-b border-[#f0f0f0] last:border-0">
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[#d9c39a] text-[13px] font-bold shrink-0">
+                    {(r.reviewer?.[0] || '?').toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#1a1a1a]">{r.reviewer}</p>
+                    <p className="text-[11px] text-[#bbb]">{(() => { const d = new Date(r.date_created); return !isNaN(d.getTime()) ? d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; })()}</p>
+                  </div>
+                </div>
+                <div className="flex mb-2">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <svg key={s} className={`w-4 h-4 ${s <= r.rating ? 'text-[#d9c39a]' : 'text-[#ddd]'}`} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                  ))}
+                </div>
+                {r.review && <p className="text-[14px] text-[#444] leading-relaxed" dangerouslySetInnerHTML={{ __html: r.review }} />}
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="bg-[#f8f6f1] rounded-xl p-6 text-center mt-4">
+          <p className="text-[14px] text-[#888] mb-1">Nessuna recensione ancora per {productName}.</p>
+          <p className="text-[12px] text-[#aaa]">Acquista questo vino e lascia la prima recensione → +100 Punti POP</p>
+        </div>
+      )}
+    </div>
   );
 }

@@ -2314,14 +2314,14 @@ function ReviewsSection({ userId }: { userId: number }) {
     })();
   }, [userId, user?.email]);
 
-  const handleSubmitReview = async (productId: number) => {
+  const handleSubmitReview = async (productId: number, productName: string) => {
     if (rating === 0) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, rating, review: reviewText, reviewer: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(), reviewerEmail: user?.email || '' }),
+        body: JSON.stringify({ productId, rating, review: reviewText, reviewer: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(), reviewerEmail: user?.email || '', customerId: user?.id, productName }),
       });
       if (res.ok) {
         setJustReviewed(prev => ({ ...prev, [productId]: { rating, text: reviewText } }));
@@ -2438,7 +2438,7 @@ function ReviewsSection({ userId }: { userId: number }) {
                           placeholder="Raccontaci la tua esperienza con questo vino..."
                           className="w-full px-3 py-3 rounded-lg border border-[#e8e4dc] bg-white text-[13px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667] resize-none mb-3" />
                         <div className="flex items-center gap-3">
-                          <button onClick={() => handleSubmitReview(product.product_id)} disabled={submitting}
+                          <button onClick={() => handleSubmitReview(product.product_id, product.name)} disabled={submitting}
                             className="bg-[#005667] text-white rounded-lg px-4 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
                             {submitting ? 'Invio...' : 'Invia recensione'}
                           </button>
