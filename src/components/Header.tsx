@@ -335,13 +335,14 @@ export default function Header() {
                   </Link>
                 );
               })}
-              {/* Vendi con noi — only if not logged in */}
-              {!isAuth && (
-                <button onClick={() => setVendorAuthOpen(true)} className="px-3 py-1.5 text-[13px] text-[#888] hover:text-[#005667] transition-colors whitespace-nowrap ml-1">
-                  Vendi con noi
-                </button>
-              )}
             </nav>
+
+            {/* Vendi con noi — visible md+ when not logged in */}
+            {!isAuth && (
+              <button onClick={() => setVendorAuthOpen(true)} className="hidden md:block text-[13px] text-[#888] hover:text-[#005667] transition-colors whitespace-nowrap ml-4">
+                Vendi con noi
+              </button>
+            )}
 
             {/* Spacer */}
             <div className="flex-1" />
