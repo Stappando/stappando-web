@@ -1370,18 +1370,62 @@ function safeDate(dateString: string): string {
 }
 
 function PointsSection({ userId }: { userId: number }) {
+  const { user } = useAuthStore();
   const [points, setPoints] = useState<{ points: number; history: { date: string; points: number; reason: string }[] }>({ points: 0, history: [] });
   const [loading, setLoading] = useState(true);
+
+  // Redeem state
+  const [redeemAmount, setRedeemAmount] = useState(100);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemResult, setRedeemResult] = useState<{ code: string; euroValue: string; remainingPoints: number } | null>(null);
+  const [redeemError, setRedeemError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchPoints(userId).then((data) => { setPoints(data); setLoading(false); });
   }, [userId]);
+
+  const handleRedeem = async () => {
+    setRedeeming(true);
+    setRedeemError('');
+    try {
+      const res = await fetch('/api/points/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          points: redeemAmount,
+          email: user?.email,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Errore');
+      setRedeemResult(data);
+      setPoints(prev => ({ ...prev, points: data.remainingPoints }));
+    } catch (err) {
+      setRedeemError(err instanceof Error ? err.message : 'Errore nel riscatto');
+    }
+    setRedeeming(false);
+  };
+
+  const handleCopyCode = () => {
+    if (redeemResult?.code) {
+      navigator.clipboard.writeText(redeemResult.code).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
 
   const euroValue = (points.points / 100).toFixed(2).replace('.', ',');
   const nextEuro = 100 - (points.points % 100);
   const progressPct = Math.min(((points.points % 100) / 100) * 100, 100);
+  const canRedeem = points.points >= 100;
+  const maxRedeem = Math.floor(points.points / 100) * 100;
+  const redeemEuro = (redeemAmount / 100).toFixed(2).replace('.', ',');
 
   return (
     <div className="space-y-6">
@@ -1402,6 +1446,86 @@ function PointsSection({ userId }: { userId: number }) {
           </div>
         </div>
       </div>
+
+      {/* Redeem section */}
+      {!redeemResult ? (
+        <div className="bg-[#1a1a1a] border-[1.5px] border-[#d9c39a] rounded-2xl p-6">
+          <h3 className="text-[18px] font-bold text-[#d9c39a] mb-2">Riscatta i tuoi punti</h3>
+          <p className="text-[13px] text-[#999] mb-5 leading-relaxed">
+            Scegli quanti punti vuoi riscattare. Ogni 100 punti = 1€ di sconto.
+            Ti generiamo un codice da usare al checkout.
+          </p>
+
+          {canRedeem ? (
+            <>
+              <div className="mb-4">
+                <label className="block text-[11px] text-[#888] uppercase tracking-wider mb-2">Quanti punti vuoi riscattare?</label>
+                <input
+                  type="range"
+                  min={100} max={maxRedeem} step={100}
+                  value={redeemAmount}
+                  onChange={e => setRedeemAmount(Number(e.target.value))}
+                  className="w-full h-2 bg-[#333] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-[#d9c39a] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[24px] font-bold text-[#d9c39a]">{redeemAmount} punti</span>
+                  <span className="text-[18px] font-bold text-white">= {redeemEuro}€</span>
+                </div>
+              </div>
+
+              {redeemError && (
+                <div className="p-3 mb-4 bg-red-900/30 border border-red-500/30 rounded-lg text-[13px] text-red-300">{redeemError}</div>
+              )}
+
+              <button
+                onClick={handleRedeem}
+                disabled={redeeming}
+                className="w-full py-3.5 bg-[#d9c39a] text-[#1a1a1a] rounded-lg text-[15px] font-bold hover:bg-[#c9b38a] transition-colors disabled:opacity-60"
+              >
+                {redeeming ? 'Generazione codice...' : `Genera codice sconto · ${redeemEuro}€`}
+              </button>
+
+              <p className="text-[11px] text-[#666] mt-3 text-center leading-relaxed">
+                Il codice azzera i punti usati · Valido per un solo ordine · Cumulabile con altre promozioni
+              </p>
+            </>
+          ) : (
+            <div className="text-center py-3">
+              <p className="text-[14px] text-[#888]">Hai bisogno di almeno <strong className="text-[#d9c39a]">100 punti</strong> per riscattare uno sconto</p>
+              <p className="text-[12px] text-[#666] mt-1">Ti mancano {100 - points.points} punti</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Codice generato */
+        <div className="bg-[#f0f7f5] border-[1.5px] border-[#005667] rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 rounded-full bg-[#005667] flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <h3 className="text-[18px] font-bold text-[#1a1a1a] mb-1">Codice sconto generato!</h3>
+          <p className="text-[13px] text-[#888] mb-5">Hai riscattato {redeemResult.code && redeemAmount} punti</p>
+
+          <div className="bg-white border-2 border-dashed border-[#005667] rounded-xl p-5 mb-4">
+            <p className="text-[11px] text-[#888] uppercase tracking-wider mb-2">Il tuo codice</p>
+            <p className="text-[26px] font-bold text-[#005667] tracking-[0.1em] font-mono">{redeemResult.code}</p>
+            <p className="text-[16px] font-bold text-[#005667] mt-1">vale {redeemResult.euroValue}€</p>
+          </div>
+
+          <button onClick={handleCopyCode}
+            className={`w-full py-3 rounded-lg text-[14px] font-semibold transition-colors mb-3 ${
+              copied ? 'bg-green-100 text-green-700' : 'bg-[#005667] text-white hover:bg-[#004555]'
+            }`}>
+            {copied ? 'Copiato! ✓' : 'Copia codice'}
+          </button>
+
+          <p className="text-[12px] text-[#888]">
+            Usa questo codice al checkout. Lo abbiamo inviato anche alla tua email.
+          </p>
+          <p className="text-[13px] text-[#005667] font-semibold mt-3">
+            Saldo aggiornato: {redeemResult.remainingPoints} punti
+          </p>
+        </div>
+      )}
 
       {/* Come guadagnare */}
       <SectionCard title="Come guadagnare punti">
