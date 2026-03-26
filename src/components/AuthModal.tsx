@@ -47,6 +47,12 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
     setShowPatience(false);
     const patienceTimer = setTimeout(() => setShowPatience(true), 4000);
 
+    // Pre-write vendor flags if vendorMode — survives any failure/redirect
+    if (vendorMode) {
+      localStorage.setItem('stappando-is-vendor', 'true');
+      localStorage.setItem('stappando-vendor-status', 'pending_contract');
+    }
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
@@ -95,29 +101,15 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
       setLoading(false);
 
-      // Redirect BEFORE closing modal
+      // Redirect vendor
       if (vendorMode || isVendorRole(data.role || '')) {
-        // Write full state to Zustand — this persists to localStorage
-        useAuthStore.setState({
-          user: data.user,
-          token: data.token,
-          role: 'vendor',
-          vendorStatus: data.vendorStatus || 'pending_contract',
-          isLoading: false,
-          error: null,
-        });
-
-        // Also write a simple flag as backup
-        localStorage.setItem('stappando-is-vendor', 'true');
-        localStorage.setItem('stappando-vendor-status', data.vendorStatus || 'pending_contract');
-
-        // Small delay to let Zustand flush to localStorage
-        setTimeout(() => {
-          window.location.href = '/vendor/dashboard';
-        }, 100);
+        window.location.href = '/vendor/dashboard';
         return;
       }
 
+      // Not vendor — clean up flags if they were set
+      localStorage.removeItem('stappando-is-vendor');
+      localStorage.removeItem('stappando-vendor-status');
       onClose();
     } catch (err) {
       clearTimeout(patienceTimer);
