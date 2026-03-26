@@ -62,8 +62,22 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       const data = await res.json();
 
       if (!res.ok) {
+        clearTimeout(patienceTimer);
         setLocalError(data.message || 'Errore. Riprova.');
         setLoading(false);
+        setShowPatience(false);
+        return;
+      }
+
+      clearTimeout(patienceTimer);
+
+      // If registered but no token — show success message
+      if (data.action === 'registered_no_login') {
+        setLocalError('');
+        setLoading(false);
+        setShowPatience(false);
+        onClose();
+        alert(data.message || 'Account creato! Accedi con le tue credenziali.');
         return;
       }
 
