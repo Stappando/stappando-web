@@ -87,7 +87,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
           user: data.user,
           token: data.token,
           role: data.role || 'customer',
-          vendorStatus: data.isVendor ? (data.action === 'registered' ? 'pending_contract' : null) : null,
+          vendorStatus: data.vendorStatus || (data.isVendor ? 'pending_contract' : null),
           isLoading: false,
           error: null,
         });
