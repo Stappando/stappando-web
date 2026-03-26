@@ -95,9 +95,20 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
       setLoading(false);
 
-      // Redirect BEFORE closing modal (onClose may reset state)
+      // Redirect BEFORE closing modal
       if (vendorMode || isVendorRole(data.role || '')) {
-        // Force vendor state in store regardless of WC role
+        // Force vendor state — write directly to localStorage before redirect
+        // Zustand persist may not flush in time before window.location
+        try {
+          const stored = JSON.parse(localStorage.getItem('stappando-auth') || '{}');
+          stored.state = stored.state || {};
+          stored.state.role = 'vendor';
+          stored.state.vendorStatus = data.vendorStatus || 'pending_contract';
+          stored.state.user = data.user;
+          stored.state.token = data.token;
+          localStorage.setItem('stappando-auth', JSON.stringify(stored));
+        } catch { /* fallback to setState */ }
+
         useAuthStore.setState({
           role: 'vendor',
           vendorStatus: data.vendorStatus || 'pending_contract',
