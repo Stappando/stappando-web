@@ -218,16 +218,14 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
             </form>
           )}
 
-          {/* Step: register */}
+          {/* Step: register — solo email + password, zero frizioni */}
           {step === 'register' && (
             <form onSubmit={handleRegister}>
-              <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-                <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20" placeholder="Nome" />
-                <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required className="h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20" placeholder="Cognome" />
+              <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <span className="text-sm text-gray-700 truncate flex-1">{email}</span>
+                <button type="button" onClick={() => { setStep('initial'); clearError(); setLocalError(''); }} className="text-xs text-[#055667] font-medium hover:underline shrink-0">Cambia</button>
               </div>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-2.5" placeholder="Email" />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3" placeholder="Password (min 6 caratteri)" />
-              {/* Newsletter opt-in — NOT checked by default (GDPR) */}
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#055667] focus:ring-2 focus:ring-[#055667]/20 mb-3" placeholder="Scegli una password (min 6 caratteri)" autoFocus />
               <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -245,9 +243,6 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
                 className="w-full py-3 rounded-xl bg-[#055667] text-white font-bold text-sm hover:bg-[#044556] transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Registrazione...' : 'Crea account'}
-              </button>
-              <button type="button" onClick={() => { setStep('password'); setLocalError(''); clearError(); }} className="block w-full mt-3 text-center text-xs text-gray-500 hover:text-[#055667]">
-                Hai già un account? <span className="underline font-medium">Accedi</span>
               </button>
               <p className="text-[9px] text-gray-400 text-center mt-3">
                 Registrandoti accetti i <a href="https://stappando.it/termini-e-condizioni/" target="_blank" rel="noopener noreferrer" className="underline">Termini</a> e la <a href="https://stappando.it/privacy-policy-2/" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
