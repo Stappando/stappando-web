@@ -23,6 +23,8 @@ export interface OrderPayload {
   items: OrderLineItem[];
   shipping: number;
   customer: OrderCustomer;
+  couponCode?: string;
+  couponDiscount?: number;
 }
 
 export type PaymentProvider = 'stripe' | 'paypal';

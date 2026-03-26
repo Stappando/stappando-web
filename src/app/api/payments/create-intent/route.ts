@@ -14,6 +14,7 @@ interface CreateIntentBody {
   shipping: number;
   carrier?: string;
   couponCode?: string;
+  couponDiscount?: number;
   customer: {
     email: string;
     firstName: string;
@@ -57,10 +58,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Indirizzo completo obbligatorio' }, { status: 400 });
     }
 
-    // Calculate total in cents
+    // Calculate total in cents (subtract coupon discount if any)
     const itemsTotal = body.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const shipping = typeof body.shipping === 'number' && body.shipping >= 0 ? body.shipping : 0;
-    const totalCents = Math.round((itemsTotal + shipping) * 100);
+    const couponDiscount = typeof body.couponDiscount === 'number' && body.couponDiscount > 0 ? body.couponDiscount : 0;
+    const totalCents = Math.round(Math.max(0.5, itemsTotal + shipping - couponDiscount) * 100);
 
     if (totalCents < 50) {
       return NextResponse.json({ error: 'Importo minimo 0,50€' }, { status: 400 });

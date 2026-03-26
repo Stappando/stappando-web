@@ -744,6 +744,7 @@ function Step3Payment() {
             customer,
             carrier: savedCarrier,
             couponCode: useCartStore.getState().appliedCoupon?.code || '',
+            couponDiscount: useCartStore.getState().appliedCoupon?.discount || 0,
           }),
         });
 
@@ -815,6 +816,7 @@ function Step3Payment() {
           customer,
           carrier: savedCarrier,
           couponCode: useCartStore.getState().appliedCoupon?.code || '',
+          couponDiscount: useCartStore.getState().appliedCoupon?.discount || 0,
         }),
       });
       const data = await res.json();
