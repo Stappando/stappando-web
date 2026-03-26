@@ -37,7 +37,7 @@ interface GiftProduct {
   slug: string;
 }
 
-const STEPS = ['Carrello', 'Spedizione', 'Pagamento', 'Conferma'];
+const STEPS = ['Carrello', 'Spedizione', 'Corriere', 'Pagamento', 'Conferma'];
 
 /* ── Main Modal ───────────────────────────────────────── */
 
@@ -54,35 +54,43 @@ export default function CheckoutModal() {
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div className="absolute inset-0 bg-black/40" onClick={checkoutStep < 4 ? closeCheckout : undefined} />
+      <div className="absolute inset-0 bg-black/40" onClick={checkoutStep < 5 ? closeCheckout : undefined} />
       <div className="absolute inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-[680px] sm:max-h-[92vh] sm:rounded-2xl bg-white flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0f0f0] shrink-0">
-          <div className="flex items-center gap-2.5">
+        {/* Header with step indicator */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#f0f0f0] shrink-0">
+          <div className="flex items-center gap-1">
             {STEPS.map((label, i) => {
               const step = i + 1;
               const isActive = step === checkoutStep;
               const isCompleted = step < checkoutStep;
               const isFuture = step > checkoutStep;
               return (
-                <button
-                  key={step}
-                  onClick={() => step < checkoutStep && setCheckoutStep(step)}
-                  disabled={isFuture || step === 4}
-                  className={`px-3.5 py-2 rounded-full text-[12px] font-semibold transition-colors ${
-                    isActive ? 'bg-[#005667] text-white' :
-                    isCompleted ? 'bg-[#e8f4f1] text-[#005667] cursor-pointer' :
-                    'bg-[#f5f5f5] text-[#bbb]'
-                  }`}
-                >
-                  <span className="sm:hidden">{isActive ? `${step} · ${label}` : step}</span>
-                  <span className="hidden sm:inline">{step} · {label}</span>
-                </button>
+                <div key={step} className="flex items-center">
+                  <button
+                    onClick={() => step < checkoutStep && setCheckoutStep(step)}
+                    disabled={isFuture || step === 5}
+                    className={`w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 ${
+                      isActive ? 'bg-[#005667] text-white' :
+                      isCompleted ? 'bg-[#005667] text-white cursor-pointer' :
+                      'bg-[#f0f0f0] text-[#888]'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    ) : (
+                      <span className="sm:hidden">{step}</span>
+                    )}
+                    <span className="hidden sm:inline">{isCompleted ? '' : `${step} · `}{label}</span>
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <div className={`w-3 sm:w-5 h-0.5 mx-0.5 ${step < checkoutStep ? 'bg-[#005667]' : 'bg-[#e8e4dc]'}`} />
+                  )}
+                </div>
               );
             })}
           </div>
-          {checkoutStep < 4 && (
-            <button onClick={closeCheckout} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+          {checkoutStep < 5 && (
+            <button onClick={closeCheckout} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           )}
@@ -91,8 +99,9 @@ export default function CheckoutModal() {
         {/* Content */}
         {checkoutStep === 1 && <Step1Cart />}
         {checkoutStep === 2 && <Step2Shipping />}
-        {checkoutStep === 3 && <Step3Payment />}
-        {checkoutStep === 4 && <Step4Confirmation />}
+        {checkoutStep === 3 && <Step3Carrier />}
+        {checkoutStep === 4 && <Step3Payment />}
+        {checkoutStep === 5 && <Step4Confirmation />}
       </div>
     </div>
   );
@@ -380,10 +389,6 @@ function Step2Shipping() {
     phone: savedShipping?.phone || '', notes: savedShipping?.notes || '',
     needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   }));
-  const [carrier, setCarrier] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'brt';
-    return 'brt';
-  });
   const [prefilled, setPrefilled] = useState(!!savedShipping);
 
   // Pre-fill from logged user (only if no saved data)
@@ -477,32 +482,6 @@ function Step2Shipping() {
               </div>
             )}
 
-            {/* Carrier selection */}
-            <div className="mt-4 pt-4 border-t border-[#f0f0f0]">
-              <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-3">Scegli il corriere</p>
-              <div className="space-y-2.5">
-                {[
-                  { id: 'brt', name: 'BRT Corriere Espresso', time: 'Consegna 24-48h lavorativi', color: '#8B0000', abbr: 'BRT' },
-                  { id: 'fedex', name: 'FedEx / TNT', time: 'Consegna 24-48h lavorativi', color: '#4D148C', abbr: 'FedEx' },
-                  { id: 'poste', name: 'Poste Italiane', time: 'Consegna 1-3 giorni lavorativi', color: '#003087', abbr: 'Poste' },
-                ].map(c => (
-                  <label key={c.id} onClick={() => { setCarrier(c.id); if (typeof window !== 'undefined') localStorage.setItem('stappando_carrier', c.id); }}
-                    className={`flex items-center gap-3.5 p-3.5 rounded-[10px] border cursor-pointer transition-all ${
-                      carrier === c.id ? 'border-[#005667] bg-[#f0f7f5]' : 'border-[#e8e4dc] hover:border-[#005667]/30'
-                    }`}>
-                    <input type="radio" name="carrier" checked={carrier === c.id} readOnly className="w-4 h-4 text-[#005667] focus:ring-[#005667]" />
-                    <div className="w-10 h-7 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
-                      <span className="text-white text-[9px] font-bold">{c.abbr}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-semibold text-[#1a1a1a]">{c.name}</p>
-                      <p className="text-[11px] text-[#888]">{c.time}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
           </div>
 
           {/* Desktop sidebar */}
@@ -532,7 +511,99 @@ function Step2Shipping() {
 }
 
 /* ═══════════════════════════════════════════════════════ */
-/* STEP 3 — PAYMENT (PayPal Smart Buttons + Stripe)       */
+/* STEP 3 — CARRIER SELECTION                              */
+/* ═══════════════════════════════════════════════════════ */
+
+function Step3Carrier() {
+  const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping } = useCartStore();
+  const [carrier, setCarrier] = useState<string>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'brt';
+    return 'brt';
+  });
+
+  const total = getTotal();
+  const popPoints = Math.round(total);
+
+  const carriers = [
+    { id: 'brt', name: 'BRT Corriere Espresso', time: 'Consegna 24-48h lavorativi', color: '#8B0000', abbr: 'BRT', desc: 'Il più veloce — consegna garantita in 24-48 ore lavorative in tutta Italia' },
+    { id: 'fedex', name: 'FedEx / TNT', time: 'Consegna 24-48h lavorativi', color: '#4D148C', abbr: 'FedEx', desc: 'Affidabile e puntuale — imballaggio premium per bottiglie fragili' },
+    { id: 'poste', name: 'Poste Italiane', time: 'Consegna 1-3 giorni lavorativi', color: '#003087', abbr: 'Poste', desc: 'Capillare su tutto il territorio — consegna anche in zone remote' },
+  ];
+
+  const handleSelect = (id: string) => {
+    setCarrier(id);
+    if (typeof window !== 'undefined') localStorage.setItem('stappando_carrier', id);
+  };
+
+  return (
+    <>
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-7">
+          <div>
+            <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-1">Scegli il tuo corriere</h3>
+            <p className="text-[13px] text-[#888] mb-5">Tutti i corrieri includono tracking e assicurazione</p>
+
+            <div className="space-y-3">
+              {carriers.map(c => (
+                <label key={c.id} onClick={() => handleSelect(c.id)}
+                  className={`flex items-start gap-4 p-5 rounded-xl border-[1.5px] cursor-pointer transition-all ${
+                    carrier === c.id ? 'border-[#005667] bg-[#f0f7f5] shadow-sm' : 'border-[#e8e4dc] hover:border-[#005667]/30'
+                  }`}>
+                  <input type="radio" name="carrier" checked={carrier === c.id} readOnly className="mt-1 w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+                  <div className="w-12 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
+                    <span className="text-white text-[10px] font-bold">{c.abbr}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[14px] font-semibold text-[#1a1a1a]">{c.name}</p>
+                      <span className="text-[11px] text-[#005667] font-semibold bg-[#e8f4f1] px-2.5 py-0.5 rounded-full">{c.time.replace('Consegna ', '')}</span>
+                    </div>
+                    <p className="text-[12px] text-[#888] mt-1 leading-relaxed">{c.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Info box */}
+            <div className="flex items-start gap-3 bg-[#f8f6f1] rounded-xl p-4 mt-5">
+              <svg className="w-5 h-5 text-[#005667] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>
+              <div>
+                <p className="text-[13px] font-semibold text-[#1a1a1a]">Imballaggio protettivo incluso</p>
+                <p className="text-[12px] text-[#888]">Ogni bottiglia viene imballata in cartoni speciali con protezione antiurto</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop sidebar */}
+          <div className="hidden sm:block space-y-2.5">
+            <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-2.5">Riepilogo</p>
+            <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
+            <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
+            <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
+            <div className="flex items-center gap-1.5 text-[#005667] mt-2">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span className="text-[11px] font-medium">+{popPoints} Punti POP</span>
+            </div>
+            <button onClick={() => setCheckoutStep(4)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors">
+              Continua al pagamento →
+            </button>
+            <button onClick={() => setCheckoutStep(2)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-1.5">← Torna alla spedizione</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile footer */}
+      <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
+        <button onClick={() => setCheckoutStep(4)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+          Continua al pagamento →
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* STEP 4 — PAYMENT (PayPal Smart Buttons + Stripe)       */
 /* ═══════════════════════════════════════════════════════ */
 
 function Step3Payment() {
@@ -646,7 +717,7 @@ function Step3Payment() {
           }
 
           completeOrder();
-          setCheckoutStep(4);
+          setCheckoutStep(5);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Errore pagamento');
           setPaying(false);
@@ -775,7 +846,7 @@ function Step3Payment() {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span className="text-[11px] font-medium">+{popPoints} Punti POP</span>
             </div>
-            <button onClick={() => setCheckoutStep(2)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-4">← Torna alla spedizione</button>
+            <button onClick={() => setCheckoutStep(3)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-4">← Torna al corriere</button>
           </div>
         </div>
       </div>
