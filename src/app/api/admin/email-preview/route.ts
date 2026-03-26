@@ -235,13 +235,8 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       }).html,
     },
     {
-      id: 'welcome',
-      title: '14. Benvenuto (base)',
-      html: welcome({ customerName: 'Roberto' }).html,
-    },
-    {
       id: 'review-request',
-      title: '15. Richiesta recensione prodotto',
+      title: '14. Richiesta recensione prodotto',
       html: reviewRequest({
         customerName: 'Roberto',
         orderNumber: '12847',
@@ -250,7 +245,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'abandoned-cart',
-      title: '16. Carrello abbandonato (prima)',
+      title: '15. Carrello abbandonato (prima)',
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
@@ -260,7 +255,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'abandoned-cart-reminder',
-      title: '17. Carrello abbandonato (reminder 3h)',
+      title: '16. Carrello abbandonato (reminder 3h)',
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
@@ -271,7 +266,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'vendor-approved',
-      title: '18. Vendor approvato — negozio attivo',
+      title: '17. Vendor approvato — negozio attivo',
       html: vendorApproved('Cantina Oddero').html,
     },
   ];

@@ -90,6 +90,13 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       : [],
     coupon_lines: params.couponCode ? [{ code: params.couponCode }] : [],
     customer_note: noteParts.join(' — '),
+    meta_data: customer.needsInvoice ? [
+      { key: '_needs_invoice', value: 'true' },
+      { key: '_invoice_company', value: customer.ragioneSociale || '' },
+      { key: '_invoice_vat', value: customer.piva || '' },
+      { key: '_invoice_cf', value: customer.codFiscale || '' },
+      { key: '_invoice_sdi', value: customer.sdi || '' },
+    ] : [],
   };
 
   const res = await fetch(url, {
@@ -152,6 +159,12 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       deliveryEstimate: deliveryEst,
       discount: discount > 0 ? discount.toFixed(2) : undefined,
       pointsEarned: popPoints,
+      invoiceData: customer.needsInvoice ? {
+        companyName: customer.ragioneSociale,
+        vatNumber: customer.piva,
+        pec: undefined,
+        sdi: customer.sdi,
+      } : undefined,
     },
   }).catch(err => console.error('Failed to send order confirmation email:', err));
 
@@ -177,6 +190,11 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       total: total.toFixed(2),
       customerNotes: customer.notes || undefined,
       carrierPreference: carrierName,
+      invoiceData: customer.needsInvoice ? {
+        companyName: customer.ragioneSociale,
+        vatNumber: customer.piva,
+        sdi: customer.sdi,
+      } : undefined,
     },
   }).catch(err => console.error('Failed to send admin order email:', err));
 

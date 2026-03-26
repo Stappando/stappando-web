@@ -10,6 +10,11 @@ export interface OrderCustomer {
   province: string;
   zip: string;
   notes?: string;
+  needsInvoice?: boolean;
+  ragioneSociale?: string;
+  piva?: string;
+  codFiscale?: string;
+  sdi?: string;
 }
 
 export interface OrderLineItem {

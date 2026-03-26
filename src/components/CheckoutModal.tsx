@@ -545,7 +545,7 @@ function Step2Shipping() {
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
             <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '' }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Continua →
             </button>
             <button onClick={() => setCheckoutStep(1)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-1.5">← Torna al carrello</button>
@@ -555,7 +555,7 @@ function Step2Shipping() {
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '' }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Continua →
         </button>
       </div>
@@ -685,6 +685,11 @@ function Step3Payment() {
       province: '',
       zip: sd?.zip || '',
       notes: sd?.notes || '',
+      needsInvoice: sd?.needsInvoice || false,
+      ragioneSociale: sd?.ragioneSociale || '',
+      piva: sd?.piva || '',
+      codFiscale: sd?.codFiscale || '',
+      sdi: sd?.sdi || '',
     };
   }, [shippingData, user]);
 

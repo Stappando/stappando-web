@@ -21,11 +21,16 @@ function baseLayout(content: string, preheader?: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
     <tr><td align="center" style="padding:32px 16px;">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
-        <!-- Header -->
-        <tr><td style="background:#005667;padding:28px 32px;text-align:center;">
+        <!-- Header — clean white, logo + rating -->
+        <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
           <a href="${SITE}" style="text-decoration:none;">
-            <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="140" style="display:inline-block;max-width:140px;height:auto;filter:brightness(0) invert(1);" />
+            <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
           </a>
+          <p style="margin:10px 0 0;font-size:11px;color:#999;">
+            <span style="color:#d9c39a;letter-spacing:1px;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+            <span style="color:#005667;font-weight:600;margin-left:4px;">4.6/5</span>
+            <span style="color:#bbb;margin-left:2px;">&middot; 1000+ recensioni</span>
+          </p>
         </td></tr>
         <!-- Content -->
         <tr><td style="padding:36px 36px 28px;">
