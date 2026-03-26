@@ -380,6 +380,10 @@ function Step2Shipping() {
     phone: savedShipping?.phone || '', notes: savedShipping?.notes || '',
     needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   }));
+  const [carrier, setCarrier] = useState<string>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'brt';
+    return 'brt';
+  });
   const [prefilled, setPrefilled] = useState(!!savedShipping);
 
   // Pre-fill from logged user (only if no saved data)
@@ -472,6 +476,32 @@ function Step2Shipping() {
                 <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
               </div>
             )}
+
+            {/* Carrier selection */}
+            <div className="mt-4 pt-4 border-t border-[#f0f0f0]">
+              <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-3">Scegli il corriere</p>
+              <div className="space-y-2.5">
+                {[
+                  { id: 'brt', name: 'BRT Corriere Espresso', time: 'Consegna 24-48h lavorativi', color: '#8B0000', abbr: 'BRT' },
+                  { id: 'fedex', name: 'FedEx / TNT', time: 'Consegna 24-48h lavorativi', color: '#4D148C', abbr: 'FedEx' },
+                  { id: 'poste', name: 'Poste Italiane', time: 'Consegna 1-3 giorni lavorativi', color: '#003087', abbr: 'Poste' },
+                ].map(c => (
+                  <label key={c.id} onClick={() => { setCarrier(c.id); if (typeof window !== 'undefined') localStorage.setItem('stappando_carrier', c.id); }}
+                    className={`flex items-center gap-3.5 p-3.5 rounded-[10px] border cursor-pointer transition-all ${
+                      carrier === c.id ? 'border-[#005667] bg-[#f0f7f5]' : 'border-[#e8e4dc] hover:border-[#005667]/30'
+                    }`}>
+                    <input type="radio" name="carrier" checked={carrier === c.id} readOnly className="w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+                    <div className="w-10 h-7 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
+                      <span className="text-white text-[9px] font-bold">{c.abbr}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[13px] font-semibold text-[#1a1a1a]">{c.name}</p>
+                      <p className="text-[11px] text-[#888]">{c.time}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
 
           </div>
 

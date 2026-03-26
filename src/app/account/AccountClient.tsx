@@ -106,6 +106,15 @@ function IconTicket() {
   );
 }
 
+function IconGear() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
 function IconTruck() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,6 +141,7 @@ type Section =
   | 'profilo'
   | 'indirizzi'
   | 'pagamenti'
+  | 'preferenze'
   | 'assistenza'
   | 'recensioni';
 
@@ -161,6 +171,7 @@ const sectionGroups: SectionGroup[] = [
       { key: 'profilo', label: 'Profilo & sicurezza', icon: IconUser },
       { key: 'indirizzi', label: 'Indirizzi', icon: IconMap },
       { key: 'pagamenti', label: 'Metodi di pagamento', icon: IconLock },
+      { key: 'preferenze', label: 'Preferenze', icon: IconGear },
     ],
   },
   {
@@ -578,6 +589,7 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
           {activeSection === 'profilo' && <ProfileSection user={user} />}
           {activeSection === 'indirizzi' && <AddressesSection userId={user.id} />}
           {activeSection === 'pagamenti' && <PaymentMethodsSection />}
+          {activeSection === 'preferenze' && <PreferencesSection userId={user.id} />}
           {activeSection === 'assistenza' && <SupportSection user={user} />}
           {activeSection === 'recensioni' && <ReviewsSection userId={user.id} />}
         </div>
@@ -1922,6 +1934,119 @@ function PaymentMethodsSection() {
         </div>
       </div>
     </SectionCard>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   PREFERENCES SECTION
+   ══════════════════════════════════════════════════════════ */
+
+function PreferencesSection({ userId }: { userId: number }) {
+  const { user } = useAuthStore();
+  const [carrier, setCarrier] = useState<string>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'brt';
+    return 'brt';
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [nlStatus, setNlStatus] = useState<'idle' | 'subscribed' | 'loading'>('idle');
+
+  const [notifOrders, setNotifOrders] = useState(true);
+  const [notifOffers, setNotifOffers] = useState(true);
+  const [notifPop, setNotifPop] = useState(true);
+
+  const handleCarrier = async (id: string) => {
+    setCarrier(id);
+    if (typeof window !== 'undefined') localStorage.setItem('stappando_carrier', id);
+    setSaving(true);
+    try {
+      await updateCustomer(userId, { meta_data: [{ key: '_preferred_carrier', value: id }] } as Record<string, unknown>);
+      setMsg('Corriere preferito salvato');
+      setTimeout(() => setMsg(''), 2500);
+    } catch {} finally { setSaving(false); }
+  };
+
+  const handleNewsletter = async () => {
+    setNlStatus('loading');
+    try {
+      await fetch('/api/newsletter', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user?.email, firstName: user?.firstName, lastName: user?.lastName }),
+      });
+      setNlStatus('subscribed');
+    } catch { setNlStatus('idle'); }
+  };
+
+  const carriers = [
+    { id: 'brt', name: 'BRT Corriere Espresso', time: '24-48h lavorativi', color: '#8B0000', abbr: 'BRT' },
+    { id: 'fedex', name: 'FedEx / TNT', time: '24-48h lavorativi', color: '#4D148C', abbr: 'FedEx' },
+    { id: 'poste', name: 'Poste Italiane', time: '1-3 giorni lavorativi', color: '#003087', abbr: 'Poste' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {msg && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-[13px] text-green-700">{msg}</div>}
+
+      {/* Carrier */}
+      <SectionCard title="Corriere preferito">
+        <p className="text-[13px] text-[#888] mb-4">Verrà preselezionato automaticamente al checkout</p>
+        <div className="space-y-2.5">
+          {carriers.map(c => (
+            <label key={c.id} onClick={() => handleCarrier(c.id)}
+              className={`flex items-center gap-3.5 p-4 rounded-[10px] border cursor-pointer transition-all ${
+                carrier === c.id ? 'border-[#005667] bg-[#f0f7f5]' : 'border-[#e8e4dc] hover:border-[#005667]/30'
+              }`}>
+              <input type="radio" name="pref_carrier" checked={carrier === c.id} readOnly className="w-4 h-4 text-[#005667] focus:ring-[#005667]" />
+              <div className="w-11 h-7 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
+                <span className="text-white text-[9px] font-bold">{c.abbr}</span>
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-[#1a1a1a]">{c.name}</p>
+                <p className="text-[12px] text-[#888]">Consegna {c.time}</p>
+              </div>
+              {carrier === c.id && saving && <span className="ml-auto text-[11px] text-[#888]">Salvataggio...</span>}
+            </label>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* Newsletter */}
+      <SectionCard title="Newsletter">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[14px] font-semibold text-[#1a1a1a]">Offerte e novità dal mondo del vino</p>
+            <p className="text-[12px] text-[#888]">Ricevi promozioni esclusive via email</p>
+          </div>
+          <button onClick={handleNewsletter} disabled={nlStatus !== 'idle'}
+            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-colors ${
+              nlStatus === 'subscribed' ? 'bg-green-100 text-green-700' : 'bg-[#005667] text-white hover:bg-[#004555]'
+            } disabled:opacity-60`}>
+            {nlStatus === 'loading' ? '...' : nlStatus === 'subscribed' ? 'Iscritto ✓' : 'Iscriviti'}
+          </button>
+        </div>
+      </SectionCard>
+
+      {/* Notifications */}
+      <SectionCard title="Notifiche email">
+        <div className="space-y-4">
+          {[
+            { label: 'Aggiornamenti ordine', desc: 'Stato ordine, spedizione, tracking', checked: notifOrders, set: setNotifOrders },
+            { label: 'Offerte e promozioni', desc: 'Sconti, nuovi arrivi, eventi', checked: notifOffers, set: setNotifOffers },
+            { label: 'Punti POP', desc: 'Accrediti, premi, scadenze', checked: notifPop, set: setNotifPop },
+          ].map(n => (
+            <label key={n.label} className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-[14px] font-semibold text-[#1a1a1a]">{n.label}</p>
+                <p className="text-[12px] text-[#888]">{n.desc}</p>
+              </div>
+              <div className={`relative w-11 h-6 rounded-full transition-colors ${n.checked ? 'bg-[#005667]' : 'bg-[#e0e0e0]'}`} onClick={() => n.set(!n.checked)}>
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${n.checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              </div>
+            </label>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
   );
 }
 
