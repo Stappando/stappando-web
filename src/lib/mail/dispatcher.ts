@@ -1,13 +1,17 @@
 /**
- * Email dispatcher — maps WooCommerce events to Mandrill email sends.
+ * Email dispatcher — maps events to Mandrill email sends.
  * Server-side only.
  */
 import { sendEmail } from './mandrill';
 import {
   orderConfirmed, orderShipped, orderCancelled,
+  adminNewOrder, adminReturnRequest,
+  returnRequestConfirmed,
   pointsUpdate, birthday, giftCardReceived,
   welcome, abandonedCart, reviewRequest,
   type OrderConfirmedData, type OrderShippedData, type OrderCancelledData,
+  type AdminNewOrderData, type AdminReturnRequestData,
+  type ReturnRequestData,
   type PointsUpdateData, type BirthdayData, type GiftCardData,
   type WelcomeData, type AbandonedCartData, type ReviewRequestData,
 } from './templates';
@@ -16,6 +20,9 @@ type EmailEvent =
   | { type: 'order.confirmed'; email: string; name: string; data: OrderConfirmedData }
   | { type: 'order.shipped'; email: string; name: string; data: OrderShippedData }
   | { type: 'order.cancelled'; email: string; name: string; data: OrderCancelledData }
+  | { type: 'admin.new-order'; email: string; name: string; data: AdminNewOrderData }
+  | { type: 'admin.return-request'; email: string; name: string; data: AdminReturnRequestData }
+  | { type: 'return.confirmed'; email: string; name: string; data: ReturnRequestData }
   | { type: 'points.update'; email: string; name: string; data: PointsUpdateData }
   | { type: 'birthday'; email: string; name: string; data: BirthdayData }
   | { type: 'giftcard.received'; email: string; name: string; data: GiftCardData }
@@ -27,6 +34,9 @@ const TEMPLATE_MAP = {
   'order.confirmed': orderConfirmed,
   'order.shipped': orderShipped,
   'order.cancelled': orderCancelled,
+  'admin.new-order': adminNewOrder,
+  'admin.return-request': adminReturnRequest,
+  'return.confirmed': returnRequestConfirmed,
   'points.update': pointsUpdate,
   'birthday': birthday,
   'giftcard.received': giftCardReceived,

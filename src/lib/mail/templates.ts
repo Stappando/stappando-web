@@ -4,8 +4,9 @@
  */
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
+const WP_ADMIN = 'https://stappando.it/wp-admin';
 
-/* ── Base layout — premium white header with logo ─────── */
+/* ── Base layout — premium header with logo ─────────── */
 
 function baseLayout(content: string, preheader?: string): string {
   return `<!DOCTYPE html>
@@ -20,35 +21,30 @@ function baseLayout(content: string, preheader?: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
     <tr><td align="center" style="padding:32px 16px;">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
-        <!-- Header — clean white, logo + rating -->
-        <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
+        <!-- Header -->
+        <tr><td style="background:#005667;padding:28px 32px;text-align:center;">
           <a href="${SITE}" style="text-decoration:none;">
-            <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
+            <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="140" style="display:inline-block;max-width:140px;height:auto;filter:brightness(0) invert(1);" />
           </a>
-          <p style="margin:10px 0 0;font-size:11px;color:#999;">
-            <span style="color:#d9c39a;letter-spacing:1px;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-            <span style="color:#005667;font-weight:600;margin-left:4px;">4.6/5</span>
-            <span style="color:#bbb;margin-left:2px;">&middot; 1000+ recensioni</span>
-          </p>
         </td></tr>
         <!-- Content -->
         <tr><td style="padding:36px 36px 28px;">
           ${content}
         </td></tr>
         <!-- Footer -->
-        <tr><td style="border-top:1px solid #f0ece4;padding:24px 36px;text-align:center;">
+        <tr><td style="background:#1a1a1a;padding:24px 36px;text-align:center;">
           <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px;">
             <tr>
-              <td style="padding:0 6px;"><a href="https://www.instagram.com/stappando.it" style="text-decoration:none;color:#888;font-size:12px;">Instagram</a></td>
-              <td style="padding:0 6px;color:#ccc;">|</td>
-              <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:12px;">Facebook</a></td>
-              <td style="padding:0 6px;color:#ccc;">|</td>
-              <td style="padding:0 6px;"><a href="${SITE}" style="text-decoration:none;color:#005667;font-size:12px;font-weight:600;">stappando.it</a></td>
+              <td style="padding:0 6px;"><a href="https://www.instagram.com/stappando.it" style="text-decoration:none;color:#888;font-size:11px;">Instagram</a></td>
+              <td style="padding:0 6px;color:#555;">|</td>
+              <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:11px;">Facebook</a></td>
+              <td style="padding:0 6px;color:#555;">|</td>
+              <td style="padding:0 6px;"><a href="${SITE}" style="text-decoration:none;color:#d9c39a;font-size:11px;font-weight:600;">stappando.it</a></td>
             </tr>
           </table>
-          <p style="margin:0;font-size:11px;color:#aaa;line-height:1.5;">
-            Stappando S.r.l.s. — Enocultura italiana<br>
-            <a href="${SITE}/privacy" style="color:#aaa;text-decoration:underline;">Privacy</a> · <a href="${SITE}/termini" style="color:#aaa;text-decoration:underline;">Termini</a>
+          <p style="margin:0;font-size:11px;color:#888;line-height:1.5;">
+            &copy; 2026 Stappando Srl Semplificata &mdash; P.IVA 15855161003<br>
+            <a href="${SITE}/privacy" style="color:#888;text-decoration:underline;">Privacy</a> &middot; <a href="${SITE}/termini" style="color:#888;text-decoration:underline;">Termini</a>
           </p>
         </td></tr>
       </table>
@@ -58,7 +54,7 @@ function baseLayout(content: string, preheader?: string): string {
 </html>`;
 }
 
-/* ── Shared components — premium style ────────────────── */
+/* ── Shared components ──────────────────────────────── */
 
 function heading(text: string): string {
   return `<h1 style="margin:0 0 12px;font-size:26px;font-weight:700;color:#1a1a1a;line-height:1.25;letter-spacing:-0.3px;">${text}</h1>`;
@@ -96,10 +92,14 @@ function goldBadge(text: string): string {
   return `<span style="display:inline-block;padding:5px 14px;background:#d9c39a;color:#5a4200;font-size:11px;font-weight:700;border-radius:20px;text-transform:uppercase;letter-spacing:0.6px;">${text}</span>`;
 }
 
-function couponBox(code: string): string {
-  return `<div style="background:#f8f6f1;border:2px dashed #005667;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
-    <span style="font-size:24px;font-weight:700;color:#005667;letter-spacing:3px;">${code}</span>
-  </div>`;
+function sectionLabel(text: string): string {
+  return `<p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;">${text}</p>`;
+}
+
+function infoBox(content: string): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:8px;margin:12px 0;">
+    <tr><td style="padding:16px 20px;">${content}</td></tr>
+  </table>`;
 }
 
 function infoCard(label: string, value: string): string {
@@ -109,34 +109,48 @@ function infoCard(label: string, value: string): string {
   </td>`;
 }
 
-/* ── Order item row ───────────────────────────────────── */
+function couponBox(code: string): string {
+  return `<div style="background:#f8f6f1;border:2px dashed #005667;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
+    <span style="font-size:24px;font-weight:700;color:#005667;letter-spacing:3px;">${code}</span>
+  </div>`;
+}
+
+/* ── Order item row ───────────────────────────────── */
 
 interface OrderItem {
   name: string;
   quantity: number;
   total: string;
   image?: string;
+  vendor?: string;
 }
 
-function orderItemsTable(items: OrderItem[], shipping: string, total: string): string {
+function orderItemsTable(items: OrderItem[], shipping: string, total: string, discount?: string, carrierName?: string): string {
   const rows = items.map(item => `
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
         ${item.image ? `<img src="${item.image}" width="48" height="48" style="border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:12px;" />` : ''}
         <span style="font-size:14px;color:#333;font-weight:500;">${item.name}</span>
+        ${item.vendor ? `<br><span style="font-size:11px;color:#999;">${item.vendor}</span>` : ''}
         <span style="font-size:12px;color:#999;"> x${item.quantity}</span>
       </td>
       <td style="padding:12px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
     </tr>
   `).join('');
 
+  const shippingLabel = carrierName ? `Spedizione via ${carrierName}` : 'Spedizione';
+
   return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
       ${rows}
       <tr>
-        <td style="padding:10px 0;font-size:13px;color:#888;">Spedizione</td>
+        <td style="padding:10px 0;font-size:13px;color:#888;">${shippingLabel}</td>
         <td style="padding:10px 0;text-align:right;font-size:13px;color:#888;">${shipping}</td>
       </tr>
+      ${discount ? `<tr>
+        <td style="padding:6px 0;font-size:13px;color:#005667;font-weight:600;">Sconto</td>
+        <td style="padding:6px 0;text-align:right;font-size:13px;color:#005667;font-weight:600;">-${discount} &euro;</td>
+      </tr>` : ''}
       <tr>
         <td style="padding:14px 0;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">Totale</td>
         <td style="padding:14px 0;text-align:right;font-size:20px;font-weight:700;color:#005667;border-top:2px solid #005667;">${total} &euro;</td>
@@ -178,7 +192,9 @@ function circuitoSuggestions(products: CircuitoProduct[]): string {
   `;
 }
 
-/* ── Template: Ordine confermato ──────────────────────── */
+/* ══════════════════════════════════════════════════════
+   MAIL 1 — CLIENTE: Ordine confermato
+   ══════════════════════════════════════════════════════ */
 
 export interface OrderConfirmedData {
   customerName: string;
@@ -188,53 +204,248 @@ export interface OrderConfirmedData {
   total: string;
   orderUrl: string;
   shippingAddress?: string;
+  carrierName?: string;
+  deliveryEstimate?: string;
+  discount?: string;
   pointsEarned?: number;
   totalPoints?: number;
+  invoiceData?: { vatNumber?: string; companyName?: string; pec?: string; sdi?: string };
   circuitoProducts?: CircuitoProduct[];
 }
 
 export function orderConfirmed(data: OrderConfirmedData): { subject: string; html: string } {
+  const carrierDisplay = data.carrierName || 'Corriere espresso';
+  const deliveryEst = data.deliveryEstimate || '1-3 giorni lavorativi';
+
   return {
-    subject: `Ordine #${data.orderNumber} confermato`,
+    subject: `Ordine #${data.orderNumber} confermato — grazie ${data.customerName}!`,
     html: baseLayout(`
       ${heading('Ordine confermato')}
       ${subheading(`Grazie ${data.customerName}, stiamo preparando il tuo pacco con cura.`)}
       ${goldBadge(`Ordine #${data.orderNumber}`)}
-      ${orderItemsTable(data.items, data.shipping, data.total)}
+      ${orderItemsTable(data.items, data.shipping, data.total, data.discount, data.carrierName)}
+
+      ${data.carrierName ? `
+      ${infoBox(`
+        ${sectionLabel('Spedizione')}
+        <p style="margin:0;font-size:14px;color:#1a1a1a;font-weight:600;">Spediremo con ${carrierDisplay}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#888;">Consegna stimata: ${deliveryEst}</p>
+      `)}` : ''}
 
       ${data.shippingAddress ? `
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
-        <tr>${infoCard('Spedizione a', data.shippingAddress)}</tr>
-      </table>
-      ` : ''}
+      ${infoBox(`
+        ${sectionLabel('Indirizzo di consegna')}
+        <p style="margin:0;font-size:14px;color:#1a1a1a;">${data.shippingAddress}</p>
+      `)}` : ''}
+
+      ${data.invoiceData ? `
+      ${infoBox(`
+        ${sectionLabel('Dati fatturazione')}
+        ${data.invoiceData.companyName ? `<p style="margin:0 0 4px;font-size:14px;color:#1a1a1a;font-weight:600;">${data.invoiceData.companyName}</p>` : ''}
+        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">P.IVA / CF: ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.pec ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">PEC: ${data.invoiceData.pec}</p>` : ''}
+        ${data.invoiceData.sdi ? `<p style="margin:0;font-size:13px;color:#444;">SDI: ${data.invoiceData.sdi}</p>` : ''}
+      `)}` : ''}
 
       ${data.pointsEarned ? `
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#005667;border-radius:10px;margin:20px 0;">
-        <tr>
-          <td style="padding:18px 24px;">
-            <table cellpadding="0" cellspacing="0" width="100%"><tr>
-              <td>
-                <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Punti POP guadagnati</p>
-                <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#ffffff;">+${data.pointsEarned}</p>
-              </td>
-              <td style="text-align:right;">
-                <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Saldo totale</p>
-                <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#d9c39a;">${data.totalPoints || 0}</p>
-              </td>
-            </tr></table>
-          </td>
-        </tr>
-      </table>
-      ` : ''}
+        <tr><td style="padding:18px 24px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Punti POP guadagnati</p>
+          <p style="margin:4px 0 0;font-size:28px;font-weight:700;color:#ffffff;">+${data.pointsEarned}</p>
+        </td></tr>
+      </table>` : ''}
 
-      ${paragraph('Riceverai un\'email con il tracking non appena il pacco sar&agrave; affidato al corriere.')}
-      ${ctaButton('Segui il tuo ordine', data.orderUrl)}
+      ${paragraph(`Riceverai un'email con il tracking non appena il pacco sar&agrave; affidato al corriere.`)}
+      ${ctaButton('Vedi il tuo ordine', data.orderUrl)}
+      ${secondaryButton('Continua a fare shopping', `${SITE}/cerca`)}
       ${circuitoSuggestions(data.circuitoProducts || [])}
-    `, `Ordine #${data.orderNumber} confermato`),
+
+      ${infoBox(`
+        <table cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td style="font-size:12px;color:#666;text-align:center;">
+            Pagamento sicuro &middot; Reso gratuito entro 14gg &middot; Assistenza dedicata
+          </td>
+        </tr></table>
+      `)}
+    `, `Ordine #${data.orderNumber} confermato — grazie ${data.customerName}!`),
   };
 }
 
-/* ── Template: Ordine spedito ─────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   MAIL 2 — ADMIN: Nuovo ordine ricevuto
+   ══════════════════════════════════════════════════════ */
+
+export interface AdminNewOrderData {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  vendorGroups: { vendorName: string; items: { name: string; quantity: number; total: string }[]; subtotal: string }[];
+  carrierName: string;
+  shippingAddress: string;
+  billingAddress: string;
+  invoiceData?: { vatNumber?: string; companyName?: string; pec?: string; sdi?: string };
+  paymentMethod: string;
+  transactionId: string;
+  subtotal: string;
+  shippingCost: string;
+  discount?: string;
+  total: string;
+  customerNotes?: string;
+  carrierPreference?: string;
+  newsletter?: boolean;
+}
+
+export function adminNewOrder(data: AdminNewOrderData): { subject: string; html: string } {
+  const vendorSections = data.vendorGroups.map(vg => {
+    const rows = vg.items.map(i => `
+      <tr>
+        <td style="padding:6px 0;border-bottom:1px solid #f0ece4;font-size:13px;color:#333;">${i.name} <span style="color:#999;">x${i.quantity}</span></td>
+        <td style="padding:6px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:13px;font-weight:600;">${i.total} &euro;</td>
+      </tr>
+    `).join('');
+    return `
+      <div style="margin-bottom:16px;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#005667;text-transform:uppercase;">${vg.vendorName}</p>
+        <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+        <p style="margin:6px 0 0;text-align:right;font-size:12px;color:#888;">Subtotale: ${vg.subtotal} &euro;</p>
+      </div>
+    `;
+  }).join('');
+
+  return {
+    subject: `🛒 Nuovo ordine #${data.orderNumber} — ${data.customerName} — ${data.total}€`,
+    html: baseLayout(`
+      ${heading(`Nuovo ordine #${data.orderNumber}`)}
+
+      ${infoBox(`
+        ${sectionLabel('Cliente')}
+        <p style="margin:0;font-size:14px;color:#1a1a1a;font-weight:600;">${data.customerName}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#444;">${data.customerEmail} &middot; ${data.customerPhone || 'N/A'}</p>
+      `)}
+
+      ${sectionLabel('Prodotti per vendor')}
+      ${vendorSections}
+
+      ${infoBox(`
+        ${sectionLabel('Spedizione')}
+        <p style="margin:0 0 4px;font-size:13px;color:#444;"><strong>Corriere:</strong> ${data.carrierName}</p>
+        <p style="margin:0;font-size:13px;color:#444;"><strong>Indirizzo:</strong> ${data.shippingAddress}</p>
+      `)}
+
+      ${data.invoiceData ? `${infoBox(`
+        ${sectionLabel('Fatturazione')}
+        ${data.invoiceData.companyName ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>Ragione sociale:</strong> ${data.invoiceData.companyName}</p>` : ''}
+        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>P.IVA / CF:</strong> ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.pec ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>PEC:</strong> ${data.invoiceData.pec}</p>` : ''}
+        ${data.invoiceData.sdi ? `<p style="margin:0;font-size:13px;color:#444;"><strong>SDI:</strong> ${data.invoiceData.sdi}</p>` : ''}
+      `)}` : ''}
+
+      ${infoBox(`
+        ${sectionLabel('Pagamento')}
+        <p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>Metodo:</strong> ${data.paymentMethod}</p>
+        <p style="margin:0;font-size:13px;color:#444;"><strong>Transaction ID:</strong> ${data.transactionId}</p>
+      `)}
+
+      ${infoBox(`
+        ${sectionLabel('Totali')}
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="font-size:13px;color:#444;padding:3px 0;">Subtotale prodotti</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.subtotal} &euro;</td></tr>
+          <tr><td style="font-size:13px;color:#444;padding:3px 0;">Spedizione</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.shippingCost} &euro;</td></tr>
+          ${data.discount ? `<tr><td style="font-size:13px;color:#005667;padding:3px 0;font-weight:600;">Sconto</td><td style="text-align:right;font-size:13px;color:#005667;font-weight:600;">-${data.discount} &euro;</td></tr>` : ''}
+          <tr><td style="font-size:16px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">Totale</td><td style="text-align:right;font-size:16px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">${data.total} &euro;</td></tr>
+        </table>
+      `)}
+
+      ${data.customerNotes ? `${infoBox(`
+        ${sectionLabel('Note cliente')}
+        <p style="margin:0;font-size:13px;color:#444;">${data.customerNotes}</p>
+      `)}` : ''}
+
+      ${data.carrierPreference ? `${infoBox(`
+        ${sectionLabel('Preferenze')}
+        <p style="margin:0 0 2px;font-size:13px;color:#444;">Corriere preferito: ${data.carrierPreference}</p>
+        ${data.newsletter !== undefined ? `<p style="margin:0;font-size:13px;color:#444;">Newsletter: ${data.newsletter ? 'S&igrave;' : 'No'}</p>` : ''}
+      `)}` : ''}
+
+      ${ctaButton('Apri ordine su WooCommerce', `${WP_ADMIN}/post.php?post=${data.orderNumber}&action=edit`)}
+    `, `Nuovo ordine #${data.orderNumber} — ${data.total}€`),
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIL 3 — VENDOR: Sub-ordine ricevuto
+   ══════════════════════════════════════════════════════ */
+
+export interface VendorSubOrderData {
+  vendorName: string;
+  subOrderNumber: string;
+  parentOrderNumber: string;
+  items: { name: string; quantity: number; total: string }[];
+  grossTotal: string;
+  netTotal: string;
+  vendorAmount: string;
+  platformAmount: string;
+  shippingAddress: string;
+  customerName: string;
+  customerPhone?: string;
+  customerNotes?: string;
+  carrierName?: string;
+}
+
+export function vendorSubOrder(data: VendorSubOrderData): { subject: string; html: string } {
+  const itemRows = data.items.map(item => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;font-size:14px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></td>
+      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: `📦 Nuovo ordine #${data.subOrderNumber} da preparare`,
+    html: baseLayout(`
+      ${heading('Nuovo ordine da preparare')}
+      ${subheading(`Ciao ${data.vendorName}, hai un nuovo ordine!`)}
+      ${goldBadge(`Ordine #${data.subOrderNumber}`)}
+      <p style="margin:8px 0 20px;font-size:12px;color:#999;">Ordine cliente #${data.parentOrderNumber}</p>
+
+      ${sectionLabel('I tuoi prodotti da spedire')}
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        ${itemRows}
+      </table>
+
+      ${infoBox(`
+        ${sectionLabel('Spedisci a')}
+        <p style="margin:0 0 4px;font-size:14px;color:#1a1a1a;font-weight:600;">${data.customerName}</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#444;">${data.shippingAddress}</p>
+        ${data.customerPhone ? `<p style="margin:0 0 4px;font-size:13px;color:#444;">Tel: ${data.customerPhone}</p>` : ''}
+        ${data.customerNotes ? `<p style="margin:4px 0 0;font-size:12px;color:#888;font-style:italic;">Note: ${data.customerNotes}</p>` : ''}
+      `)}
+
+      ${data.carrierName ? `${infoBox(`
+        ${sectionLabel('Corriere scelto dal cliente')}
+        <p style="margin:0;font-size:14px;color:#005667;font-weight:600;">${data.carrierName}</p>
+      `)}` : ''}
+
+      ${infoBox(`
+        ${sectionLabel('Il tuo incasso')}
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="font-size:13px;color:#444;padding:3px 0;">Lordo</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.grossTotal} &euro;</td></tr>
+          <tr><td style="font-size:13px;color:#444;padding:3px 0;">IVA (22%)</td><td style="text-align:right;font-size:13px;color:#999;">- inclusa</td></tr>
+          <tr><td style="font-size:13px;color:#444;padding:3px 0;">Netto</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.netTotal} &euro;</td></tr>
+          <tr><td style="font-size:15px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">La tua quota (85%)</td><td style="text-align:right;font-size:15px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">${data.vendorAmount} &euro;</td></tr>
+        </table>
+      `)}
+
+      ${paragraph('Prepara il pacco e attendi il ritiro del corriere. Il cliente ricever&agrave; automaticamente la notifica di spedizione.')}
+      ${ctaButton('Vai alla Dashboard', `${SITE}/vendor/dashboard`)}
+    `, `Nuovo ordine #${data.subOrderNumber} per ${data.vendorName}`),
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIL 4 — CLIENTE: Ordine spedito
+   ══════════════════════════════════════════════════════ */
 
 export interface OrderShippedData {
   customerName: string;
@@ -242,47 +453,213 @@ export interface OrderShippedData {
   trackingUrl: string;
   trackingNumber: string;
   carrier: string;
+  items?: OrderItem[];
+  shippingAddress?: string;
+  deliveryEstimate?: string;
 }
 
 export function orderShipped(data: OrderShippedData): { subject: string; html: string } {
+  const itemRows = data.items?.map(item => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;font-size:13px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:13px;font-weight:600;">${item.total} &euro;</td>
+    </tr>
+  `).join('') || '';
+
   return {
-    subject: `Il tuo ordine #${data.orderNumber} è in viaggio`,
+    subject: `🚚 Il tuo ordine #${data.orderNumber} è in viaggio!`,
     html: baseLayout(`
-      ${heading('Il tuo vino è in viaggio')}
-      ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato affidato al corriere.`)}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
-        <tr>
-          ${infoCard('Corriere', data.carrier)}
-          ${infoCard('Tracking', data.trackingNumber)}
-        </tr>
-      </table>
-      ${paragraph('La consegna è prevista in <strong>24-48 ore lavorative</strong>.')}
-      ${ctaButton('Traccia il pacco', data.trackingUrl)}
-    `, `Ordine #${data.orderNumber} spedito`),
+      ${heading('Il tuo vino è in viaggio!')}
+      ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato spedito.`)}
+
+      ${itemRows ? `
+        ${sectionLabel('Prodotti spediti')}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">${itemRows}</table>
+      ` : ''}
+
+      ${infoBox(`
+        ${sectionLabel('Tracking')}
+        <p style="margin:0 0 4px;font-size:13px;color:#444;"><strong>Corriere:</strong> ${data.carrier}</p>
+        <p style="margin:0;font-size:13px;color:#444;"><strong>Numero tracking:</strong> ${data.trackingNumber}</p>
+      `)}
+
+      ${data.shippingAddress ? `${infoBox(`
+        ${sectionLabel('Indirizzo consegna')}
+        <p style="margin:0;font-size:13px;color:#444;">${data.shippingAddress}</p>
+      `)}` : ''}
+
+      ${paragraph(`Consegna prevista in <strong>${data.deliveryEstimate || '1-3 giorni lavorativi'}</strong>.`)}
+      ${ctaButton('Traccia il tuo pacco', data.trackingUrl)}
+      ${secondaryButton('I miei ordini', `${SITE}/account`)}
+    `, `Ordine #${data.orderNumber} spedito — traccia il pacco`),
   };
 }
 
-/* ── Template: Ordine annullato ───────────────────────── */
+/* ══════════════════════════════════════════════════════
+   MAIL 5 — CLIENTE: Ordine annullato
+   ══════════════════════════════════════════════════════ */
 
 export interface OrderCancelledData {
   customerName: string;
   orderNumber: string;
+  items?: OrderItem[];
+  refundAmount?: string;
+  paymentMethod?: string;
 }
 
 export function orderCancelled(data: OrderCancelledData): { subject: string; html: string } {
+  const itemRows = data.items?.map(item => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;font-size:13px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:13px;font-weight:600;">${item.total} &euro;</td>
+    </tr>
+  `).join('') || '';
+
   return {
     subject: `Ordine #${data.orderNumber} annullato`,
     html: baseLayout(`
       ${heading('Ordine annullato')}
       ${subheading(`${data.customerName}, il tuo ordine #${data.orderNumber} è stato annullato.`)}
-      ${paragraph('Se il pagamento era già stato effettuato, il rimborso verrà elaborato entro 5-10 giorni lavorativi.')}
+
+      ${itemRows ? `
+        ${sectionLabel('Prodotti annullati')}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">${itemRows}</table>
+      ` : ''}
+
+      ${data.refundAmount ? `${infoBox(`
+        ${sectionLabel('Rimborso')}
+        <p style="margin:0;font-size:14px;color:#1a1a1a;">Il rimborso di <strong style="color:#005667;">${data.refundAmount} &euro;</strong> sar&agrave; accreditato entro 5-7 giorni lavorativi${data.paymentMethod ? ` sul metodo di pagamento usato (${data.paymentMethod})` : ''}.</p>
+      `)}` : `${paragraph('Se il pagamento era gi&agrave; stato effettuato, il rimborso verr&agrave; elaborato entro 5-7 giorni lavorativi.')}`}
+
       ${paragraph('Hai bisogno di aiuto? Rispondi a questa email o scrivici su <a href="mailto:info@stappando.it" style="color:#005667;font-weight:600;">info@stappando.it</a>')}
-      ${ctaButton('Torna allo shop', SITE)}
+      ${ctaButton('Contattaci', `${SITE}/contatti`)}
+      ${secondaryButton('Continua a fare shopping', `${SITE}/cerca`)}
     `, `Ordine #${data.orderNumber} annullato`),
   };
 }
 
-/* ── Template: Aggiornamento Punti POP ────────────────── */
+/* ══════════════════════════════════════════════════════
+   MAIL 6 — CLIENTE: Richiesta reso ricevuta
+   ══════════════════════════════════════════════════════ */
+
+export interface ReturnRequestData {
+  customerName: string;
+  orderNumber: string;
+  items: { name: string; quantity: number; reason?: string }[];
+  pickupMethod: string;
+  pickupDate?: string;
+  pickupTimeSlot?: string;
+  pickupAddress?: string;
+  refundEstimate: string;
+}
+
+export function returnRequestConfirmed(data: ReturnRequestData): { subject: string; html: string } {
+  const itemRows = data.items.map(item => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0ece4;">
+        <span style="font-size:13px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></span>
+        ${item.reason ? `<br><span style="font-size:11px;color:#888;">Motivo: ${item.reason}</span>` : ''}
+      </td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: `Richiesta reso #${data.orderNumber} ricevuta`,
+    html: baseLayout(`
+      ${heading('Reso ricevuto')}
+      ${subheading(`${data.customerName}, abbiamo ricevuto la tua richiesta di reso per l'ordine #${data.orderNumber}.`)}
+
+      ${sectionLabel('Prodotti in reso')}
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">${itemRows}</table>
+
+      ${infoBox(`
+        ${sectionLabel('Modalit&agrave; ritiro')}
+        <p style="margin:0 0 4px;font-size:14px;color:#1a1a1a;font-weight:600;">${data.pickupMethod === 'domicilio' ? 'Ritiro a domicilio' : 'Spedizione tramite ufficio postale'}</p>
+        ${data.pickupMethod === 'domicilio' && data.pickupDate ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">Data: ${data.pickupDate}${data.pickupTimeSlot ? ` — ${data.pickupTimeSlot}` : ''}</p>` : ''}
+        ${data.pickupAddress ? `<p style="margin:0;font-size:13px;color:#444;">Indirizzo: ${data.pickupAddress}</p>` : ''}
+      `)}
+
+      ${infoBox(`
+        ${sectionLabel('Rimborso stimato')}
+        <p style="margin:0;font-size:18px;color:#005667;font-weight:700;">${data.refundEstimate} &euro;</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#888;">Elaboreremo la richiesta entro 2-3 giorni lavorativi</p>
+      `)}
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbe6;border-radius:8px;margin:16px 0;border:1px solid #f0e68c;">
+        <tr><td style="padding:14px 20px;font-size:13px;color:#8a6d00;">
+          <strong>Ricorda:</strong> imballa correttamente i prodotti nella confezione originale per garantire un reso rapido.
+        </td></tr>
+      </table>
+
+      ${ctaButton('Vedi stato reso', `${SITE}/account`)}
+    `, `Richiesta reso #${data.orderNumber} ricevuta`),
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIL 7 — ADMIN: Richiesta reso
+   ══════════════════════════════════════════════════════ */
+
+export interface AdminReturnRequestData {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  items: { name: string; quantity: number; reason?: string }[];
+  pickupMethod: string;
+  pickupDate?: string;
+  pickupTimeSlot?: string;
+  pickupAddress?: string;
+  refundEstimate: string;
+}
+
+export function adminReturnRequest(data: AdminReturnRequestData): { subject: string; html: string } {
+  const itemRows = data.items.map(item => `
+    <tr>
+      <td style="padding:6px 0;border-bottom:1px solid #f0ece4;font-size:13px;color:#333;">${item.name} x${item.quantity}</td>
+      <td style="padding:6px 0;border-bottom:1px solid #f0ece4;font-size:12px;color:#888;">${item.reason || 'N/A'}</td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: `↩️ Reso #${data.orderNumber} — ${data.customerName} — ${data.items.map(i => i.name).join(', ')}`,
+    html: baseLayout(`
+      ${heading(`Reso #${data.orderNumber}`)}
+
+      ${infoBox(`
+        ${sectionLabel('Cliente')}
+        <p style="margin:0;font-size:14px;color:#1a1a1a;font-weight:600;">${data.customerName}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#444;">${data.customerEmail}${data.customerPhone ? ` &middot; ${data.customerPhone}` : ''}</p>
+      `)}
+
+      ${sectionLabel('Prodotti da rendere')}
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+        <tr><td style="font-size:11px;color:#888;font-weight:600;padding:4px 0;">Prodotto</td><td style="font-size:11px;color:#888;font-weight:600;padding:4px 0;">Motivo</td></tr>
+        ${itemRows}
+      </table>
+
+      ${infoBox(`
+        ${sectionLabel('Ritiro')}
+        <p style="margin:0 0 4px;font-size:13px;color:#444;"><strong>Modalit&agrave;:</strong> ${data.pickupMethod === 'domicilio' ? 'Ritiro a domicilio' : 'Ufficio postale'}</p>
+        ${data.pickupMethod === 'domicilio' ? `
+          ${data.pickupAddress ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>Indirizzo:</strong> ${data.pickupAddress}</p>` : ''}
+          ${data.pickupDate ? `<p style="margin:0;font-size:13px;color:#444;"><strong>Data:</strong> ${data.pickupDate}${data.pickupTimeSlot ? ` — ${data.pickupTimeSlot}` : ''}</p>` : ''}
+        ` : ''}
+      `)}
+
+      ${infoBox(`
+        ${sectionLabel('Rimborso stimato')}
+        <p style="margin:0;font-size:18px;color:#005667;font-weight:700;">${data.refundEstimate} &euro;</p>
+      `)}
+
+      ${ctaButton('Gestisci reso su WooCommerce', `${WP_ADMIN}/post.php?post=${data.orderNumber}&action=edit`)}
+    `, `Reso #${data.orderNumber} — ${data.customerName}`),
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   Template: Aggiornamento Punti POP
+   ══════════════════════════════════════════════════════ */
 
 export interface PointsUpdateData {
   customerName: string;
@@ -387,7 +764,7 @@ export function welcome(data: WelcomeData): { subject: string; html: string } {
       ${paragraph('Stappando è il marketplace dei migliori vini italiani, selezionati direttamente dai produttori e spediti con cura fino a casa tua.')}
       ${divider()}
       <table width="100%" cellpadding="0" cellspacing="0">
-        <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualità e territorio garantiti</td></tr>
+        <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualit&agrave; e territorio garantiti</td></tr>
         <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Consegna 24-48h</strong> — Spedizione gratuita da 69€</td></tr>
         <tr><td style="padding:10px 0;font-size:14px;color:#444;"><strong style="color:#005667;">Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
       </table>
@@ -409,7 +786,7 @@ export function welcomeTemplate(firstName: string, couponCode: string, expiresDa
     ${ctaButton('Usa il codice ora', `${SITE}/cerca`)}
     ${divider()}
     <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualità garantita</td></tr>
+      <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Selezionati da sommelier</strong> — Qualit&agrave; garantita</td></tr>
       <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Consegna 24-48h</strong> — Gratuita da 69€</td></tr>
       <tr><td style="padding:8px 0;font-size:13px;color:#666;"><strong style="color:#005667;">Punti POP</strong> — Accumula punti ad ogni ordine</td></tr>
     </table>
@@ -437,7 +814,7 @@ export interface AbandonedCartData {
   items: OrderItem[];
   cartUrl: string;
   total: string;
-  isReminder?: boolean; // true = second email after 3h
+  isReminder?: boolean;
 }
 
 export function abandonedCart(data: AbandonedCartData): { subject: string; html: string } {
@@ -461,7 +838,7 @@ export function abandonedCart(data: AbandonedCartData): { subject: string; html:
     html: baseLayout(`
       ${heading(isReminder ? 'Le scorte si stanno esaurendo' : 'Il tuo carrello ti aspetta')}
       ${subheading(isReminder
-        ? `${data.customerName}, i prodotti nel tuo carrello hanno disponibilità limitata. Non vorremmo che li perdessi.`
+        ? `${data.customerName}, i prodotti nel tuo carrello hanno disponibilit&agrave; limitata. Non vorremmo che li perdessi.`
         : `${data.customerName}, hai lasciato qualcosa nel carrello. Lo teniamo da parte per te.`
       )}
       <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
@@ -472,14 +849,13 @@ export function abandonedCart(data: AbandonedCartData): { subject: string; html:
         </tr>
       </table>
       ${ctaButton('Completa l\'ordine', data.cartUrl)}
-      ${divider()}
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;">
-        <tr>
-          <td style="padding:14px 20px;font-size:12px;color:#666;text-align:center;">
+      ${infoBox(`
+        <table cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td style="font-size:12px;color:#666;text-align:center;">
             Spedizione gratuita da 69€ &middot; Consegna 24-48h &middot; Pagamento 100% sicuro
           </td>
-        </tr>
-      </table>
+        </tr></table>
+      `)}
     `, isReminder
       ? `Ultima chance — i tuoi vini stanno per finire`
       : `Il tuo carrello ti aspetta: ${data.items.length} prodott${data.items.length === 1 ? 'o' : 'i'}`
@@ -533,7 +909,6 @@ export function reviewRequest(data: ReviewRequestData): { subject: string; html:
   };
 }
 
-
 /* ── Vendor Approved ─────────────────────────────────── */
 
 export function vendorApproved(cantina: string): { subject: string; html: string } {
@@ -573,64 +948,5 @@ export function vendorApproved(cantina: string): { subject: string; html: string
         </table>
       </div>
     `, `${cantina}, il tuo negozio su Stappando è attivo!`),
-  };
-}
-
-/* ── Template: Vendor sub-order notification ─────────── */
-
-export interface VendorSubOrderData {
-  vendorName: string;
-  subOrderNumber: string;
-  parentOrderNumber: string;
-  items: { name: string; quantity: number; total: string }[];
-  grossTotal: string;
-  netTotal: string;
-  vendorAmount: string;
-  platformAmount: string;
-  shippingAddress: string;
-  customerName: string;
-}
-
-export function vendorSubOrder(data: VendorSubOrderData): { subject: string; html: string } {
-  const itemRows = data.items.map(item => `
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;font-size:14px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></td>
-      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
-    </tr>
-  `).join('');
-
-  return {
-    subject: `Nuovo ordine #${data.subOrderNumber} — ${data.vendorName}`,
-    html: baseLayout(`
-      ${heading('Nuovo ordine ricevuto')}
-      ${subheading(`Ciao ${data.vendorName}, hai un nuovo ordine da preparare!`)}
-      ${goldBadge(`Sub-ordine #${data.subOrderNumber}`)}
-      <p style="margin:8px 0 20px;font-size:12px;color:#999;">Ordine cliente #${data.parentOrderNumber}</p>
-
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-        ${itemRows}
-      </table>
-
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
-        <tr>
-          ${infoCard('Lordo', `${data.grossTotal} €`)}
-          ${infoCard('Netto (- IVA 22%)', `${data.netTotal} €`)}
-        </tr>
-        <tr>
-          ${infoCard('Tuo guadagno (85%)', `${data.vendorAmount} €`)}
-          ${infoCard('Commissione Stappando (15%)', `${data.platformAmount} €`)}
-        </tr>
-      </table>
-
-      ${divider()}
-
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:0 0 20px;">
-        <tr>${infoCard('Spedizione a', data.shippingAddress)}</tr>
-        <tr>${infoCard('Cliente', data.customerName)}</tr>
-      </table>
-
-      ${paragraph('Prepara il pacco e aggiorna lo stato quando spedisci. Il cliente riceverà automaticamente la notifica di spedizione.')}
-      ${ctaButton('Vai alla Dashboard', `${SITE}/vendor/dashboard`)}
-    `, `Nuovo ordine #${data.subOrderNumber} per ${data.vendorName}`),
   };
 }

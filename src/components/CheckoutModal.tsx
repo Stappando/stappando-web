@@ -1144,7 +1144,7 @@ function Step4Confirmation() {
               </div>
               <div>
                 <p className="text-[10px] text-[#888] uppercase tracking-wider mb-1">Consegna stimata</p>
-                <p className="text-[13px] text-[#444] leading-relaxed"><strong>{deliveryEst}</strong><br/>Corriere espresso 24-48h<br/>Tracking via email</p>
+                <p className="text-[13px] text-[#444] leading-relaxed"><strong>{deliveryEst}</strong><br/>{(() => { const c = typeof window !== 'undefined' ? localStorage.getItem('stappando_carrier') || 'brt' : 'brt'; const names: Record<string, string> = { brt: 'BRT Corriere Espresso', fedex: 'FedEx / TNT', poste: 'Poste Italiane' }; return `Spedizione via ${names[c] || c}`; })()}<br/>Tracking via email</p>
               </div>
             </div>
           </div>

@@ -333,6 +333,10 @@ async function notifyVendor(
     total: li.total,
   }));
 
+  // Extract carrier from customer note or shipping line
+  const shippingLine = (parent as unknown as { shipping_lines?: { method_title?: string }[] }).shipping_lines?.[0];
+  const carrierFromShipping = shippingLine?.method_title || '';
+
   const { subject, html } = vendorSubOrder({
     vendorName: group.vendorName,
     subOrderNumber: String(result.subOrderId),
@@ -344,6 +348,9 @@ async function notifyVendor(
     platformAmount: String(commissions.platformAmount),
     shippingAddress: `${parent.shipping.first_name} ${parent.shipping.last_name}, ${parent.shipping.address_1}, ${parent.shipping.postcode} ${parent.shipping.city} (${parent.shipping.state})`,
     customerName: `${parent.billing.first_name} ${parent.billing.last_name}`,
+    customerPhone: parent.billing.phone || undefined,
+    customerNotes: (parent as unknown as { customer_note?: string }).customer_note || undefined,
+    carrierName: carrierFromShipping || undefined,
   });
 
   await sendEmail({

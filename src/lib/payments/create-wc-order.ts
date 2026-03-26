@@ -16,6 +16,12 @@ const CARRIER_NAMES: Record<string, string> = {
   poste: 'Poste Italiane',
 };
 
+const CARRIER_DELIVERY: Record<string, string> = {
+  brt: '24-48h lavorativi',
+  fedex: '24-48h lavorativi',
+  poste: '1-3 giorni lavorativi',
+};
+
 interface CustomerPreferences {
   carrier?: string;
   newsletter?: boolean;
@@ -29,11 +35,14 @@ interface CreateWCOrderParams {
   shippingCost: number;
   preferences?: CustomerPreferences;
   couponCode?: string;
+  couponDiscount?: number;
 }
 
 export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: number }> {
   const { provider, transactionId, customer, items, shippingCost } = params;
-  const carrier = params.preferences?.carrier;
+  const carrierId = params.preferences?.carrier || '';
+  const carrierName = CARRIER_NAMES[carrierId] || carrierId || 'Corriere espresso';
+  const deliveryEst = CARRIER_DELIVERY[carrierId] || '1-3 giorni lavorativi';
 
   const wc = getWCSecrets();
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
@@ -42,7 +51,9 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
   // Build customer note with carrier preference
   const noteParts: string[] = [];
   if (customer.notes) noteParts.push(customer.notes);
-  if (carrier) noteParts.push(`Corriere preferito: ${CARRIER_NAMES[carrier] || carrier}`);
+  if (carrierId) noteParts.push(`Corriere preferito: ${carrierName}`);
+
+  const shippingTitle = carrierId ? `Spedizione via ${carrierName}` : 'Spedizione';
 
   const orderData = {
     status: 'processing',
@@ -75,7 +86,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       quantity: item.quantity,
     })),
     shipping_lines: shippingCost > 0
-      ? [{ method_id: 'flat_rate', method_title: carrier ? `Spedizione (${CARRIER_NAMES[carrier] || carrier})` : 'Spedizione', total: String(shippingCost) }]
+      ? [{ method_id: 'flat_rate', method_title: shippingTitle, total: String(shippingCost) }]
       : [],
     coupon_lines: params.couponCode ? [{ code: params.couponCode }] : [],
     customer_note: noteParts.join(' — '),
@@ -112,11 +123,15 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     }
   }
 
-  // ── Send order confirmation email to customer ──
+  // ── Computed values for emails ──
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const total = subtotal + shippingCost;
+  const discount = params.couponDiscount || 0;
+  const total = subtotal + shippingCost - discount;
   const popPoints = Math.round(total);
+  const shippingAddr = `${customer.firstName} ${customer.lastName}, ${customer.address}, ${customer.zip} ${customer.city} (${customer.province})`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
 
+  // ── MAIL 1: Send order confirmation email to customer ──
   dispatchEmail({
     type: 'order.confirmed',
     email: customer.email,
@@ -131,11 +146,39 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       })),
       shipping: shippingCost > 0 ? `${shippingCost.toFixed(2)}` : 'Gratuita',
       total: `${total.toFixed(2)}`,
-      orderUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/account`,
-      shippingAddress: `${customer.firstName} ${customer.lastName}, ${customer.address}, ${customer.zip} ${customer.city} (${customer.province})`,
+      orderUrl: `${siteUrl}/account`,
+      shippingAddress: shippingAddr,
+      carrierName,
+      deliveryEstimate: deliveryEst,
+      discount: discount > 0 ? discount.toFixed(2) : undefined,
       pointsEarned: popPoints,
     },
   }).catch(err => console.error('Failed to send order confirmation email:', err));
+
+  // ── MAIL 2: Send admin notification to ordini@stappando.it ──
+  dispatchEmail({
+    type: 'admin.new-order',
+    email: 'ordini@stappando.it',
+    name: 'Stappando Ordini',
+    data: {
+      orderNumber: String(order.id),
+      customerName: `${customer.firstName} ${customer.lastName}`,
+      customerEmail: customer.email,
+      customerPhone: customer.phone || '',
+      vendorGroups: [{ vendorName: 'Tutti i prodotti', items: items.map(i => ({ name: i.name, quantity: i.quantity, total: (i.price * i.quantity).toFixed(2) })), subtotal: subtotal.toFixed(2) }],
+      carrierName,
+      shippingAddress: shippingAddr,
+      billingAddress: shippingAddr,
+      paymentMethod: PROVIDER_TITLES[provider],
+      transactionId,
+      subtotal: subtotal.toFixed(2),
+      shippingCost: shippingCost.toFixed(2),
+      discount: discount > 0 ? discount.toFixed(2) : undefined,
+      total: total.toFixed(2),
+      customerNotes: customer.notes || undefined,
+      carrierPreference: carrierName,
+    },
+  }).catch(err => console.error('Failed to send admin order email:', err));
 
   // ── Split into vendor sub-orders ──
   try {
