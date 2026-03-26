@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   orderConfirmed,
+  orderShipped,
   orderCancelled,
+  adminNewOrder,
+  returnRequestConfirmed,
+  adminReturnRequest,
   pointsUpdate,
   birthday,
   giftCardReceived,
@@ -16,9 +20,11 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
+
 const MOCK_ITEMS = [
-  { name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 2, total: '84,00' },
-  { name: 'Vermentino di Sardegna DOC 2024', quantity: 1, total: '9,90' },
+  { name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 2, total: '84,00', vendor: 'Cantina Oddero' },
+  { name: 'Vermentino di Sardegna DOC 2024', quantity: 1, total: '9,90', vendor: 'Stappando Enoteca' },
 ];
 
 const MOCK_REVIEW_ITEMS = [
@@ -40,44 +46,177 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'order-confirmed',
-      title: '3. Ordine confermato',
+      title: '3. Ordine confermato (cliente)',
       html: orderConfirmed({
         customerName: 'Roberto',
         orderNumber: '12847',
         items: MOCK_ITEMS,
         shipping: 'Gratuita',
         total: '93,90',
-        orderUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/account`,
-        shippingAddress: 'Via Roma 42, 00184 Roma (RM)',
-        pointsEarned: 150,
-        totalPoints: 820,
+        orderUrl: `${SITE}/account`,
+        shippingAddress: 'Roberto Bianchi, Via Roma 42, 00184 Roma (RM)',
+        carrierName: 'BRT Corriere Espresso',
+        deliveryEstimate: '24-48h lavorativi',
+        pointsEarned: 94,
+        invoiceData: {
+          companyName: 'Bianchi Srl',
+          vatNumber: 'IT12345678901',
+          pec: 'bianchi@pec.it',
+          sdi: 'USAL8PV',
+        },
         circuitoProducts: [
-          { name: 'Barolo DOCG 2019 — Marchesi', slug: 'barolo-docg-2019', price: '42,00', image: 'https://stappando.it/wp-content/uploads/2021/06/barolo.jpg' },
           { name: 'Brunello di Montalcino 2018', slug: 'brunello-montalcino-2018', price: '38,50', image: 'https://stappando.it/wp-content/uploads/2021/06/brunello.jpg' },
+          { name: 'Amarone della Valpolicella 2017', slug: 'amarone-2017', price: '45,00' },
         ],
       }).html,
     },
     {
+      id: 'order-confirmed-no-invoice',
+      title: '4. Ordine confermato (senza fattura)',
+      html: orderConfirmed({
+        customerName: 'Marco',
+        orderNumber: '12848',
+        items: [{ name: 'Pignoletto Frizzante Trideo — Merlotta', quantity: 1, total: '8,90' }],
+        shipping: '6,50',
+        total: '15,40',
+        discount: '5,00',
+        orderUrl: `${SITE}/account`,
+        shippingAddress: 'Marco Rossi, Via Garibaldi 15, 20121 Milano (MI)',
+        carrierName: 'FedEx / TNT',
+        deliveryEstimate: '24-48h lavorativi',
+        pointsEarned: 15,
+      }).html,
+    },
+    {
+      id: 'admin-new-order',
+      title: '5. Admin — Nuovo ordine ricevuto',
+      html: adminNewOrder({
+        orderNumber: '12847',
+        customerName: 'Roberto Bianchi',
+        customerEmail: 'roberto@email.com',
+        customerPhone: '+39 333 1234567',
+        vendorGroups: [
+          {
+            vendorName: 'Cantina Oddero',
+            items: [{ name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 2, total: '84,00' }],
+            subtotal: '84,00',
+          },
+          {
+            vendorName: 'Stappando Enoteca',
+            items: [{ name: 'Vermentino di Sardegna DOC 2024', quantity: 1, total: '9,90' }],
+            subtotal: '9,90',
+          },
+        ],
+        carrierName: 'BRT Corriere Espresso',
+        shippingAddress: 'Via Roma 42, 00184 Roma (RM) — Tel: +39 333 1234567',
+        billingAddress: 'Via Roma 42, 00184 Roma (RM)',
+        invoiceData: {
+          companyName: 'Bianchi Srl',
+          vatNumber: 'IT12345678901',
+          pec: 'bianchi@pec.it',
+          sdi: 'USAL8PV',
+        },
+        paymentMethod: 'Carta di credito (Stripe)',
+        transactionId: 'pi_3PkGx2FHPp1UJx500tX8Kv4m',
+        subtotal: '93,90',
+        shippingCost: '0,00',
+        total: '93,90',
+        customerNotes: 'Suonate il campanello del secondo piano, grazie!',
+        carrierPreference: 'BRT Corriere Espresso',
+        newsletter: true,
+      }).html,
+    },
+    {
+      id: 'order-shipped',
+      title: '6. Ordine spedito (cliente)',
+      html: orderShipped({
+        customerName: 'Roberto',
+        orderNumber: '12847',
+        trackingUrl: 'https://tracking.shippypro.com/xyz123',
+        trackingNumber: 'BRT-2026-XYZ123',
+        carrier: 'BRT Corriere Espresso',
+        items: MOCK_ITEMS,
+        shippingAddress: 'Roberto Bianchi, Via Roma 42, 00184 Roma (RM)',
+        deliveryEstimate: '24-48h lavorativi',
+      }).html,
+    },
+    {
       id: 'order-cancelled',
-      title: '4. Ordine annullato',
+      title: '7. Ordine annullato (cliente)',
       html: orderCancelled({
         customerName: 'Roberto',
         orderNumber: '12847',
+        items: MOCK_ITEMS,
+        refundAmount: '93,90',
+        paymentMethod: 'Carta di credito',
+      }).html,
+    },
+    {
+      id: 'return-confirmed',
+      title: '8. Reso ricevuto (cliente)',
+      html: returnRequestConfirmed({
+        customerName: 'Roberto',
+        orderNumber: '12847',
+        items: [
+          { name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 1, reason: 'Bottiglia danneggiata' },
+        ],
+        pickupMethod: 'domicilio',
+        pickupDate: '28 marzo 2026',
+        pickupTimeSlot: '09:00 – 13:00',
+        pickupAddress: 'Via Roma 42, 00184 Roma (RM)',
+        refundEstimate: '42,00',
+      }).html,
+    },
+    {
+      id: 'admin-return',
+      title: '9. Admin — Richiesta reso',
+      html: adminReturnRequest({
+        orderNumber: '12847',
+        customerName: 'Roberto Bianchi',
+        customerEmail: 'roberto@email.com',
+        customerPhone: '+39 333 1234567',
+        items: [
+          { name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 1, reason: 'Bottiglia danneggiata' },
+        ],
+        pickupMethod: 'domicilio',
+        pickupDate: '28 marzo 2026',
+        pickupTimeSlot: '09:00 – 13:00',
+        pickupAddress: 'Via Roma 42, 00184 Roma (RM)',
+        refundEstimate: '42,00',
+      }).html,
+    },
+    {
+      id: 'vendor-sub-order',
+      title: '10. Vendor — Sub-ordine ricevuto',
+      html: vendorSubOrder({
+        vendorName: 'Cantina Oddero',
+        subOrderNumber: '12850',
+        parentOrderNumber: '12847',
+        items: [{ name: 'Barolo DOCG 2019 — Marchesi di Barolo', quantity: 2, total: '84,00' }],
+        grossTotal: '84,00',
+        netTotal: '68,85',
+        vendorAmount: '58,52',
+        platformAmount: '10,33',
+        shippingAddress: 'Via Roma 42, 00184 Roma (RM)',
+        customerName: 'Roberto Bianchi',
+        customerPhone: '+39 333 1234567',
+        customerNotes: 'Suonate il campanello del secondo piano',
+        carrierName: 'BRT Corriere Espresso',
       }).html,
     },
     {
       id: 'points-update',
-      title: '5. Aggiornamento Punti POP',
+      title: '11. Aggiornamento Punti POP',
       html: pointsUpdate({
         customerName: 'Roberto',
-        pointsEarned: 150,
+        pointsEarned: 94,
         totalPoints: 820,
         orderNumber: '12847',
       }).html,
     },
     {
       id: 'birthday',
-      title: '6. Compleanno + coupon 20%',
+      title: '12. Compleanno + coupon 20%',
       html: birthday({
         customerName: 'Roberto',
         couponCode: 'BUONCOMPLEANNO-ROBERTO',
@@ -86,7 +225,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'giftcard',
-      title: '7. Gift card ricevuta',
+      title: '13. Gift card ricevuta',
       html: giftCardReceived({
         recipientName: 'Marco',
         senderName: 'Roberto',
@@ -96,8 +235,13 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       }).html,
     },
     {
+      id: 'welcome',
+      title: '14. Benvenuto (base)',
+      html: welcome({ customerName: 'Roberto' }).html,
+    },
+    {
       id: 'review-request',
-      title: '8. Richiesta recensione prodotto',
+      title: '15. Richiesta recensione prodotto',
       html: reviewRequest({
         customerName: 'Roberto',
         orderNumber: '12847',
@@ -106,45 +250,29 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'abandoned-cart',
-      title: '9. Carrello abbandonato (prima)',
+      title: '16. Carrello abbandonato (prima)',
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
-        cartUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/checkout`,
+        cartUrl: `${SITE}/checkout`,
         total: '93,90',
       }).html,
     },
     {
       id: 'abandoned-cart-reminder',
-      title: '10. Carrello abbandonato (reminder 3h)',
+      title: '17. Carrello abbandonato (reminder 3h)',
       html: abandonedCart({
         customerName: 'Roberto',
         items: MOCK_ITEMS,
-        cartUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it'}/checkout`,
+        cartUrl: `${SITE}/checkout`,
         total: '93,90',
         isReminder: true,
       }).html,
     },
     {
       id: 'vendor-approved',
-      title: '11. Vendor approvato — negozio attivo',
+      title: '18. Vendor approvato — negozio attivo',
       html: vendorApproved('Cantina Oddero').html,
-    },
-    {
-      id: 'vendor-sub-order',
-      title: '12. Vendor — nuovo sub-ordine',
-      html: vendorSubOrder({
-        vendorName: 'Cantina Oddero',
-        subOrderNumber: '12850',
-        parentOrderNumber: '12847',
-        items: MOCK_ITEMS,
-        grossTotal: '93,90',
-        netTotal: '76,97',
-        vendorAmount: '65,42',
-        platformAmount: '11,55',
-        shippingAddress: 'Roberto Bianchi, Via Roma 42, 00184 Roma (RM)',
-        customerName: 'Roberto Bianchi',
-      }).html,
     },
   ];
 }
