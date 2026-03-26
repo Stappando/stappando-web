@@ -15,21 +15,39 @@ export default function VendorDashboard() {
 
   useEffect(() => { setHydrated(true); }, []);
 
-  // Fetch vendor status from WC customer meta
+  // Get vendor status — localStorage cache first, then WC API in background
   useEffect(() => {
     if (!hydrated || !isAuthenticated() || !user?.id) return;
     if (!isVendor()) { setLoading(false); return; }
 
-    fetch(`/api/customers?id=${user.id}`)
+    // 1. Check localStorage cache first (instant)
+    const cached = localStorage.getItem(`vendor_status_${user.id}`);
+    if (cached) {
+      setVendorStatus(cached);
+      setLoading(false);
+    } else {
+      // Default to pending_contract for new vendors (no loading wait)
+      setVendorStatus('pending_contract');
+      setLoading(false);
+    }
+
+    // 2. Refresh from WC in background (don't block UI)
+    const controller = new AbortController();
+    fetch(`/api/customers?id=${user.id}`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.meta_data) {
           const statusMeta = data.meta_data.find((m: { key: string }) => m.key === '_vendor_status');
-          setVendorStatus(statusMeta?.value || 'pending_contract');
+          const status = statusMeta?.value || 'pending_contract';
+          setVendorStatus(status);
+          localStorage.setItem(`vendor_status_${user.id}`, status);
         }
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { /* background refresh failed, cached value used */ });
+
+    // Timeout: if WC doesn't respond in 10s, abort silently
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    return () => { clearTimeout(timeout); controller.abort(); };
   }, [hydrated, isAuthenticated, isVendor, user]);
 
   if (!hydrated || loading) {
