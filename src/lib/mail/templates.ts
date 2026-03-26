@@ -532,3 +532,46 @@ export function reviewRequest(data: ReviewRequestData): { subject: string; html:
     `, `Recensisci i prodotti dell'ordine #${data.orderNumber}`),
   };
 }
+
+
+/* ── Vendor Approved ─────────────────────────────────── */
+
+export function vendorApproved(cantina: string): { subject: string; html: string } {
+  return {
+    subject: `Il tuo negozio su Stappando è attivo!`,
+    html: baseLayout(`
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:#e8f4f1;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#005667" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#1a1a1a;">${cantina}, il tuo negozio è live!</h1>
+        <p style="margin:0 0 28px;font-size:15px;color:#666;line-height:1.6;">Il tuo profilo cantina è stato approvato.<br/>Da oggi puoi aggiungere i tuoi vini e iniziare a vendere su Stappando.</p>
+        <a href="${SITE}/vendor/dashboard" style="display:inline-block;background:#005667;color:#fff;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;">Accedi alla tua Dashboard</a>
+      </div>
+
+      <div style="background:#f8f6f1;border-radius:10px;padding:24px;margin-top:8px;">
+        <p style="font-size:12px;color:#005667;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:0.05em;">I prossimi passi</p>
+        <table cellpadding="0" cellspacing="0" width="100%">
+          <tr><td style="vertical-align:top;width:36px;padding-bottom:14px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#005667;color:#fff;text-align:center;line-height:28px;font-size:12px;font-weight:700;">1</div>
+          </td><td style="padding-bottom:14px;">
+            <p style="font-size:14px;color:#1a1a1a;margin:0;font-weight:600;">Completa il profilo cantina</p>
+            <p style="font-size:12px;color:#888;margin:4px 0 0;">Aggiungi logo, descrizione e storia della tua cantina</p>
+          </td></tr>
+          <tr><td style="vertical-align:top;width:36px;padding-bottom:14px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#005667;color:#fff;text-align:center;line-height:28px;font-size:12px;font-weight:700;">2</div>
+          </td><td style="padding-bottom:14px;">
+            <p style="font-size:14px;color:#1a1a1a;margin:0;font-weight:600;">Aggiungi i tuoi vini</p>
+            <p style="font-size:12px;color:#888;margin:4px 0 0;">Carica foto, descrizioni e prezzi dei tuoi prodotti</p>
+          </td></tr>
+          <tr><td style="vertical-align:top;width:36px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#005667;color:#fff;text-align:center;line-height:28px;font-size:12px;font-weight:700;">3</div>
+          </td><td>
+            <p style="font-size:14px;color:#1a1a1a;margin:0;font-weight:600;">Inizia a vendere</p>
+            <p style="font-size:12px;color:#888;margin:4px 0 0;">I tuoi vini saranno visibili a migliaia di appassionati</p>
+          </td></tr>
+        </table>
+      </div>
+    `, `${cantina}, il tuo negozio su Stappando è attivo!`),
+  };
+}
