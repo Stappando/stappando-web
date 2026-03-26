@@ -45,21 +45,24 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
     setLocalError('');
 
     // Step 1: Try login
+    let loginOk = false;
     try {
       await login(email, password);
       const state = useAuthStore.getState();
       if (state.token) {
+        loginOk = true;
         onClose();
         if (vendorMode || isVendorRole(state.role)) {
           window.location.href = '/vendor/dashboard';
         }
-        return;
       }
     } catch {
-      // Login failed — try registration
+      // Login failed — will try register
     }
 
-    // Step 2: Auto-register
+    if (loginOk) { setLoading(false); return; }
+
+    // Step 2: Auto-register (only if login failed)
     try {
       if (vendorMode) {
         const res = await fetch('/api/vendor/register', {
@@ -68,9 +71,29 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
           body: JSON.stringify({ email, password }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Errore registrazione');
+        if (!res.ok) {
+          // If email already exists, it's a wrong password
+          if (data.message?.includes('già') || data.message?.includes('exists') || data.message?.includes('exist')) {
+            setLocalError('Password errata. Riprova o usa "Password dimenticata".');
+          } else {
+            setLocalError(data.message || 'Errore registrazione');
+          }
+          setLoading(false);
+          return;
+        }
       } else {
-        await register(email, password, '', '', newsletter);
+        try {
+          await register(email, password, '', '', newsletter);
+        } catch (regErr) {
+          const msg = regErr instanceof Error ? regErr.message : '';
+          if (msg.includes('già') || msg.includes('exists') || msg.includes('exist')) {
+            setLocalError('Password errata. Riprova o usa "Password dimenticata".');
+          } else {
+            setLocalError(msg || 'Errore registrazione');
+          }
+          setLoading(false);
+          return;
+        }
       }
 
       // Auto-login after registration
@@ -83,6 +106,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
         }
         return;
       }
+      setLocalError('Registrazione completata ma login fallito. Riprova.');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Errore. Riprova.');
     } finally {
@@ -113,8 +137,8 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
             {vendorMode ? 'Inserisci email e password per iniziare' : 'Per ordinare, salvare preferiti e accumulare Punti POP'}
           </p>
 
-          {/* Social login */}
-          {!vendorMode && (
+          {/* Social login — always visible */}
+          {(
             <>
               <div className="space-y-2.5 mb-4">
                 <a
@@ -174,7 +198,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
               placeholder="Password"
             />
 
-            {!vendorMode && (
+            {(
               <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
                 <input
                   type="checkbox"
