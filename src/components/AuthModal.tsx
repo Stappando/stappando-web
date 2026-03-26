@@ -97,23 +97,24 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
       // Redirect BEFORE closing modal
       if (vendorMode || isVendorRole(data.role || '')) {
-        // Force vendor state — write directly to localStorage before redirect
-        // Zustand persist may not flush in time before window.location
-        try {
-          const stored = JSON.parse(localStorage.getItem('stappando-auth') || '{}');
-          stored.state = stored.state || {};
-          stored.state.role = 'vendor';
-          stored.state.vendorStatus = data.vendorStatus || 'pending_contract';
-          stored.state.user = data.user;
-          stored.state.token = data.token;
-          localStorage.setItem('stappando-auth', JSON.stringify(stored));
-        } catch { /* fallback to setState */ }
-
+        // Write full state to Zustand — this persists to localStorage
         useAuthStore.setState({
+          user: data.user,
+          token: data.token,
           role: 'vendor',
           vendorStatus: data.vendorStatus || 'pending_contract',
+          isLoading: false,
+          error: null,
         });
-        window.location.href = '/vendor/dashboard';
+
+        // Also write a simple flag as backup
+        localStorage.setItem('stappando-is-vendor', 'true');
+        localStorage.setItem('stappando-vendor-status', data.vendorStatus || 'pending_contract');
+
+        // Small delay to let Zustand flush to localStorage
+        setTimeout(() => {
+          window.location.href = '/vendor/dashboard';
+        }, 100);
         return;
       }
 

@@ -27,7 +27,10 @@ export default function VendorDashboard() {
     );
   }
 
-  if (!isVendor()) {
+  // Check vendor from store OR localStorage backup
+  const isVendorCheck = isVendor() || (typeof window !== 'undefined' && localStorage.getItem('stappando-is-vendor') === 'true');
+
+  if (!isVendorCheck) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Area venditori</h1>
@@ -37,14 +40,17 @@ export default function VendorDashboard() {
     );
   }
 
+  // Get vendorStatus from store or localStorage backup
+  const effectiveStatus = vendorStatus || (typeof window !== 'undefined' ? localStorage.getItem('stappando-vendor-status') : null) || 'pending_contract';
+
   // pending_contract → go to contract page
-  if (vendorStatus === 'pending_contract') {
+  if (effectiveStatus === 'pending_contract') {
     router.push('/vendor/contratto');
     return null;
   }
 
   // pending_approval → blurred overlay
-  if (vendorStatus === 'pending_approval' || vendorStatus === null) {
+  if (effectiveStatus === 'pending_approval' || effectiveStatus === null) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
         <div className="fixed inset-0 z-0 overflow-hidden">
@@ -80,7 +86,7 @@ export default function VendorDashboard() {
             <p className="text-[10px] text-[#888] uppercase tracking-wider font-semibold mb-3">Cosa succede ora</p>
             {[
               { n: '1', text: 'Registrazione completata', done: true },
-              { n: '2', text: 'Contratto firmato', done: vendorStatus === 'pending_approval' },
+              { n: '2', text: 'Contratto firmato', done: effectiveStatus === 'pending_approval' },
               { n: '3', text: 'Verifica e approvazione', done: false },
               { n: '4', text: 'Il tuo negozio è live!', done: false },
             ].map(step => (
