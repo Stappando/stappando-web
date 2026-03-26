@@ -337,13 +337,6 @@ export default function Header() {
               })}
             </nav>
 
-            {/* Vendi con noi — visible md+ when not logged in */}
-            {!isAuth && (
-              <button onClick={() => setVendorAuthOpen(true)} className="hidden md:block text-[13px] text-[#888] hover:text-[#005667] transition-colors whitespace-nowrap ml-4">
-                Vendi con noi
-              </button>
-            )}
-
             {/* Spacer */}
             <div className="flex-1" />
 
@@ -371,6 +364,13 @@ export default function Header() {
 
               {/* Cart — always visible */}
               <CartIcon />
+
+              {/* Vendi con noi — pill after cart, md+ only */}
+              {!isAuth && (
+                <button onClick={() => setVendorAuthOpen(true)} className="hidden md:flex items-center px-3.5 py-1.5 ml-2 border border-[#005667] text-[#005667] text-[12px] font-semibold rounded-full hover:bg-[#005667] hover:text-white transition-colors whitespace-nowrap">
+                  Vendi con noi
+                </button>
+              )}
 
               {/* Hamburger — mobile/tablet only */}
               <button
