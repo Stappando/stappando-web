@@ -3,7 +3,7 @@ import { getWCSecrets } from '@/lib/config';
 import { isValidEmail, sanitize } from '@/lib/validation';
 
 /** Allow up to 30s for slow WooCommerce responses */
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * Single endpoint: try login → if fails → register → login.
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (tokenRes.ok) {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const regRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers?${auth}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(55000),
       body: JSON.stringify({
         email,
         password,
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (!loginRes.ok) {

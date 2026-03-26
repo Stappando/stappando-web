@@ -15,6 +15,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPatience, setShowPatience] = useState(false);
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
@@ -28,6 +29,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       setPassword('');
       setLocalError('');
       setLoading(false);
+      setShowPatience(false);
     }
   }, [isOpen]);
 
@@ -42,10 +44,12 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
 
     setLoading(true);
     setLocalError('');
+    setShowPatience(false);
+    const patienceTimer = setTimeout(() => setShowPatience(true), 4000);
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
       const res = await fetch('/api/auth/auto', {
         method: 'POST',
@@ -81,12 +85,14 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
         window.location.href = '/vendor/dashboard';
       }
     } catch (err) {
+      clearTimeout(patienceTimer);
       if (err instanceof DOMException && err.name === 'AbortError') {
         setLocalError('Il server sta rispondendo lentamente. Riprova tra qualche secondo.');
       } else {
         setLocalError('Errore di connessione. Riprova.');
       }
       setLoading(false);
+      setShowPatience(false);
     }
   };
 
@@ -184,6 +190,13 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
                 'Continua'
               )}
             </button>
+
+            {showPatience && loading && (
+              <div className="mt-3 p-3 rounded-lg bg-[#f0f7f5] border border-[#005667]/20 text-center">
+                <p className="text-[12px] text-[#005667] font-medium">Non chiudere la finestra</p>
+                <p className="text-[11px] text-[#888] mt-0.5">Stiamo configurando il tuo account...</p>
+              </div>
+            )}
           </form>
 
           <div className="flex justify-center mt-3">
