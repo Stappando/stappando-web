@@ -575,3 +575,62 @@ export function vendorApproved(cantina: string): { subject: string; html: string
     `, `${cantina}, il tuo negozio su Stappando è attivo!`),
   };
 }
+
+/* ── Template: Vendor sub-order notification ─────────── */
+
+export interface VendorSubOrderData {
+  vendorName: string;
+  subOrderNumber: string;
+  parentOrderNumber: string;
+  items: { name: string; quantity: number; total: string }[];
+  grossTotal: string;
+  netTotal: string;
+  vendorAmount: string;
+  platformAmount: string;
+  shippingAddress: string;
+  customerName: string;
+}
+
+export function vendorSubOrder(data: VendorSubOrderData): { subject: string; html: string } {
+  const itemRows = data.items.map(item => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;font-size:14px;color:#333;">${item.name} <span style="color:#999;">x${item.quantity}</span></td>
+      <td style="padding:10px 0;border-bottom:1px solid #f0ece4;text-align:right;font-size:14px;font-weight:600;color:#1a1a1a;">${item.total} &euro;</td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: `Nuovo ordine #${data.subOrderNumber} — ${data.vendorName}`,
+    html: baseLayout(`
+      ${heading('Nuovo ordine ricevuto')}
+      ${subheading(`Ciao ${data.vendorName}, hai un nuovo ordine da preparare!`)}
+      ${goldBadge(`Sub-ordine #${data.subOrderNumber}`)}
+      <p style="margin:8px 0 20px;font-size:12px;color:#999;">Ordine cliente #${data.parentOrderNumber}</p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        ${itemRows}
+      </table>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:20px 0;">
+        <tr>
+          ${infoCard('Lordo', `${data.grossTotal} €`)}
+          ${infoCard('Netto (- IVA 22%)', `${data.netTotal} €`)}
+        </tr>
+        <tr>
+          ${infoCard('Tuo guadagno (85%)', `${data.vendorAmount} €`)}
+          ${infoCard('Commissione Stappando (15%)', `${data.platformAmount} €`)}
+        </tr>
+      </table>
+
+      ${divider()}
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f1;border-radius:10px;margin:0 0 20px;">
+        <tr>${infoCard('Spedizione a', data.shippingAddress)}</tr>
+        <tr>${infoCard('Cliente', data.customerName)}</tr>
+      </table>
+
+      ${paragraph('Prepara il pacco e aggiorna lo stato quando spedisci. Il cliente riceverà automaticamente la notifica di spedizione.')}
+      ${ctaButton('Vai alla Dashboard', `${SITE}/vendor/dashboard`)}
+    `, `Nuovo ordine #${data.subOrderNumber} per ${data.vendorName}`),
+  };
+}

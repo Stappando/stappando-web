@@ -11,6 +11,7 @@ import {
   welcomeTemplate,
   secondOrderTemplate,
   vendorApproved,
+  vendorSubOrder,
 } from '@/lib/mail/templates';
 
 export const dynamic = 'force-dynamic';
@@ -128,6 +129,22 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       id: 'vendor-approved',
       title: '11. Vendor approvato — negozio attivo',
       html: vendorApproved('Cantina Oddero').html,
+    },
+    {
+      id: 'vendor-sub-order',
+      title: '12. Vendor — nuovo sub-ordine',
+      html: vendorSubOrder({
+        vendorName: 'Cantina Oddero',
+        subOrderNumber: '12850',
+        parentOrderNumber: '12847',
+        items: MOCK_ITEMS,
+        grossTotal: '93,90',
+        netTotal: '76,97',
+        vendorAmount: '65,42',
+        platformAmount: '11,55',
+        shippingAddress: 'Roberto Bianchi, Via Roma 42, 00184 Roma (RM)',
+        customerName: 'Roberto Bianchi',
+      }).html,
     },
   ];
 }

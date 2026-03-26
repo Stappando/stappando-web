@@ -7,6 +7,7 @@ import { Elements, CardElement, PaymentElement, useStripe, useElements } from '@
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
+import { API_CONFIG } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
@@ -151,9 +152,7 @@ function Step1Cart() {
   const totalShipping = getTotalShipping();
   const total = getTotal();
   const popPoints = Math.round(total);
-  const freeShippingThreshold = 69;
-  const remaining = Math.max(0, freeShippingThreshold - subtotal);
-  const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+  const freeShippingThreshold = API_CONFIG.freeShippingThreshold;
 
   // Fetch gift products when switching to gifts tab
   useEffect(() => {
@@ -246,19 +245,23 @@ function Step1Cart() {
               ))}
             </div>
 
-            {/* Shipping progress */}
-            <div className="mx-6 p-3 bg-[#f8f6f1] rounded-lg mb-5">
-              <div className="flex items-center justify-between text-[12px] mb-2">
-                <span className="text-[#666]">Spedizione gratuita da €{freeShippingThreshold}</span>
-                {remaining > 0 ? (
-                  <span className="text-[#005667] font-semibold">−{formatPrice(remaining)} €</span>
-                ) : (
-                  <span className="text-green-600 font-semibold">Gratuita!</span>
-                )}
-              </div>
-              <div className="h-1 bg-[#ede9e0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#005667] rounded-full transition-all" style={{ width: `${progress}%` }} />
-              </div>
+            {/* Shipping progress — one bar per vendor */}
+            <div className="mx-6 p-3 bg-[#f8f6f1] rounded-lg mb-5 space-y-3">
+              {vendorShipping.map((vs) => (
+                <div key={vs.vendorId}>
+                  <div className="flex items-center justify-between text-[12px] mb-1.5">
+                    <span className="text-[#666]">Spedizione gratuita da €{freeShippingThreshold}{vendorShipping.length > 1 ? <span className="text-[#999]"> · {vs.vendorName}</span> : ''}</span>
+                    {vs.isFree ? (
+                      <span className="text-green-600 font-semibold">Gratuita!</span>
+                    ) : (
+                      <span className="text-[#005667] font-semibold">−{formatPrice(vs.remaining)} €</span>
+                    )}
+                  </div>
+                  <div className="h-1 bg-[#ede9e0] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#005667] rounded-full transition-all" style={{ width: `${vs.percentage}%` }} />
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Coupon */}

@@ -6,6 +6,7 @@ import { getWCSecrets } from '@/lib/config';
 import { generateCoupon, markCouponUsed, orderUsedCouponPrefix, getCustomerCouponMeta } from '@/lib/coupons/generate';
 import { sendEmail } from '@/lib/mail/mandrill';
 import { secondOrderTemplate } from '@/lib/mail/templates';
+import { splitOrderIntoSubOrders } from '@/lib/vendor/sub-orders';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,20 @@ export async function POST(req: NextRequest) {
 async function handleWebhook(topic: string, resource: string, payload: Record<string, unknown>) {
   switch (topic) {
     case 'order.created':
+      await handleOrderEvent(payload);
+      // Split into vendor sub-orders on creation (only for paid orders)
+      if ((payload.status === 'processing' || payload.set_paid) && payload.line_items) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const results = await splitOrderIntoSubOrders(payload as any);
+          if (results.length > 0) {
+            console.log(`Order #${payload.id}: split into ${results.length} sub-orders`);
+          }
+        } catch (err) {
+          console.error(`Sub-order split failed for order #${payload.id}:`, err);
+        }
+      }
+      break;
     case 'order.updated':
       await handleOrderEvent(payload);
       break;

@@ -131,10 +131,52 @@ async function getVendorMap(
     const response = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
     if (!response.ok) return {};
     const data: VendorApiResponse = await response.json();
-    return data.vendors || {};
+    const vendors = data.vendors || {};
+
+    // Resolve vendor names that look like emails (PHP endpoint fallback issue)
+    await resolveVendorNames(vendors);
+
+    return vendors;
   } catch {
     return {};
   }
+}
+
+/** If vendor_name looks like an email, fetch the real cantina name from WC customer meta */
+async function resolveVendorNames(
+  vendors: Record<string, { vendor_id: string | number; vendor_name: string }>,
+) {
+  const toResolve = Object.values(vendors).filter(
+    v => typeof v.vendor_name === 'string' && v.vendor_name.includes('@'),
+  );
+  if (toResolve.length === 0) return;
+
+  // Only run server-side (needs WC secrets)
+  let wc: { baseUrl: string; consumerKey: string; consumerSecret: string };
+  try {
+    wc = getWCSecrets();
+  } catch {
+    return; // client-side or missing env — skip
+  }
+
+  const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+  await Promise.all(
+    toResolve.map(async (v) => {
+      const userId = String(v.vendor_id).replace('author_', '');
+      try {
+        const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${userId}?${auth}`);
+        if (!res.ok) return;
+        const customer = await res.json();
+        const meta = (customer.meta_data || []) as { key: string; value: string }[];
+        const cantina = meta.find(m => m.key === '_vendor_cantina')?.value;
+        if (cantina) {
+          v.vendor_name = cantina;
+        } else if (customer.first_name || customer.last_name) {
+          v.vendor_name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+        }
+      } catch { /* skip */ }
+    }),
+  );
 }
 
 async function enrichProductsWithVendors(products: WCProduct[]): Promise<WCProduct[]> {
