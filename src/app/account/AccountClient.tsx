@@ -1153,46 +1153,131 @@ function AccountDetailsSection({ userId }: { userId: number }) {
 /* ── Gift Cards ────────────────────────────────────────── */
 
 function GiftCardsSection() {
-  const [code, setCode] = useState('');
+  const { user } = useAuthStore();
+  const [coupons, setCoupons] = useState<{ id: number; code: string; description: string; type: string; amount: string; expires: string | null; usageCount: number; usageLimit: number | null; status: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [redeemCode, setRedeemCode] = useState('');
+
+  useEffect(() => {
+    if (!user?.email) { setLoading(false); return; }
+    fetch(`/api/coupons/user?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.json())
+      .then(d => { setCoupons(d.coupons || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [user?.email]);
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code).catch(() => {});
+    setCopied(code);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const getCouponLabel = (desc: string, code: string) => {
+    const c = code.toLowerCase();
+    if (c.startsWith('benvenuto')) return 'Sconto benvenuto';
+    if (c.startsWith('grazie')) return 'Premio fedeltà';
+    if (c.startsWith('compleanno') || desc.toLowerCase().includes('compleanno')) return 'Buon compleanno';
+    if (desc) return desc;
+    return 'Coupon';
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  const activeCoupons = coupons.filter(c => c.status === 'active');
+  const inactiveCoupons = coupons.filter(c => c.status !== 'active');
 
   return (
-    <SectionCard title="Buoni regalo">
-      <p className="text-sm text-brand-muted mb-4">
-        Inserisci il codice del tuo buono regalo per applicarlo al tuo account.
-      </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (code.trim()) {
-            window.location.href = `https://stappando.it/my-account/?apply_coupon=${encodeURIComponent(code.trim())}`;
-          }
-        }}
-        className="flex gap-3 max-w-md"
-      >
-        <input
-          type="text"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="flex-1 px-4 py-3 rounded-lg border border-brand-border bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
-          placeholder="Inserisci codice buono"
-        />
-        <button
-          type="submit"
-          className="px-6 py-3 bg-brand-accent text-white font-semibold rounded-lg hover:bg-brand-accent/90 transition-colors"
-        >
-          Riscatta
-        </button>
-      </form>
-      <div className="mt-6 p-4 bg-brand-accent/5 rounded-xl border border-brand-accent/20">
-        <h3 className="text-sm font-semibold text-brand-accent mb-1">Regala un&apos;esperienza enologica</h3>
-        <p className="text-sm text-brand-muted">
-          Acquista un buono regalo Stappando e fai un dono speciale a chi ami.
-        </p>
-        <a href="https://stappando.it/prodotto/gift-card-stappando/" className="inline-block mt-3 text-sm text-brand-accent font-semibold hover:underline">
-          Acquista buono regalo &rarr;
+    <div className="space-y-6">
+      {/* Redeem code */}
+      <SectionCard title="Riscatta un codice">
+        <form onSubmit={(e) => { e.preventDefault(); if (redeemCode.trim()) handleCopy(redeemCode.trim()); }} className="flex gap-3 max-w-md">
+          <input type="text" value={redeemCode} onChange={(e) => setRedeemCode(e.target.value)}
+            className="flex-1 px-4 py-3 rounded-lg border border-[#e5e5e5] bg-white text-[14px] focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]"
+            placeholder="Inserisci codice buono o coupon" />
+          <button type="submit" className="px-6 py-3 bg-[#005667] text-white font-semibold rounded-lg text-[14px] hover:bg-[#004555] transition-colors shrink-0">Riscatta</button>
+        </form>
+      </SectionCard>
+
+      {/* Active coupons */}
+      <SectionCard title="Coupon attivi">
+        {activeCoupons.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-[14px] text-[#888] mb-4">Non hai coupon attivi al momento</p>
+            <a href="/cerca?tag=regali" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Regala un vino</a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activeCoupons.map((c) => (
+              <div key={c.id} className="border-[1.5px] border-[#005667] rounded-xl p-4 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[#005667] font-semibold uppercase tracking-wider mb-1">{getCouponLabel(c.description, c.code)}</p>
+                  <p className="text-[18px] font-bold text-[#005667]">
+                    {c.type === 'percent' ? `${c.amount}%` : `${c.amount}€`}
+                    <span className="text-[12px] font-normal text-[#888] ml-1">di sconto</span>
+                  </p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className="text-[12px] text-[#888] font-mono bg-[#f8f6f1] px-2 py-0.5 rounded">{c.code}</span>
+                    {c.expires && (
+                      <span className="text-[11px] text-[#888]">Scade il {new Date(c.expires).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    )}
+                    {c.usageLimit && (
+                      <span className="text-[11px] text-[#888]">{c.usageLimit - c.usageCount} utilizz{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'} rimast{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'}</span>
+                    )}
+                  </div>
+                </div>
+                <button onClick={() => handleCopy(c.code)}
+                  className={`shrink-0 px-4 py-2.5 rounded-lg text-[12px] font-semibold transition-all ${
+                    copied === c.code ? 'bg-green-100 text-green-700' : 'bg-[#005667] text-white hover:bg-[#004555]'
+                  }`}>
+                  {copied === c.code ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      Copiato!
+                    </span>
+                  ) : 'Copia codice'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Expired/used coupons */}
+      {inactiveCoupons.length > 0 && (
+        <SectionCard title="Coupon scaduti o usati">
+          <div className="space-y-3">
+            {inactiveCoupons.map((c) => (
+              <div key={c.id} className="border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 opacity-50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[#888] font-semibold uppercase tracking-wider mb-1">{getCouponLabel(c.description, c.code)}</p>
+                  <p className="text-[16px] font-bold text-[#888]">
+                    {c.type === 'percent' ? `${c.amount}%` : `${c.amount}€`}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[12px] text-[#aaa] font-mono">{c.code}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.status === 'expired' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {c.status === 'expired' ? 'Scaduto' : 'Già usato'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Gift card CTA */}
+      <div className="bg-[#f8f6f1] border border-[#e8e4dc] rounded-xl p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-[15px] font-semibold text-[#1a1a1a]">Regala un&apos;esperienza enologica</p>
+          <p className="text-[13px] text-[#888]">Acquista un buono regalo Stappando</p>
+        </div>
+        <a href="/cerca?tag=regali" className="shrink-0 bg-[#1a1a1a] text-[#d9c39a] rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-[#333] transition-colors">
+          Regala un vino
         </a>
       </div>
-    </SectionCard>
+    </div>
   );
 }
 
