@@ -44,12 +44,17 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
     setLocalError('');
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
       const res = await fetch('/api/auth/auto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: em, password: pw, vendorMode }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
       const data = await res.json();
 
       if (!res.ok) {
@@ -75,8 +80,12 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       if (vendorMode || isVendorRole(data.role || '')) {
         window.location.href = '/vendor/dashboard';
       }
-    } catch {
-      setLocalError('Errore di connessione. Riprova.');
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setLocalError('Il server sta rispondendo lentamente. Riprova tra qualche secondo.');
+      } else {
+        setLocalError('Errore di connessione. Riprova.');
+      }
       setLoading(false);
     }
   };

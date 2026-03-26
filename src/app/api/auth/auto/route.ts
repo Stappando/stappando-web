@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (tokenRes.ok) {
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     const regRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers?${auth}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         email,
         password,
@@ -85,6 +87,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!loginRes.ok) {
