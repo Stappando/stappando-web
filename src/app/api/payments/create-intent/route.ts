@@ -13,6 +13,7 @@ interface CreateIntentBody {
   items: LineItem[];
   shipping: number;
   carrier?: string;
+  couponCode?: string;
   customer: {
     email: string;
     firstName: string;
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
         ).slice(0, 500),
         shipping_cost: String(shipping),
         preferred_carrier: sanitize(body.carrier || '', 20),
+        coupon_code: sanitize(body.couponCode || '', 50),
       },
       receipt_email: sanitize(c.email, 254),
     });

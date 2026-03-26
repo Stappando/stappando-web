@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
           })),
           shippingCost: parseFloat(meta.shipping_cost || '0'),
           preferences: meta.preferred_carrier ? { carrier: meta.preferred_carrier } : undefined,
+          couponCode: meta.coupon_code || undefined,
         });
       }
     } catch (err) {

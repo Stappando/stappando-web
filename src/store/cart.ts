@@ -46,6 +46,13 @@ export interface LastOrder {
   vendorCount: number;
 }
 
+export interface AppliedCoupon {
+  code: string;
+  discount: number;
+  type: string;
+  description: string;
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
@@ -54,6 +61,7 @@ interface CartState {
   shippingData: ShippingData | null;
   recentlyViewed: RecentlyViewed[];
   lastOrder: LastOrder | null;
+  appliedCoupon: AppliedCoupon | null;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -61,6 +69,8 @@ interface CartState {
   closeCheckout: () => void;
   setCheckoutStep: (step: number) => void;
   setShippingData: (data: ShippingData) => void;
+  applyCoupon: (coupon: AppliedCoupon) => void;
+  removeCoupon: () => void;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -81,6 +91,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       recentlyViewed: [],
       lastOrder: null,
+      appliedCoupon: null,
       isOpen: false,
       checkoutOpen: false,
       checkoutStep: 1,
@@ -113,7 +124,10 @@ export const useCartStore = create<CartState>()(
           return { items: state.items.map((i) => (i.id === id ? { ...i, quantity } : i)) };
         }),
 
-      clearCart: () => set({ items: [] }),
+      applyCoupon: (coupon) => set({ appliedCoupon: coupon }),
+      removeCoupon: () => set({ appliedCoupon: null }),
+
+      clearCart: () => set({ items: [], appliedCoupon: null }),
 
       completeOrder: () => {
         const s = get();
@@ -171,7 +185,12 @@ export const useCartStore = create<CartState>()(
       },
 
       getTotalShipping: () => get().getVendorShipping().reduce((sum, v) => sum + v.shippingCost, 0),
-      getTotal: () => get().getSubtotal() + get().getTotalShipping(),
+      getTotal: () => {
+        const subtotal = get().getSubtotal();
+        const shipping = get().getTotalShipping();
+        const couponDiscount = get().appliedCoupon?.discount || 0;
+        return Math.max(0, subtotal + shipping - couponDiscount);
+      },
       getItemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
     {

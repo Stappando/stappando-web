@@ -926,7 +926,7 @@ function OrdersSection({ userId }: { userId: number }) {
                                 {item.image?.src && <img src={item.image.src} alt={item.name} className="w-full h-full object-contain" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">{item.name}</p>
+                                <a href={`/prodotto/${item.product_id}`} className="text-[13px] font-semibold text-[#1a1a1a] truncate hover:text-[#005667] transition-colors block">{item.name}</a>
                                 <p className="text-[11px] text-[#888]">x{item.quantity}</p>
                               </div>
                               <p className="text-[13px] font-bold text-[#005667] shrink-0">{formatPrice(item.price)} €</p>
@@ -2421,7 +2421,7 @@ function ReviewsSection({ userId }: { userId: number }) {
                         {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-[#1a1a1a]">{product.name}</p>
+                        <a href={`/prodotto/${product.product_id}`} className="text-[13px] font-semibold text-[#1a1a1a] hover:text-[#005667] transition-colors block">{product.name}</a>
                         <p className="text-[10px] text-[#bbb]">Ordine completato</p>
                       </div>
                     </div>
@@ -2473,7 +2473,7 @@ function ReviewsSection({ userId }: { userId: number }) {
                           {product.image?.src && <img src={product.image.src} alt={product.name} className="w-full h-full object-contain" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold text-[#1a1a1a]">{product.name}</p>
+                          <a href={`/prodotto/${product.product_id}`} className="text-[13px] font-semibold text-[#1a1a1a] hover:text-[#005667] transition-colors block">{product.name}</a>
                           <p className="text-[10px] text-[#bbb]">{safeDate(rev.date)}</p>
                         </div>
                         <span className="bg-[#e8f5e9] text-[#2e7d32] rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">Recensione inviata ✓</span>

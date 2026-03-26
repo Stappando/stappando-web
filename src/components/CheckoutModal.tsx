@@ -112,9 +112,35 @@ export default function CheckoutModal() {
 /* ═══════════════════════════════════════════════════════ */
 
 function Step1Cart() {
-  const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep, addItem } = useCartStore();
+  const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep, addItem, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
+  const { user } = useAuthStore();
   const [tab, setTab] = useState<'cart' | 'gifts'>('cart');
   const [coupon, setCoupon] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
+  const handleApplyCoupon = async () => {
+    if (!coupon.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch('/api/coupon/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: coupon.trim(), cartTotal: subtotal, email: user?.email || '' }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        applyCoupon({ code: data.code, discount: data.discount, type: data.type, description: data.description });
+        setCoupon('');
+      } else {
+        setCouponError(data.error || 'Coupon non valido');
+      }
+    } catch {
+      setCouponError('Errore nella verifica');
+    }
+    setCouponLoading(false);
+  };
   const [giftMessage, setGiftMessage] = useState('');
   const [giftProducts, setGiftProducts] = useState<GiftProduct[]>([]);
   const [giftCards, setGiftCards] = useState<GiftProduct[]>([]);
@@ -237,14 +263,37 @@ function Step1Cart() {
 
             {/* Coupon */}
             <div className="px-6 mb-4">
-              <div className="flex gap-2.5">
-                <input
-                  type="text" value={coupon} onChange={e => setCoupon(e.target.value)}
-                  placeholder="Codice sconto"
-                  className="flex-1 h-10 px-3.5 text-[13px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667]"
-                />
-                <button className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333]">Applica</button>
-              </div>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-[#f0f7f5] border border-[#005667] rounded-lg px-3.5 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <span className="text-[13px] font-semibold text-[#005667]">{appliedCoupon.code}</span>
+                    <span className="text-[12px] text-[#888]">{appliedCoupon.description}</span>
+                  </div>
+                  <button onClick={() => { removeCoupon(); setCoupon(''); setCouponError(''); }} className="p-1 text-[#888] hover:text-[#c0392b] transition-colors">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2.5">
+                    <input
+                      type="text" value={coupon} onChange={e => { setCoupon(e.target.value); setCouponError(''); }}
+                      placeholder="Codice sconto"
+                      className={`flex-1 h-10 px-3.5 text-[13px] border rounded-lg focus:outline-none focus:border-[#005667] ${couponError ? 'border-[#c0392b]' : 'border-[#e5e5e5]'}`}
+                      onKeyDown={e => e.key === 'Enter' && coupon.trim() && handleApplyCoupon()}
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !coupon.trim()}
+                      className="h-10 px-5 bg-[#1a1a1a] text-white text-[12px] font-semibold rounded-lg shrink-0 hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {couponLoading ? '...' : 'Applica'}
+                    </button>
+                  </div>
+                  {couponError && <p className="text-[12px] text-[#c0392b] mt-1.5">{couponError}</p>}
+                </>
+              )}
             </div>
 
             {/* POP points */}
@@ -260,6 +309,9 @@ function Step1Cart() {
                 {vendorShipping.map(vs => (
                   <div key={vs.vendorId} className="flex justify-between text-[13px]"><span className="text-[#888]">Spedizione · {vs.vendorName}</span><span>{vs.isFree ? 'Gratuita' : `${formatPrice(vs.shippingCost)} €`}</span></div>
                 ))}
+                {appliedCoupon && (
+                  <div className="flex justify-between text-[13px] text-[#005667]"><span className="font-medium">Sconto {appliedCoupon.code}</span><span className="font-semibold">-{formatPrice(appliedCoupon.discount)} €</span></div>
+                )}
                 <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
               </div>
               <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-4 hover:bg-[#004555] transition-colors hidden sm:block">
@@ -688,6 +740,7 @@ function Step3Payment() {
             shipping: getTotalShipping(),
             customer,
             carrier: savedCarrier,
+            couponCode: useCartStore.getState().appliedCoupon?.code || '',
           }),
         });
 
@@ -711,6 +764,7 @@ function Step3Payment() {
               items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
               shipping: getTotalShipping(),
               carrier: savedCarrier,
+              couponCode: useCartStore.getState().appliedCoupon?.code || '',
             }),
           });
 
@@ -757,6 +811,7 @@ function Step3Payment() {
           shipping: getTotalShipping(),
           customer,
           carrier: savedCarrier,
+          couponCode: useCartStore.getState().appliedCoupon?.code || '',
         }),
       });
       const data = await res.json();

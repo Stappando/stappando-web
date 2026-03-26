@@ -19,6 +19,7 @@ interface CreateWCOrderParams {
   items: OrderLineItem[];
   shippingCost: number;
   preferences?: CustomerPreferences;
+  couponCode?: string;
 }
 
 export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: number }> {
@@ -59,6 +60,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     shipping_lines: shippingCost > 0
       ? [{ method_id: 'flat_rate', method_title: 'Spedizione', total: String(shippingCost) }]
       : [],
+    coupon_lines: params.couponCode ? [{ code: params.couponCode }] : [],
     customer_note: customer.notes || '',
   };
 
