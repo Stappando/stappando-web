@@ -1660,10 +1660,10 @@ function GiftCardsSection() {
       <div className="bg-[#f8f6f1] border border-[#e8e4dc] rounded-xl p-5 flex items-center justify-between gap-4">
         <div>
           <p className="text-[15px] font-semibold text-[#1a1a1a]">Regala un&apos;esperienza enologica</p>
-          <p className="text-[13px] text-[#888]">Acquista un buono regalo Stappando</p>
+          <p className="text-[13px] text-[#888]">Degustazioni, corsi e wine experience</p>
         </div>
-        <a href="/cerca?tag=regali" className="shrink-0 bg-[#1a1a1a] text-[#d9c39a] rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-[#333] transition-colors">
-          Regala un vino
+        <a href="https://app.vineis.eu" target="_blank" rel="noopener noreferrer" className="shrink-0 bg-[#1a1a1a] text-[#d9c39a] rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-[#333] transition-colors">
+          Regala esperienza
         </a>
       </div>
     </div>
@@ -1966,11 +1966,42 @@ function PreferencesSection({ userId }: { userId: number }) {
   });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
-  const [nlStatus, setNlStatus] = useState<'idle' | 'subscribed' | 'loading'>('idle');
 
+  // Newsletter state from Mailchimp
+  const [nlLoading, setNlLoading] = useState(true);
+  const [nlSubscribed, setNlSubscribed] = useState(false);
+  const [nlActioning, setNlActioning] = useState(false);
+
+  // Notification prefs from WC meta
   const [notifOrders, setNotifOrders] = useState(true);
   const [notifOffers, setNotifOffers] = useState(true);
   const [notifPop, setNotifPop] = useState(true);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  // Load Mailchimp status + WC customer meta on mount
+  useEffect(() => {
+    if (!user?.email) { setNlLoading(false); return; }
+
+    // Mailchimp status
+    fetch(`/api/mailchimp/status?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.json())
+      .then(d => { setNlSubscribed(d.subscribed); setNlLoading(false); })
+      .catch(() => setNlLoading(false));
+
+    // WC customer meta for notifications
+    fetchCustomer(userId).then(c => {
+      const meta = (c as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+      const get = (k: string) => meta.find(m => m.key === k)?.value;
+      if (get('_notify_orders') !== undefined) setNotifOrders(get('_notify_orders') !== 'false');
+      if (get('_notify_promos') !== undefined) setNotifOffers(get('_notify_promos') !== 'false');
+      if (get('_notify_points') !== undefined) setNotifPop(get('_notify_points') !== 'false');
+      if (get('_preferred_carrier')) {
+        setCarrier(get('_preferred_carrier')!);
+        if (typeof window !== 'undefined') localStorage.setItem('stappando_carrier', get('_preferred_carrier')!);
+      }
+      setPrefsLoaded(true);
+    }).catch(() => setPrefsLoaded(true));
+  }, [user?.email, userId]);
 
   const handleCarrier = async (id: string) => {
     setCarrier(id);
@@ -1983,15 +2014,38 @@ function PreferencesSection({ userId }: { userId: number }) {
     } catch {} finally { setSaving(false); }
   };
 
-  const handleNewsletter = async () => {
-    setNlStatus('loading');
+  const handleNewsletterToggle = async () => {
+    setNlActioning(true);
     try {
-      await fetch('/api/newsletter', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user?.email, firstName: user?.firstName, lastName: user?.lastName }),
-      });
-      setNlStatus('subscribed');
-    } catch { setNlStatus('idle'); }
+      if (nlSubscribed) {
+        // Unsubscribe
+        await fetch('/api/mailchimp/status', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user?.email, status: 'unsubscribed' }),
+        });
+        setNlSubscribed(false);
+      } else {
+        // Subscribe
+        await fetch('/api/newsletter', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user?.email, firstName: user?.firstName, lastName: user?.lastName }),
+        });
+        setNlSubscribed(true);
+      }
+    } catch {} finally { setNlActioning(false); }
+  };
+
+  const handleNotifToggle = async (key: string, value: boolean, setter: (v: boolean) => void, tagName: string) => {
+    setter(value);
+    // Save to WC meta
+    updateCustomer(userId, { meta_data: [{ key, value: String(value) }] } as Record<string, unknown>).catch(() => {});
+    // Update Mailchimp tag
+    if (user?.email) {
+      fetch('/api/mailchimp/status', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, tags: [{ name: tagName, status: value ? 'active' : 'inactive' }] }),
+      }).catch(() => {});
+    }
   };
 
   const carriers = [
@@ -2027,36 +2081,48 @@ function PreferencesSection({ userId }: { userId: number }) {
         </div>
       </SectionCard>
 
-      {/* Newsletter */}
+      {/* Newsletter — real Mailchimp status */}
       <SectionCard title="Newsletter">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[14px] font-semibold text-[#1a1a1a]">Offerte e novità dal mondo del vino</p>
-            <p className="text-[12px] text-[#888]">Ricevi promozioni esclusive via email</p>
+        {nlLoading ? (
+          <div className="flex items-center gap-2 py-2"><div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" /><span className="text-[13px] text-[#888]">Verifica iscrizione...</span></div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[14px] font-semibold text-[#1a1a1a]">Offerte e novità dal mondo del vino</p>
+              <p className="text-[12px] text-[#888]">{nlSubscribed ? 'Sei iscritto alla newsletter' : 'Ricevi promozioni esclusive via email'}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {nlSubscribed && (
+                <svg className="w-5 h-5 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              )}
+              <div
+                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${nlSubscribed ? 'bg-[#005667]' : 'bg-[#e0e0e0]'} ${nlActioning ? 'opacity-50' : ''}`}
+                onClick={() => !nlActioning && handleNewsletterToggle()}
+              >
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${nlSubscribed ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              </div>
+            </div>
           </div>
-          <button onClick={handleNewsletter} disabled={nlStatus !== 'idle'}
-            className={`px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-colors ${
-              nlStatus === 'subscribed' ? 'bg-green-100 text-green-700' : 'bg-[#005667] text-white hover:bg-[#004555]'
-            } disabled:opacity-60`}>
-            {nlStatus === 'loading' ? '...' : nlStatus === 'subscribed' ? 'Iscritto ✓' : 'Iscriviti'}
-          </button>
-        </div>
+        )}
       </SectionCard>
 
-      {/* Notifications */}
+      {/* Notifications — save to WC meta + Mailchimp tags */}
       <SectionCard title="Notifiche email">
+        <p className="text-[12px] text-[#888] mb-4">Le email transazionali (conferma ordine, spedizione) arrivano sempre per legge.</p>
         <div className="space-y-4">
           {[
-            { label: 'Aggiornamenti ordine', desc: 'Stato ordine, spedizione, tracking', checked: notifOrders, set: setNotifOrders },
-            { label: 'Offerte e promozioni', desc: 'Sconti, nuovi arrivi, eventi', checked: notifOffers, set: setNotifOffers },
-            { label: 'Punti POP', desc: 'Accrediti, premi, scadenze', checked: notifPop, set: setNotifPop },
+            { label: 'Offerte e promozioni', desc: 'Sconti, nuovi arrivi, eventi', checked: notifOffers, key: '_notify_promos', tag: 'promo-attive', set: setNotifOffers },
+            { label: 'Punti POP', desc: 'Accrediti, premi, scadenze punti', checked: notifPop, key: '_notify_points', tag: 'punti-pop-attivi', set: setNotifPop },
           ].map(n => (
             <label key={n.label} className="flex items-center justify-between cursor-pointer">
               <div>
                 <p className="text-[14px] font-semibold text-[#1a1a1a]">{n.label}</p>
                 <p className="text-[12px] text-[#888]">{n.desc}</p>
               </div>
-              <div className={`relative w-11 h-6 rounded-full transition-colors ${n.checked ? 'bg-[#005667]' : 'bg-[#e0e0e0]'}`} onClick={() => n.set(!n.checked)}>
+              <div
+                className={`relative w-11 h-6 rounded-full transition-colors ${n.checked ? 'bg-[#005667]' : 'bg-[#e0e0e0]'}`}
+                onClick={() => handleNotifToggle(n.key, !n.checked, n.set, n.tag)}
+              >
                 <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${n.checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
               </div>
             </label>
