@@ -183,9 +183,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               >
                 {isLoading ? 'Accesso...' : 'Accedi'}
               </button>
-              <div className="flex justify-between mt-3">
+              <div className="flex justify-center mt-3">
                 <a href="https://stappando.it/my-account/lost-password/" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-[#055667]">Password dimenticata?</a>
-                <button type="button" onClick={() => setStep('register')} className="text-xs text-[#055667] font-medium hover:underline">Non hai un account?</button>
               </div>
             </form>
           )}
