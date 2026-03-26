@@ -16,6 +16,7 @@ import {
 import { formatPrice } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
 import { DEFAULT_VENDOR_NAME } from '@/lib/config';
+import AuthModal from '@/components/AuthModal';
 
 /* ── Status badge colors ───────────────────────────────── */
 
@@ -203,14 +204,41 @@ export default function AccountClient() {
   }
 
   if (!isAuthenticated()) {
-    return <AuthForms isLoading={isLoading} error={error} clearError={clearError} />;
+    return <AccountLoginPrompt />;
   }
 
   return <Dashboard user={user!} onLogout={logout} />;
 }
 
 /* ══════════════════════════════════════════════════════════
-   AUTH FORMS (Login / Register)
+   LOGIN PROMPT — no inline forms, only modal
+   ══════════════════════════════════════════════════════════ */
+
+function AccountLoginPrompt() {
+  const [authOpen, setAuthOpen] = useState(false);
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-20 text-center">
+      <div className="w-20 h-20 rounded-full bg-[#1a1a1a] flex items-center justify-center mx-auto mb-6">
+        <svg className="w-10 h-10 text-[#d9c39a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+      </div>
+      <h1 className="text-[24px] font-bold text-[#1a1a1a] mb-2">Accedi al tuo account</h1>
+      <p className="text-[14px] text-[#888] mb-8 leading-relaxed">
+        Per gestire ordini, punti POP e preferenze
+      </p>
+      <button
+        onClick={() => setAuthOpen(true)}
+        className="w-full max-w-xs mx-auto py-3.5 bg-[#005667] text-white font-bold text-[15px] rounded-xl hover:bg-[#004555] transition-colors"
+      >
+        Accedi o registrati
+      </button>
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   LEGACY AUTH FORMS — kept for reference, not rendered
    ══════════════════════════════════════════════════════════ */
 
 function AuthForms({
