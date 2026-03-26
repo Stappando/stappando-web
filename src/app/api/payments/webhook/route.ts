@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
             id: i.id, name: '', price: i.price, quantity: i.qty,
           })),
           shippingCost: parseFloat(meta.shipping_cost || '0'),
+          preferences: meta.preferred_carrier ? { carrier: meta.preferred_carrier } : undefined,
         });
       }
     } catch (err) {

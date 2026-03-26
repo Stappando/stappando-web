@@ -12,6 +12,7 @@ interface LineItem {
 interface CreateIntentBody {
   items: LineItem[];
   shipping: number;
+  carrier?: string;
   customer: {
     email: string;
     firstName: string;
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
           body.items.map((i) => ({ id: i.id, qty: i.quantity, price: i.price })),
         ).slice(0, 500),
         shipping_cost: String(shipping),
+        preferred_carrier: sanitize(body.carrier || '', 20),
       },
       receipt_email: sanitize(c.email, 254),
     });

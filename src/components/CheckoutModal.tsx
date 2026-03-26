@@ -616,6 +616,7 @@ function Step3Payment() {
 
   const total = getTotal();
   const popPoints = Math.round(total);
+  const savedCarrier = typeof window !== 'undefined' ? localStorage.getItem('stappando_carrier') || '' : '';
 
   const getCustomerData = useCallback(() => {
     const sd = shippingData;
@@ -686,6 +687,7 @@ function Step3Payment() {
             items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
             shipping: getTotalShipping(),
             customer,
+            carrier: savedCarrier,
           }),
         });
 
@@ -708,6 +710,7 @@ function Step3Payment() {
               customer,
               items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
               shipping: getTotalShipping(),
+              carrier: savedCarrier,
             }),
           });
 
@@ -753,6 +756,7 @@ function Step3Payment() {
           items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
           shipping: getTotalShipping(),
           customer,
+          carrier: savedCarrier,
         }),
       });
       const data = await res.json();

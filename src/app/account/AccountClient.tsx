@@ -887,8 +887,8 @@ function OrdersSection({ userId }: { userId: number }) {
                       {/* Action buttons — desktop only */}
                       <div className="hidden sm:flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         <button onClick={() => handleReorder(order)} className="px-3 py-1.5 bg-[#005667] text-white rounded-md text-[11px] font-semibold hover:bg-[#004555] transition-colors">Riordina</button>
-                        {trackNum && (
-                          <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="px-3 py-1.5 border border-[#005667] text-[#005667] rounded-md text-[11px] font-semibold hover:bg-[#005667]/5 transition-colors">Traccia</button>
+                        {['completed', 'processing'].includes(order.status) && (
+                          <button onClick={() => trackNum ? setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) }) : alert('Tracking non ancora disponibile. Riceverai una mail con il link di tracciamento quando l\'ordine verrà spedito.')} className="px-3 py-1.5 border border-[#005667] text-[#005667] rounded-md text-[11px] font-semibold hover:bg-[#005667]/5 transition-colors">Traccia</button>
                         )}
                         {order.status === 'completed' && !getReturnStatus(order) && (
                           <button onClick={() => setResoOrder(order)} className="px-3 py-1.5 border border-[#e8e4dc] text-[#888] rounded-md text-[11px] font-semibold hover:bg-[#f8f6f1] transition-colors">Reso</button>
@@ -946,7 +946,9 @@ function OrdersSection({ userId }: { userId: number }) {
                         {/* Mobile actions */}
                         <div className="sm:hidden px-6 pb-4 flex gap-2">
                           <button onClick={() => handleReorder(order)} className="flex-1 py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold">Riordina</button>
-                          {trackNum && <button onClick={() => setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) })} className="flex-1 py-2.5 border border-[#005667] text-[#005667] rounded-lg text-[12px] font-semibold">Traccia</button>}
+                          {['completed', 'processing'].includes(order.status) && (
+                            <button onClick={() => trackNum ? setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) }) : alert('Tracking non ancora disponibile.')} className="flex-1 py-2.5 border border-[#005667] text-[#005667] rounded-lg text-[12px] font-semibold">Traccia</button>
+                          )}
                           {order.status === 'completed' && !getReturnStatus(order) && <button onClick={() => setResoOrder(order)} className="py-2.5 px-4 border border-[#e8e4dc] text-[#888] rounded-lg text-[12px] font-semibold">Reso</button>}
                         </div>
                       </div>

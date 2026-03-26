@@ -7,12 +7,18 @@ const PROVIDER_TITLES: Record<PaymentProvider, string> = {
   paypal: 'PayPal',
 };
 
+interface CustomerPreferences {
+  carrier?: string;
+  newsletter?: boolean;
+}
+
 interface CreateWCOrderParams {
   provider: PaymentProvider;
   transactionId: string;
   customer: OrderCustomer;
   items: OrderLineItem[];
   shippingCost: number;
+  preferences?: CustomerPreferences;
 }
 
 export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: number }> {
@@ -69,5 +75,25 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
 
   const order = await res.json();
   console.log(`WC order #${order.id} created via ${provider} — tx: ${transactionId}`);
+
+  // Add customer preferences as internal order note
+  if (params.preferences) {
+    const { carrier, newsletter } = params.preferences;
+    const carrierNames: Record<string, string> = { brt: 'BRT Corriere Espresso', fedex: 'FedEx / TNT', poste: 'Poste Italiane' };
+    const noteParts = [
+      carrier ? `Corriere: ${carrierNames[carrier] || carrier}` : null,
+      newsletter !== undefined ? `Newsletter: ${newsletter ? 'Sì' : 'No'}` : null,
+    ].filter(Boolean);
+
+    if (noteParts.length > 0) {
+      const noteUrl = `${wc.baseUrl}/wp-json/wc/v3/orders/${order.id}/notes?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+      fetch(noteUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: `Preferenze cliente: ${noteParts.join(' | ')}`, customer_note: false }),
+      }).catch(err => console.error('Failed to add preferences note:', err));
+    }
+  }
+
   return { id: order.id };
 }
