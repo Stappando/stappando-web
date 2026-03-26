@@ -805,7 +805,7 @@ function OrdersSection({ userId }: { userId: number }) {
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                     {statusLabels[order.status] || order.status}
                   </span>
-                  <span className="text-xs text-brand-muted">{new Date(order.date_created).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
+                  <span className="text-xs text-brand-muted">{safeDate(order.date_created)}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-brand-primary">{formatPrice(order.total)} €</span>
@@ -1012,6 +1012,12 @@ function AddressInput({ label, value, onChange, required }: { label: string; val
 
 /* ── Points ────────────────────────────────────────────── */
 
+function safeDate(dateString: string): string {
+  if (!dateString) return '—';
+  const d = new Date(dateString);
+  return !isNaN(d.getTime()) ? d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+}
+
 function PointsSection({ userId }: { userId: number }) {
   const [points, setPoints] = useState<{ points: number; history: { date: string; points: number; reason: string }[] }>({ points: 0, history: [] });
   const [loading, setLoading] = useState(true);
@@ -1022,36 +1028,68 @@ function PointsSection({ userId }: { userId: number }) {
 
   if (loading) return <LoadingSpinner />;
 
+  const euroValue = (points.points / 100).toFixed(2).replace('.', ',');
+  const nextEuro = 100 - (points.points % 100);
+  const progressPct = Math.min(((points.points % 100) / 100) * 100, 100);
+
   return (
-    <SectionCard title="Punti POP">
-      <div className="text-center py-6">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-brand-accent/10 mb-4">
-          <span className="text-3xl font-bold text-brand-accent">{points.points}</span>
+    <div className="space-y-6">
+      {/* Saldo hero */}
+      <div className="bg-[#1a1a1a] border-[1.5px] border-[#d9c39a] rounded-2xl p-8 text-center">
+        <p className="text-[10px] text-[#d9c39a] font-bold uppercase tracking-[0.1em] mb-3">I tuoi Punti POP</p>
+        <p className="text-[48px] font-bold text-[#d9c39a] leading-none mb-2">{points.points}</p>
+        <p className="text-[13px] text-[#888]">= {euroValue}€ di sconto disponibile</p>
+
+        {/* Progress bar */}
+        <div className="mt-6 max-w-xs mx-auto">
+          <div className="flex justify-between text-[10px] text-[#666] mb-1.5">
+            <span>{points.points % 100} / 100</span>
+            <span>{nextEuro} punti al prossimo euro</span>
+          </div>
+          <div className="w-full h-2 bg-[#333] rounded-full overflow-hidden">
+            <div className="h-full bg-[#d9c39a] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          </div>
         </div>
-        <p className="text-lg font-semibold text-brand-text">Punti disponibili</p>
-        <p className="text-sm text-brand-muted mt-1">Accumula punti con ogni acquisto e riscattali per ottenere sconti</p>
       </div>
+
+      {/* Come guadagnare */}
+      <SectionCard title="Come guadagnare punti">
+        <div className="grid sm:grid-cols-3 gap-4">
+          {[
+            { title: 'Acquista', desc: '1 punto per ogni euro speso', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
+            { title: 'Recensisci', desc: '100 punti per ogni recensione', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
+            { title: 'Compleanno', desc: 'Bonus speciale il giorno del tuo compleanno', icon: 'M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
+          ].map((item) => (
+            <div key={item.title} className="text-center p-4 bg-[#f8f6f1] rounded-xl">
+              <svg className="w-6 h-6 text-[#005667] mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+              </svg>
+              <p className="text-[13px] font-semibold text-[#1a1a1a]">{item.title}</p>
+              <p className="text-[11px] text-[#888] mt-1">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* Cronologia */}
       {points.history.length > 0 && (
-        <div className="mt-6 border-t border-brand-border pt-4">
-          <h3 className="text-sm font-semibold text-brand-text mb-3">Cronologia</h3>
-          <div className="space-y-2">
+        <SectionCard title="Cronologia movimenti">
+          <div className="space-y-0">
             {points.history.map((h, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-brand-border last:border-0">
+              <div key={i} className="flex items-center justify-between py-3.5 border-b border-[#f0f0f0] last:border-0">
                 <div>
-                  <p className="text-sm text-brand-text">{h.reason}</p>
-                  <p className="text-xs text-brand-muted">
-                    {new Date(h.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
+                  <p className="text-[13px] font-medium text-[#1a1a1a]">{h.reason || 'Movimento punti'}</p>
+                  <p className="text-[11px] text-[#888] mt-0.5">{safeDate(h.date)}</p>
                 </div>
-                <span className={`text-sm font-bold ${h.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-[15px] font-bold ${h.points > 0 ? 'text-[#005667]' : 'text-[#c0392b]'}`}>
                   {h.points > 0 ? '+' : ''}{h.points}
                 </span>
               </div>
             ))}
           </div>
-        </div>
+        </SectionCard>
       )}
-    </SectionCard>
+    </div>
   );
 }
 
@@ -1219,7 +1257,7 @@ function GiftCardsSection() {
                   <div className="flex items-center gap-3 mt-1.5">
                     <span className="text-[12px] text-[#888] font-mono bg-[#f8f6f1] px-2 py-0.5 rounded">{c.code}</span>
                     {c.expires && (
-                      <span className="text-[11px] text-[#888]">Scade il {new Date(c.expires).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      <span className="text-[11px] text-[#888]">Scade il {safeDate(c.expires)}</span>
                     )}
                     {c.usageLimit && (
                       <span className="text-[11px] text-[#888]">{c.usageLimit - c.usageCount} utilizz{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'} rimast{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'}</span>
@@ -1395,6 +1433,7 @@ function SupportSection({ user }: { user: { id: number; email: string; firstName
 function TrackingSection({ userId }: { userId: number }) {
   const [orders, setOrders] = useState<WCOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trackingModal, setTrackingModal] = useState<{ trackingNumber: string; zipCode: string } | null>(null);
 
   useEffect(() => {
     fetchOrders(userId).then((o) => { setOrders(o); setLoading(false); }).catch(() => setLoading(false));
@@ -1411,47 +1450,112 @@ function TrackingSection({ userId }: { userId: number }) {
     return 0;
   };
 
+  const getTrackingNumber = (order: WCOrder): string | null => {
+    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+    const trackingMeta = meta.find(m =>
+      m.key === '_tracking_number' || m.key === 'tracking_number' ||
+      m.key === '_wc_shipment_tracking_items' || m.key === 'sp_tracking_number'
+    );
+    if (trackingMeta?.value) {
+      try { const parsed = JSON.parse(trackingMeta.value); return parsed[0]?.tracking_number || trackingMeta.value; } catch { return trackingMeta.value; }
+    }
+    return null;
+  };
+
+  const getZipCode = (order: WCOrder): string => {
+    return (order as unknown as { shipping?: { postcode?: string } }).shipping?.postcode || '';
+  };
+
   return (
     <SectionCard title="Tracciamento spedizioni">
       {shippedOrders.length === 0 ? (
         <p className="text-[14px] text-[#888] py-8 text-center">Nessun ordine in spedizione</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {shippedOrders.slice(0, 10).map((order) => {
             const currentStep = getStep(order.status);
+            const trackingNum = getTrackingNumber(order);
+            const zipCode = getZipCode(order);
+
             return (
-              <div key={order.id} className="border border-[#e8e4dc] rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div key={order.id} className="border border-[#e8e4dc] rounded-xl p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <p className="text-[14px] font-bold">Ordine #{order.number}</p>
-                    <p className="text-[12px] text-[#888]">{new Date(order.date_created).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p className="text-[15px] font-bold text-[#1a1a1a]">Ordine #{order.number}</p>
+                    <p className="text-[12px] text-[#888] mt-0.5">{safeDate(order.date_created)}</p>
                   </div>
-                  <span className={`text-[11px] font-semibold px-3 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-[11px] font-semibold px-3 py-1.5 rounded-full ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                     {statusLabels[order.status] || order.status}
                   </span>
                 </div>
 
-                {/* Timeline */}
-                <div className="flex items-center gap-0 mb-2">
+                {/* Timeline horizontal */}
+                <div className="relative flex items-start justify-between mb-5">
+                  {/* Connector line */}
+                  <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-[#e8e4dc]" />
+                  <div className="absolute top-4 left-[10%] h-0.5 bg-[#005667] transition-all duration-500" style={{ width: `${Math.min((currentStep / (steps.length - 1)) * 80, 80)}%` }} />
+
                   {steps.map((s, i) => (
-                    <div key={s} className="flex-1 flex flex-col items-center">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        i <= currentStep ? 'bg-[#005667] text-white' : 'bg-[#e8e4dc] text-[#bbb]'
-                      }`}>{i < currentStep ? '✓' : i + 1}</div>
-                      <p className={`text-[9px] mt-1 text-center ${i <= currentStep ? 'text-[#005667] font-semibold' : 'text-[#bbb]'}`}>{s}</p>
-                      {i < steps.length - 1 && (
-                        <div className={`h-0.5 w-full absolute ${i < currentStep ? 'bg-[#005667]' : 'bg-[#e8e4dc]'}`} />
-                      )}
+                    <div key={s} className="flex flex-col items-center relative z-10" style={{ width: '20%' }}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+                        i < currentStep ? 'bg-[#005667] text-white' :
+                        i === currentStep ? 'bg-[#005667] text-white animate-pulse' :
+                        'bg-white border-2 border-[#e8e4dc] text-[#bbb]'
+                      }`}>
+                        {i < currentStep ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : i + 1}
+                      </div>
+                      <p className={`text-[9px] mt-2 text-center leading-tight ${
+                        i <= currentStep ? 'text-[#005667] font-semibold' : 'text-[#bbb]'
+                      }`}>{s}</p>
                     </div>
                   ))}
                 </div>
 
-                {order.status === 'completed' && (
-                  <p className="text-[12px] text-[#005667] font-medium mt-3 text-center">Consegnato con successo</p>
-                )}
+                {/* Tracking button */}
+                <div className="pt-3 border-t border-[#f0f0f0]">
+                  {trackingNum ? (
+                    <button
+                      onClick={() => setTrackingModal({ trackingNumber: trackingNum, zipCode })}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-[#005667] text-white rounded-lg text-[13px] font-semibold hover:bg-[#004555] transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                      Traccia spedizione
+                    </button>
+                  ) : (
+                    <p className="text-[12px] text-[#888] text-center py-2">
+                      <svg className="w-4 h-4 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      Tracking non ancora disponibile — riceverai una mail quando spedito
+                    </p>
+                  )}
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ShippyPro tracking modal */}
+      {trackingModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setTrackingModal(null)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f0f0]">
+              <h3 className="text-[15px] font-bold text-[#1a1a1a]">Traccia la tua spedizione</h3>
+              <button onClick={() => setTrackingModal(null)} className="p-2 hover:bg-[#f0f0f0] rounded-lg transition-colors">
+                <svg className="w-5 h-5 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-5">
+              <iframe
+                src={`https://www.shippypro.com/tracking/?tracking=${encodeURIComponent(trackingModal.trackingNumber)}&zip=${encodeURIComponent(trackingModal.zipCode)}`}
+                className="w-full h-[400px] border-0 rounded-lg"
+                title="Tracciamento spedizione"
+              />
+            </div>
+          </div>
         </div>
       )}
     </SectionCard>
