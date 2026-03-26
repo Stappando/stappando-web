@@ -132,6 +132,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         set({ user: null, token: null, role: 'customer', vendorStatus: null, error: null });
+        // Clean vendor flags from localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('stappando-is-vendor');
+          localStorage.removeItem('stappando-vendor-status');
+        }
       },
 
       clearError: () => set({ error: null }),

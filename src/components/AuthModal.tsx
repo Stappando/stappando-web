@@ -102,15 +102,14 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       setLoading(false);
 
       // Redirect vendor
-      if (vendorMode || isVendorRole(data.role || '')) {
-        // Update localStorage with server-provided status
+      if (vendorMode || isVendorRole(data.role || '') || data.isVendor) {
         localStorage.setItem('stappando-is-vendor', 'true');
         localStorage.setItem('stappando-vendor-status', data.vendorStatus || 'pending_contract');
         window.location.href = '/vendor/dashboard';
         return;
       }
 
-      // Not vendor — clean up flags if they were set
+      // Not vendor — clean up flags
       localStorage.removeItem('stappando-is-vendor');
       localStorage.removeItem('stappando-vendor-status');
       onClose();
