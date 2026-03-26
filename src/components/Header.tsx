@@ -86,7 +86,8 @@ function CartIcon() {
 function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [mounted, setMounted] = useState(false);
   const isAuth = useAuthStore(s => s.isAuthenticated());
-  const isVendorUser = useAuthStore(s => s.isVendor());
+  const isVendorStore = useAuthStore(s => s.isVendor());
+  const isVendorUser = isVendorStore || (typeof window !== 'undefined' && localStorage.getItem('stappando-is-vendor') === 'true');
   const user = useAuthStore(s => s.user);
   useEffect(() => setMounted(true), []);
 
