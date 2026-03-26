@@ -14,6 +14,12 @@ interface MandrillRecipient {
   name?: string;
 }
 
+interface MandrillAttachment {
+  type: string;
+  name: string;
+  content: string; // base64
+}
+
 interface MandrillMessage {
   to: MandrillRecipient[];
   subject: string;
@@ -21,6 +27,7 @@ interface MandrillMessage {
   from_email?: string;
   from_name?: string;
   tags?: string[];
+  attachments?: MandrillAttachment[];
 }
 
 interface MandrillResponse {
@@ -50,6 +57,7 @@ export async function sendEmail(message: MandrillMessage): Promise<MandrillRespo
         track_clicks: true,
         inline_css: true,
         preserve_recipients: false,
+        ...(message.attachments?.length ? { attachments: message.attachments } : {}),
       },
     }),
   });
