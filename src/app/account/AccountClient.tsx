@@ -161,6 +161,7 @@ const sectionGroups: SectionGroup[] = [
     items: [
       { key: 'punti', label: 'Punti POP & storico', icon: IconStar },
       { key: 'buoni', label: 'Buoni regalo & coupon', icon: IconGift },
+      { key: 'recensioni', label: 'Lascia una recensione', icon: IconStar },
     ],
   },
   {
@@ -176,7 +177,6 @@ const sectionGroups: SectionGroup[] = [
     label: 'SUPPORTO',
     items: [
       { key: 'assistenza', label: 'Assistenza & ticket', icon: IconTicket },
-      { key: 'recensioni', label: 'Lascia una recensione', icon: IconStar },
     ],
   },
 ];
@@ -1672,6 +1672,7 @@ function GiftCardsSection() {
 
   const getCouponLabel = (desc: string, code: string) => {
     const c = code.toLowerCase();
+    if (c.startsWith('pop-')) return 'Da Punti POP';
     if (c.startsWith('benvenuto')) return 'Sconto benvenuto';
     if (c.startsWith('grazie')) return 'Premio fedeltà';
     if (c.startsWith('compleanno') || desc.toLowerCase().includes('compleanno')) return 'Buon compleanno';
@@ -1682,10 +1683,22 @@ function GiftCardsSection() {
   if (loading) return <LoadingSpinner />;
 
   const activeCoupons = coupons.filter(c => c.status === 'active');
-  const inactiveCoupons = coupons.filter(c => c.status !== 'active');
+  const usedCoupons = coupons.filter(c => c.status === 'used');
+  const expiredCoupons = coupons.filter(c => c.status === 'expired');
 
   return (
     <div className="space-y-6">
+      {/* 1. CTA Regala una gift card — always on top */}
+      <div className="bg-[#1a1a1a] border-[1.5px] border-[#d9c39a] rounded-[14px] p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-[16px] font-bold text-[#d9c39a]">Regala una gift card</p>
+          <p className="text-[12px] text-[#888]">Il regalo perfetto per un amante del vino</p>
+        </div>
+        <a href="/cerca?cat=gift-card" className="shrink-0 bg-[#d9c39a] text-[#1a1a1a] rounded-lg px-5 py-2.5 text-[13px] font-bold hover:bg-[#c9b38a] transition-colors">
+          Acquista ora →
+        </a>
+      </div>
+
       {/* Redeem code */}
       <SectionCard title="Riscatta un codice">
         <form onSubmit={(e) => { e.preventDefault(); if (redeemCode.trim()) handleCopy(redeemCode.trim()); }} className="flex gap-3 max-w-md">
@@ -1696,30 +1709,28 @@ function GiftCardsSection() {
         </form>
       </SectionCard>
 
-      {/* Active coupons */}
-      <SectionCard title="Coupon attivi">
-        {activeCoupons.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-[14px] text-[#888] mb-4">Non hai coupon attivi al momento</p>
-            <a href="/cerca?tag=regali" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors">Regala un vino</a>
-          </div>
-        ) : (
+      {/* 3. Coupon attivi — only if present */}
+      {activeCoupons.length > 0 && (
+        <div>
+          <p className="text-[10px] text-[#888] uppercase tracking-[0.06em] font-semibold mb-3">Coupon attivi</p>
           <div className="space-y-3">
             {activeCoupons.map((c) => (
-              <div key={c.id} className="border-[1.5px] border-[#005667] rounded-xl p-4 flex items-center gap-4">
+              <div key={c.id} className="bg-white border-[1.5px] border-[#005667] rounded-xl p-4 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-[#005667] font-semibold uppercase tracking-wider mb-1">{getCouponLabel(c.description, c.code)}</p>
                   <p className="text-[18px] font-bold text-[#005667]">
                     {c.type === 'percent' ? `${c.amount}%` : `${c.amount}€`}
                     <span className="text-[12px] font-normal text-[#888] ml-1">di sconto</span>
                   </p>
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <span className="text-[12px] text-[#888] font-mono bg-[#f8f6f1] px-2 py-0.5 rounded">{c.code}</span>
-                    {c.expires && (
+                    {c.expires ? (
                       <span className="text-[11px] text-[#888]">Scade il {safeDate(c.expires)}</span>
+                    ) : (
+                      <span className="text-[11px] text-[#888]">Nessuna scadenza</span>
                     )}
                     {c.usageLimit && (
-                      <span className="text-[11px] text-[#888]">{c.usageLimit - c.usageCount} utilizz{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'} rimast{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'}</span>
+                      <span className="text-[11px] text-[#888]">{c.usageLimit - c.usageCount} utilizz{c.usageLimit - c.usageCount === 1 ? 'o' : 'i'}</span>
                     )}
                   </div>
                 </div>
@@ -1737,34 +1748,54 @@ function GiftCardsSection() {
               </div>
             ))}
           </div>
-        )}
-      </SectionCard>
+        </div>
+      )}
 
-      {/* Expired/used coupons */}
-      {inactiveCoupons.length > 0 && (
-        <SectionCard title="Coupon scaduti o usati">
+      {/* 4. Storico coupon utilizzati — only if present */}
+      {usedCoupons.length > 0 && (
+        <div>
+          <p className="text-[10px] text-[#888] uppercase tracking-[0.06em] font-semibold mb-3">Storico coupon utilizzati</p>
           <div className="space-y-3">
-            {inactiveCoupons.map((c) => (
-              <div key={c.id} className="border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 opacity-50">
+            {usedCoupons.map((c) => (
+              <div key={c.id} className="bg-white border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 opacity-60">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-[#888] font-semibold uppercase tracking-wider mb-1">{getCouponLabel(c.description, c.code)}</p>
                   <p className="text-[16px] font-bold text-[#888]">
                     {c.type === 'percent' ? `${c.amount}%` : `${c.amount}€`}
                   </p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[12px] text-[#aaa] font-mono">{c.code}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.status === 'expired' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {c.status === 'expired' ? 'Scaduto' : 'Già usato'}
-                    </span>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <span className="text-[14px] text-[#888] font-mono line-through">{c.code}</span>
+                    <span className="bg-[#f5f5f5] text-[#888] rounded-full px-2 py-0.5 text-[10px] font-semibold">Utilizzato</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </div>
       )}
 
-      {/* Gift card CTA */}
+      {/* Expired — only if present */}
+      {expiredCoupons.length > 0 && (
+        <div>
+          <p className="text-[10px] text-[#888] uppercase tracking-[0.06em] font-semibold mb-3">Coupon scaduti</p>
+          <div className="space-y-3">
+            {expiredCoupons.map((c) => (
+              <div key={c.id} className="bg-white border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 opacity-60">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[#888] font-semibold uppercase tracking-wider mb-1">{getCouponLabel(c.description, c.code)}</p>
+                  <p className="text-[16px] font-bold text-[#888]">{c.type === 'percent' ? `${c.amount}%` : `${c.amount}€`}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[12px] text-[#aaa] font-mono">{c.code}</span>
+                    <span className="bg-orange-100 text-orange-700 rounded-full px-2 py-0.5 text-[10px] font-semibold">Scaduto</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Regala esperienza enologica */}
       <div className="bg-[#f8f6f1] border border-[#e8e4dc] rounded-xl p-5 flex items-center justify-between gap-4">
         <div>
           <p className="text-[15px] font-semibold text-[#1a1a1a]">Regala un&apos;esperienza enologica</p>
