@@ -298,26 +298,40 @@ export default function NuovoProdottoPage() {
 
   // Save draft at any point
   const handleSaveDraft = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setError('Errore: utente non autenticato. Ricarica la pagina.');
+      return;
+    }
     setSavingDraft(true);
     setSaveMsg('');
     setError('');
     try {
+      const payload = buildPayload();
+      console.log('[Wizard] Saving draft...', { draftId, vendorId: user.id, name: payload.name });
       const res = await fetch('/api/vendor/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.productId && !draftId) setDraftId(data.productId);
+        console.log('[Wizard] Draft saved:', data);
+        if (data.productId) {
+          setDraftId(data.productId);
+          // Update URL so reload preserves draft
+          const url = new URL(window.location.href);
+          url.searchParams.set('draft', String(data.productId));
+          window.history.replaceState({}, '', url.toString());
+        }
         setSaveMsg('Bozza salvata!');
         setTimeout(() => setSaveMsg(''), 4000);
       } else {
-        const data = await res.json();
-        setError(data.error || 'Errore nel salvataggio bozza');
+        const data = await res.json().catch(() => ({}));
+        console.error('[Wizard] Save failed:', res.status, data);
+        setError(data.error || `Errore salvataggio (${res.status})`);
       }
-    } catch {
+    } catch (err) {
+      console.error('[Wizard] Network error:', err);
       setError('Errore di rete. Riprova.');
     }
     setSavingDraft(false);
