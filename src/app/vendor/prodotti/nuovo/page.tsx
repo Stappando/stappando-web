@@ -611,15 +611,13 @@ export default function NuovoProdottoPage() {
 
           <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
             <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Produzione</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Vinificazione</label>
-                <input value={form.vinificazione} onChange={set('vinificazione')} className={inputClass} placeholder="Es. Fermentazione in acciaio" />
-              </div>
-              <div>
-                <label className={labelClass}>Affinamento</label>
-                <input value={form.affinamento} onChange={set('affinamento')} className={inputClass} placeholder="Es. 12 mesi in barrique" />
-              </div>
+            <div>
+              <label className={labelClass}>Vinificazione</label>
+              <textarea value={form.vinificazione} onChange={set('vinificazione')} rows={3} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Es. Fermentazione in acciaio inox a temperatura controllata (16-18°C) per 15 giorni con lieviti selezionati" />
+            </div>
+            <div>
+              <label className={labelClass}>Affinamento</label>
+              <textarea value={form.affinamento} onChange={set('affinamento')} rows={3} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Es. 12 mesi in barrique di rovere francese di primo e secondo passaggio, seguiti da 6 mesi in bottiglia" />
             </div>
             <div>
               <label className={labelClass}>Vendemmia</label>
