@@ -395,7 +395,7 @@ export default function Header() {
               {/* Hamburger — mobile/tablet */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg text-gray-600 hover:text-[#005667] hover:bg-gray-50 transition-colors"
+                className="lg:hidden flex items-center justify-center w-11 h-11 -mr-1 rounded-lg text-gray-600 hover:text-[#005667] hover:bg-gray-50 transition-colors"
                 aria-label="Menu"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
