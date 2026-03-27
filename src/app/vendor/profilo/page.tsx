@@ -96,7 +96,8 @@ export default function VendorProfiloPage() {
       setSaveAlert({ type: 'progress', message: 'Errore di rete. Riprova.' });
     }
     setSaving(false);
-    setTimeout(() => setSaveAlert(null), 6000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setSaveAlert(null), 8000);
   };
 
   if (!hydrated) return null;
@@ -282,13 +283,18 @@ export default function VendorProfiloPage() {
           </div>
 
           {/* ── Save button sticky bottom ── */}
-          <div className="sticky bottom-0 bg-[#f8f6f1] pt-4 pb-6 -mx-6 px-6 border-t border-[#e8e4dc] mt-4">
+          <div className="sticky bottom-0 z-10 bg-[#f8f6f1]/95 backdrop-blur-sm pt-4 pb-6 border-t border-[#e8e4dc] mt-4">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full sm:w-auto bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto bg-[#005667] text-white rounded-lg px-8 py-3.5 text-[14px] font-semibold hover:bg-[#004555] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {saving ? 'Salvataggio...' : 'Salva profilo'}
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Salvataggio in corso...
+                </>
+              ) : 'Salva profilo'}
             </button>
           </div>
 
