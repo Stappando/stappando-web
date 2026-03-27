@@ -144,6 +144,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ products: [], hasMore: false });
   }
 
+  // Check if q matches a WC category name — if so, search by category ID (much better results)
+  const wc2 = getWCSecrets();
+  const wcAuth2 = `consumer_key=${wc2.consumerKey}&consumer_secret=${wc2.consumerSecret}`;
+  try {
+    const catRes = await fetch(`${wc2.baseUrl}/wp-json/wc/v3/products/categories?search=${encodeURIComponent(q)}&per_page=5&${wcAuth2}`);
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      const exactMatch = cats.find((c: { name: string }) => c.name.toLowerCase() === q.toLowerCase());
+      if (exactMatch) {
+        const catUrl = `${wc2.baseUrl}/wp-json/wc/v3/products?${wcAuth2}&category=${exactMatch.id}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+        const prodRes = await fetch(catUrl);
+        if (prodRes.ok) {
+          const products = await prodRes.json();
+          return NextResponse.json({ products: mapProducts(products), hasMore: products.length === limit });
+        }
+      }
+    }
+  } catch { /* fall through to text search */ }
+
   const results = await searchProducts(q, limit, page);
   return NextResponse.json({ products: results, hasMore: results.length === limit });
 }
