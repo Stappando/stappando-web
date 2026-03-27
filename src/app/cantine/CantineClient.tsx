@@ -53,7 +53,7 @@ export default function CantineClient() {
     let list = [...cantine];
     if (regionFilter) list = list.filter(c => c.region === regionFilter);
     return list;
-  }, [cantine, regionFilter, sortBy]);
+  }, [cantine, regionFilter]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
