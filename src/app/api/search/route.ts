@@ -45,7 +45,7 @@ const searchProducts = unstable_cache(
       const images = (p.images || []) as { src: string }[];
 
       const isCircuito = tags.some(t => t.id === CIRCUITO_TAG);
-      const vendor = attrs.find(a => a.name === 'Produttore')?.options?.[0] || '';
+      const vendor = 'Stappando Enoteca'; // Real vendor set by enrichWithVendors below
       const region = attrs.find(a => a.name === 'Regione')?.options?.[0] || '';
       const badge = meta.find(m => m.key === '_circuito_badge')?.value || '';
 
@@ -196,7 +196,7 @@ function mapProducts(products: Record<string, unknown>[]): SearchResult[] {
       regular_price: p.regular_price as string,
       sale_price: p.sale_price as string,
       image: images[0]?.src || null,
-      vendor: decodeHtml(attrs.find(a => a.name === 'Produttore')?.options?.[0] || ''),
+      vendor: 'Stappando Enoteca',
       region: decodeHtml(attrs.find(a => a.name === 'Regione')?.options?.[0] || ''),
       on_sale: p.on_sale as boolean,
       is_circuito: isCircuito,
