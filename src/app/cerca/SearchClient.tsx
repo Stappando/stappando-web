@@ -131,7 +131,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const searchRef = useRef({ rawResults: [] as SearchResult[], searching: false });
 
   const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
-    if (!term && !onSale && !urlMaxPrice) {
+    if (!term && !urlMaxPrice) {
       setRawResults([]);
       setSearched(false);
       searchRef.current.rawResults = [];
@@ -144,7 +144,6 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     try {
       const params = new URLSearchParams();
       if (term) params.set('q', term);
-      if (onSale) params.set('on_sale', 'true');
       if (urlMaxPrice) params.set('max_price', urlMaxPrice);
       params.set('limit', '40');
       params.set('page', String(pageNum));
@@ -179,11 +178,11 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       searchRef.current.searching = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSale]);
+  }, [urlMaxPrice]);
 
-  // Initial search — runs once per searchTerm/onSale/maxPrice change
+  // Initial search — runs once per searchTerm/maxPrice change
   useEffect(() => {
-    if (searchTerm || onSale || urlMaxPrice) {
+    if (searchTerm || urlMaxPrice) {
       doSearch(searchTerm);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -196,7 +195,8 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     const dataMin = prices.length > 0 ? Math.floor(Math.min(...prices) / 5) * 5 : 0;
     const dataMax = prices.length > 0 ? Math.ceil(Math.max(...prices) / 5) * 5 : 999;
 
-    // Only filter if user moved the sliders from the auto-set range
+    // Client-side filters
+    if (onSale) data = data.filter(r => r.on_sale);
     if (minPrice > dataMin) data = data.filter(r => parseFloat(r.price) >= minPrice);
     if (maxPrice < dataMax) data = data.filter(r => parseFloat(r.price) <= maxPrice);
 
@@ -205,7 +205,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     else if (orderBy === 'date') data.sort((a, b) => b.id - a.id);
 
     return data;
-  }, [rawResults, minPrice, maxPrice, orderBy]);
+  }, [rawResults, onSale, minPrice, maxPrice, orderBy]);
 
   // Category handler — reset price on category change
   const handleCategory = useCallback((cat: string) => {
@@ -249,8 +249,8 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           ))}
         </select>
 
-        <button onClick={handleOfferte} className={`h-8 px-3 rounded-lg text-[12px] font-semibold shrink-0 transition-all ${onSale ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>
-          {onSale ? '✕ Offerte' : 'Offerte'}
+        <button onClick={handleOfferte} className={`h-8 px-3 rounded-lg text-[12px] font-semibold shrink-0 transition-all ${onSale ? 'bg-red-500 text-white' : 'bg-white border border-red-200 text-red-500 hover:bg-red-500 hover:text-white'}`}>
+          {onSale ? '✕ In offerta' : 'In offerta'}
         </button>
 
         <div className="w-px h-5 bg-gray-200 shrink-0" />
@@ -288,15 +288,13 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       </div>
 
       {/* Active filter status */}
-      {(activeCategory || onSale) && (
-        <p className="text-[11px] text-[#888] mb-2">
-          {activeCategory && onSale
-            ? `Offerte in ${activeCategory}`
-            : onSale
-              ? 'Tutte le offerte'
-              : activeCategory}
-          {activeCategory && !onSale && <span className="text-[#aaa]"> · attiva &quot;Offerte&quot; per vedere solo le promo di questa categoria</span>}
-        </p>
+      {onSale && (
+        <div className="flex items-center gap-2 mb-2">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[11px] font-medium">
+            Filtro: solo prodotti in offerta
+            <button onClick={handleOfferte} className="ml-1 hover:text-red-800">✕</button>
+          </span>
+        </div>
       )}
 
       {/* Active filter label */}
