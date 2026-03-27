@@ -350,27 +350,31 @@ export default function Header() {
 
             {/* RIGHT — Actions */}
             <div className="flex items-center">
-              {/* Search pill — desktop: wide, mobile: icon only */}
+              {/* Search pill — desktop: prominent wide bar */}
               <button
                 onClick={() => {
                   const mobile = window.innerWidth < 640;
                   if (mobile) setMobileSearchOpen(true);
                   else setSearchOpen(!searchOpen);
                 }}
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors mr-1 ${
-                  searchOpen ? 'border-[#005667] bg-[#005667]/5 text-[#005667]' : 'border-[#e5e5e5] text-[#888] hover:border-[#005667] hover:text-[#005667]'
+                className={`hidden sm:flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl transition-all mr-2 min-w-[220px] lg:min-w-[260px] ${
+                  searchOpen
+                    ? 'bg-[#005667] text-white shadow-lg'
+                    : 'bg-[#f8f6f1] text-[#666] hover:bg-[#005667] hover:text-white hover:shadow-lg'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[13px]">Cosa vuoi cercare?</span>
+                <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[13px] font-medium flex-1 text-left">Cosa vuoi cercare?</span>
+                <kbd className="hidden lg:inline text-[10px] opacity-50 border border-current/20 rounded px-1.5 py-0.5 font-mono">/</kbd>
               </button>
-              {/* Mobile search icon */}
+              {/* Mobile search bar */}
               <button
                 onClick={() => setMobileSearchOpen(true)}
-                className="sm:hidden flex items-center justify-center w-11 h-11 rounded-lg text-gray-500 hover:text-[#005667] hover:bg-gray-50 transition-colors"
+                className="sm:hidden flex items-center gap-2 flex-1 mx-1 px-3 py-2 rounded-lg bg-[#f8f6f1] text-[#888] active:bg-[#005667] active:text-white transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[12px]">Cerca vino...</span>
               </button>
 
               {/* Account — desktop only */}
