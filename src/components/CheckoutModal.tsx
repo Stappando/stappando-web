@@ -916,43 +916,6 @@ function Step3Payment() {
               </div>
             )}
 
-            {/* COD — Test only */}
-            <div className="border-t border-[#f0f0f0] pt-5 mt-2">
-              <button
-                disabled={paying}
-                onClick={async () => {
-                  setError(null);
-                  setPaying(true);
-                  try {
-                    const customer = getCustomerData();
-                    const res = await fetch('/api/payments/cod', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-                        shipping: getTotalShipping(),
-                        customer,
-                        carrier: savedCarrier,
-                        couponCode: useCartStore.getState().appliedCoupon?.code || '',
-                      }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Errore');
-                    completeOrder();
-                    setCheckoutStep(5);
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : 'Errore contrassegno');
-                  } finally {
-                    setPaying(false);
-                  }
-                }}
-                className="w-full py-3.5 bg-[#005667] text-white font-semibold rounded-xl hover:bg-[#004555] transition-colors text-[14px]"
-              >
-                {paying ? 'Creazione ordine...' : `Contrassegno (Test) · ${formatPrice(total)} €`}
-              </button>
-              <p className="text-[11px] text-[#f44] text-center mt-1.5">Solo per test — rimuovere prima del go-live</p>
-            </div>
-
             {/* Security badge */}
             <div className="flex items-center gap-2.5 bg-[#f8f6f1] rounded-lg p-3.5 mt-5">
               <svg className="w-[18px] h-[18px] text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
