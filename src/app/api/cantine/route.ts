@@ -23,13 +23,20 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fetch from the custom WP endpoint with real swatch logos
-    const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`);
-    if (!res.ok) return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
+    const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { next: { revalidate: 600 } });
+    if (!res.ok) {
+      console.error('Producer logos fetch failed:', res.status);
+      return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
+    }
 
-    const raw: Record<string, ProducerLogo> = await res.json();
+    const raw = await res.json();
+    console.log('Producer logos: type=', typeof raw, 'isArray=', Array.isArray(raw), 'keys=', Object.keys(raw || {}).length);
+
+    // Handle both object {id: {...}} and array formats
+    const entries: ProducerLogo[] = Array.isArray(raw) ? raw : Object.values(raw || {});
 
     // Convert to array, filter count > 0, sort by count desc
-    let allCantine = Object.values(raw)
+    let allCantine = entries
       .filter(t => t.count > 0)
       .map(t => ({
         name: t.name,
