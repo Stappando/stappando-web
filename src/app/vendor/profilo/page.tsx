@@ -139,10 +139,6 @@ export default function VendorProfiloPage() {
                   <input value={profile.email} onChange={set('email')} type="email" className={inputClass} placeholder="info@cantina.it" />
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Sito web</label>
-                <input value={profile.sito} onChange={set('sito')} type="url" className={inputClass} placeholder="https://www.cantina.it" />
-              </div>
             </div>
           </div>
 
@@ -206,10 +202,6 @@ export default function VendorProfiloPage() {
                   {REGIONI.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              <div>
-                <label className={labelClass}>Indirizzo esperienze <span className="text-[#aaa] normal-case font-normal">(se diverso da sede legale)</span></label>
-                <input value={profile.indirizzoEsperienze} onChange={set('indirizzoEsperienze')} className={inputClass} placeholder="Località Vigna Alta, 5 — 40050 Monte San Pietro (BO)" />
-              </div>
             </div>
           </div>
 
@@ -228,6 +220,44 @@ export default function VendorProfiloPage() {
             </div>
             <div className="mt-4 bg-[#fef3c7] rounded-lg px-4 py-3">
               <p className="text-[12px] text-[#92400e]">I dati bancari sono necessari per ricevere i pagamenti delle vendite. Verranno utilizzati esclusivamente per i trasferimenti delle commissioni.</p>
+            </div>
+          </div>
+
+          {/* ── Sezione 5: Servizi partner ── */}
+          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
+            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-4">Servizi per la tua cantina</p>
+            <div className="space-y-3">
+              <a
+                href="https://app.vineis.eu"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl border border-[#e8e4dc] hover:border-[#005667]/40 hover:bg-[#f8fafa] transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#005667] flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.115 5.19l.319 1.913A6 6 0 008.11 10.36L9.75 12l-.387.775c-.217.433-.132.956.21 1.298l1.348 1.348c.21.21.329.497.329.795v1.089c0 .426.24.815.622 1.006l.153.076c.433.217.956.132 1.298-.21l.723-.723a8.7 8.7 0 002.288-4.042 1.087 1.087 0 00-.358-1.099l-1.33-1.108c-.251-.21-.582-.299-.905-.245l-1.17.195a1.125 1.125 0 01-.98-.314l-.295-.295a1.125 1.125 0 010-1.591l.13-.132a1.125 1.125 0 011.3-.21l.603.302a.809.809 0 001.086-1.086L14.25 7.5l1.256-.837a4.5 4.5 0 001.528-1.732l.146-.292M6.115 5.19A9 9 0 1017.18 4.64M6.115 5.19A8.965 8.965 0 0112 3c1.929 0 3.716.607 5.18 1.64" /></svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold text-[#1a1a1a]">Pubblica esperienze</p>
+                  <p className="text-[12px] text-[#888]">Crea degustazioni e visite in cantina su Vineis</p>
+                </div>
+                <svg className="w-4 h-4 text-[#ccc] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+              </a>
+
+              <a
+                href="https://anbrekabol.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl border border-[#e8e4dc] hover:border-[#005667]/40 hover:bg-[#f8fafa] transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#8B4513] flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold text-[#1a1a1a]">Acquista cartoni da spedizione</p>
+                  <p className="text-[12px] text-[#888]">Cartoni e imballaggi per bottiglie su Anbrekabol</p>
+                </div>
+                <svg className="w-4 h-4 text-[#ccc] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+              </a>
             </div>
           </div>
 
