@@ -349,53 +349,50 @@ export default function Header() {
             <div className="flex-1" />
 
             {/* RIGHT — Actions */}
-            <div className="flex items-center gap-1">
-              {/* Search pill — desktop: full width between nav and account */}
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-1 lg:flex-none justify-end">
+              {/* Search pill — desktop: full width */}
+              <button
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="hidden lg:flex items-center flex-1 min-w-[280px] xl:min-w-[360px] gap-3 pl-4 pr-1.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-all mr-1"
+              >
+                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[13px] text-[#888] flex-1 text-left">Cosa vuoi cercare?</span>
+                <span className="bg-[#005667] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full">Cerca</span>
+              </button>
+
+              {/* Mobile + Tablet search: compact pill */}
               <button
                 onClick={() => {
                   const mobile = window.innerWidth < 640;
                   if (mobile) setMobileSearchOpen(true);
                   else setSearchOpen(!searchOpen);
                 }}
-                className="hidden lg:flex items-center flex-1 min-w-[280px] xl:min-w-[360px] gap-3 pl-4 pr-1.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-all mr-2"
-              >
-                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[13px] text-[#888] flex-1 text-left">Cosa vuoi cercare?</span>
-                <span className="bg-[#005667] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full">Cerca</span>
-              </button>
-              {/* Tablet search */}
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-all mr-1"
-              >
-                <svg className="w-4 h-4 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[12px] text-[#888]">Cerca</span>
-              </button>
-              {/* Mobile search */}
-              <button
-                onClick={() => setMobileSearchOpen(true)}
-                className="sm:hidden flex items-center gap-2 flex-1 mx-0.5 px-3 py-2 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
+                className="lg:hidden flex items-center flex-1 min-w-0 pl-2.5 pr-1 py-1 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[12px] text-[#888] flex-1 text-left">Cerca vino...</span>
-                <span className="bg-[#005667] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">Cerca</span>
+                <svg className="w-3.5 h-3.5 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[11px] sm:text-[12px] text-[#aaa] flex-1 text-left ml-1.5 truncate">Cerca...</span>
+                <span className="bg-[#005667] text-white text-[9px] sm:text-[10px] font-semibold px-2 py-1 rounded-full shrink-0">Cerca</span>
               </button>
 
-              {/* Account — always visible (was desktop only) */}
-              <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
+              {/* Account — desktop only (mobile in burger) */}
+              <div className="hidden sm:block shrink-0">
+                <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
+              </div>
 
-              {/* Cart — always visible */}
-              <CartIcon />
+              {/* Cart */}
+              <div className="shrink-0">
+                <CartIcon />
+              </div>
 
-              {/* Vendi con noi — pill after cart, md+ only */}
+              {/* Vendi con noi — lg+ only */}
               {!isAuth && (
-                <button onClick={() => { setAuthVendorMode(true); setAuthModalOpen(true); }} className="hidden md:flex items-center px-3.5 py-1.5 ml-2 border border-[#005667] text-[#005667] text-[12px] font-semibold rounded-full hover:bg-[#005667] hover:text-white transition-colors whitespace-nowrap">
+                <button onClick={() => { setAuthVendorMode(true); setAuthModalOpen(true); }} className="hidden lg:flex items-center px-3.5 py-1.5 border border-[#005667] text-[#005667] text-[12px] font-semibold rounded-full hover:bg-[#005667] hover:text-white transition-colors whitespace-nowrap shrink-0">
                   Vendi con noi
                 </button>
               )}
 
-              {/* Hamburger — mobile/tablet only */}
+              {/* Hamburger — mobile/tablet */}
               <button
                 onClick={() => setMobileOpen(true)}
                 className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg text-gray-600 hover:text-[#005667] hover:bg-gray-50 transition-colors"
