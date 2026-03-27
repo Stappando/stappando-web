@@ -27,9 +27,10 @@ const WC_FIELDS = 'id,slug,name,price,regular_price,sale_price,on_sale,images,at
 
 /** Fetch and cache WC search results for 10 minutes */
 const searchProducts = unstable_cache(
-  async (query: string, limit: number): Promise<SearchResult[]> => {
+  async (query: string, limit: number, page: number = 1): Promise<SearchResult[]> => {
     const wc = getWCSecrets();
-    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${encodeURIComponent(query)}&per_page=${Math.min(limit + 10, 30)}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    const perPage = Math.min(limit, 50);
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
 
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -78,14 +79,70 @@ const searchProducts = unstable_cache(
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim();
-  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '5'), 20);
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '20'), 50);
+  const page = Math.max(parseInt(req.nextUrl.searchParams.get('page') || '1'), 1);
+  const onSaleParam = req.nextUrl.searchParams.get('on_sale');
+  const tagParam = req.nextUrl.searchParams.get('tag')?.trim();
 
-  if (!q || q.length < 2) {
-    return NextResponse.json([]);
+  // If on_sale, fetch sale products directly
+  if (onSaleParam === 'true') {
+    const wc = getWCSecrets();
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&on_sale=true&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const products = await res.json();
+        return NextResponse.json({ products: mapProducts(products), hasMore: products.length === limit });
+      }
+    } catch { /* fall through */ }
+    return NextResponse.json({ products: [], hasMore: false });
   }
 
-  const results = await searchProducts(q, limit);
-  return NextResponse.json(results);
+  // If tag search (e.g. best-seller, quotidiani)
+  if (tagParam && (!q || q.length < 2)) {
+    const wc = getWCSecrets();
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&tag=${encodeURIComponent(tagParam)}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const products = await res.json();
+        return NextResponse.json({ products: mapProducts(products), hasMore: products.length === limit });
+      }
+    } catch { /* fall through */ }
+    return NextResponse.json({ products: [], hasMore: false });
+  }
+
+  if (!q || q.length < 2) {
+    return NextResponse.json({ products: [], hasMore: false });
+  }
+
+  const results = await searchProducts(q, limit, page);
+  return NextResponse.json({ products: results, hasMore: results.length === limit });
+}
+
+/** Map WC products to SearchResult format */
+function mapProducts(products: Record<string, unknown>[]): SearchResult[] {
+  return products.map((p) => {
+    const tags = (p.tags || []) as { id: number; name: string; slug: string }[];
+    const attrs = (p.attributes || []) as { name: string; options: string[] }[];
+    const meta = (p.meta_data || []) as { key: string; value: string }[];
+    const images = (p.images || []) as { src: string }[];
+    const isCircuito = tags.some(t => t.id === API_CONFIG.tags.circuito);
+    return {
+      id: p.id as number,
+      slug: p.slug as string,
+      name: p.name as string,
+      price: p.price as string,
+      regular_price: p.regular_price as string,
+      sale_price: p.sale_price as string,
+      image: images[0]?.src || null,
+      vendor: decodeHtml(attrs.find(a => a.name === 'Produttore')?.options?.[0] || ''),
+      region: decodeHtml(attrs.find(a => a.name === 'Regione')?.options?.[0] || ''),
+      on_sale: p.on_sale as boolean,
+      is_circuito: isCircuito,
+      circuito_badge: meta.find(m => m.key === '_circuito_badge')?.value || '',
+    };
+  });
 }
 
 /** Enrich search results with real WCFM vendor names from product-vendors endpoint */

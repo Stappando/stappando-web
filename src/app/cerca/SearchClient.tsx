@@ -112,6 +112,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const [maxPrice, setMaxPrice] = useState(999);
   const [rawResults, setRawResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Build WC API search term from all active filters
   const searchTerm = useMemo(() => {
@@ -122,50 +125,57 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   }, [query, tag, vendor]);
 
   // Fetch results from API
-  const doSearch = useCallback(async (term: string) => {
+  const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
     if (!term && !onSale) {
-      // No search term and no sale filter — show nothing (or could show featured)
       setResults([]);
       setSearched(false);
       return;
     }
 
-    setLoading(true);
+    if (append) setLoadingMore(true); else setLoading(true);
     try {
       const params = new URLSearchParams();
       if (term) params.set('q', term);
-      params.set('limit', '20');
+      if (onSale) params.set('on_sale', 'true');
+      params.set('limit', '40');
+      params.set('page', String(pageNum));
 
       const res = await fetch(`/api/search?${params.toString()}`);
       if (res.ok) {
-        const raw: SearchResult[] = await res.json();
-        setRawResults(raw);
+        const data = await res.json();
+        // Support both old format (array) and new format ({products, hasMore})
+        const raw: SearchResult[] = Array.isArray(data) ? data : (data.products || []);
+        const more = Array.isArray(data) ? false : !!data.hasMore;
+        setHasMore(more);
 
-        // Set max price dynamically from results (round up to nearest 5)
-        const highestPrice = Math.max(...raw.map(r => parseFloat(r.price) || 0), 10);
+        const allRaw = append ? [...rawResults, ...raw] : raw;
+        setRawResults(allRaw);
+
+        // Set max price dynamically
+        const highestPrice = Math.max(...allRaw.map(r => parseFloat(r.price) || 0), 10);
         const roundedMax = Math.ceil(highestPrice / 5) * 5;
-        if (maxPrice === 999 || maxPrice > roundedMax) setMaxPrice(roundedMax);
+        if (!append && (maxPrice === 999 || maxPrice > roundedMax)) setMaxPrice(roundedMax);
 
         // Client-side filters
-        let data = [...raw];
-        if (onSale) data = data.filter(r => r.on_sale);
-        if (minPrice > 0) data = data.filter(r => parseFloat(r.price) >= minPrice);
-        if (maxPrice < roundedMax) data = data.filter(r => parseFloat(r.price) <= maxPrice);
+        let filtered = [...allRaw];
+        if (minPrice > 0) filtered = filtered.filter(r => parseFloat(r.price) >= minPrice);
+        if (maxPrice < roundedMax) filtered = filtered.filter(r => parseFloat(r.price) <= maxPrice);
 
         // Sort
-        if (orderBy === 'price-asc') data.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        else if (orderBy === 'price-desc') data.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-        else if (orderBy === 'date') data.sort((a, b) => b.id - a.id);
+        if (orderBy === 'price-asc') filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        else if (orderBy === 'price-desc') filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+        else if (orderBy === 'date') filtered.sort((a, b) => b.id - a.id);
 
-        setResults(data);
+        setResults(filtered);
       }
     } catch {
-      setResults([]);
+      if (!append) setResults([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setSearched(true);
     }
-  }, [onSale, minPrice, maxPrice, orderBy]);
+  }, [onSale, minPrice, maxPrice, orderBy, rawResults]);
 
   // Initial search on mount / param change
   useEffect(() => {
@@ -174,8 +184,11 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     }
   }, [searchTerm, onSale, doSearch]);
 
-  // Category pill handler — search by category name
+  // Category handler — reset price on category change
   const handleCategory = useCallback((cat: string) => {
+    setMinPrice(0);
+    setMaxPrice(999);
+    setPage(1);
     setQuery(cat === 'offerte' ? '' : cat);
     setTag('');
     setVendor('');
@@ -264,11 +277,29 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
       {/* Results grid */}
       {!loading && results.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {results.map(r => (
-            <ProductCard key={r.id} product={toWCProduct(r)} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {results.map(r => (
+              <ProductCard key={r.id} product={toWCProduct(r)} />
+            ))}
+          </div>
+          {/* Load more */}
+          {hasMore && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => {
+                  const nextPage = page + 1;
+                  setPage(nextPage);
+                  doSearch(searchTerm, nextPage, true);
+                }}
+                disabled={loadingMore}
+                className="px-8 py-3 border border-[#005667] text-[#005667] rounded-lg text-[13px] font-semibold hover:bg-[#005667] hover:text-white transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? 'Caricamento...' : 'Carica altri prodotti'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* No results — show suggestions */}
