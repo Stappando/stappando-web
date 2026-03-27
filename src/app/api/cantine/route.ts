@@ -35,18 +35,18 @@ export async function GET(req: NextRequest) {
     // Handle both object {id: {...}} and array formats
     const entries: ProducerLogo[] = Array.isArray(raw) ? raw : Object.values(raw || {});
 
-    // Convert to array, filter count > 0, sort by count desc
+    // Convert to array, sort by count or name
     let allCantine = entries
-      .filter(t => t.count > 0)
+      .filter(t => t.name)
       .map(t => ({
         name: t.name,
         slug: t.slug,
         description: stripHtml(t.description || '').slice(0, 160),
-        count: t.count,
+        count: t.count || 0,
         image: t.image || null,
-        region: '', // will be enriched below for paginated set
+        region: '',
       }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name));
 
     const total = allCantine.length;
     const paginated = allCantine.slice((pageParam - 1) * perPage, pageParam * perPage);

@@ -13,13 +13,11 @@ interface Cantina {
   region: string;
 }
 
-type SortBy = 'count' | 'name';
 
 export default function CantineClient() {
   const [cantine, setCantine] = useState<Cantina[]>([]);
   const [ready, setReady] = useState(false);
   const [regionFilter, setRegionFilter] = useState('');
-  const [sortBy, setSortBy] = useState<SortBy>('count');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
@@ -54,8 +52,6 @@ export default function CantineClient() {
   const displayed = useMemo(() => {
     let list = [...cantine];
     if (regionFilter) list = list.filter(c => c.region === regionFilter);
-    if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
-    else list.sort((a, b) => b.count - a.count);
     return list;
   }, [cantine, regionFilter, sortBy]);
 
@@ -80,14 +76,6 @@ export default function CantineClient() {
             {regions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         )}
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as SortBy)}
-          className="h-9 px-3 rounded-lg border border-gray-200 text-[12px] text-gray-700 bg-white focus:outline-none focus:border-[#005667]"
-        >
-          <option value="count">Più vini</option>
-          <option value="name">A-Z</option>
-        </select>
         <span className="text-[11px] text-gray-400 ml-auto">{displayed.length} cantine</span>
       </div>
 
