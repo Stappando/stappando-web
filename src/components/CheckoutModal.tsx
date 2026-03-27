@@ -144,6 +144,8 @@ function Step1Cart() {
     setCouponLoading(false);
   };
   const [giftMessage, setGiftMessage] = useState('');
+  const [wantBox, setWantBox] = useState(false);
+  const [wantCard, setWantCard] = useState(false);
   const [giftProducts, setGiftProducts] = useState<GiftProduct[]>([]);
   const [giftCards, setGiftCards] = useState<GiftProduct[]>([]);
   const [loadingGifts, setLoadingGifts] = useState(false);
@@ -330,107 +332,73 @@ function Step1Cart() {
         {/* TAB 2: GIFTS */}
         {tab === 'gifts' && (
           <div className="px-6 py-5">
-            {loadingGifts ? (
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="animate-pulse rounded-xl bg-[#f5f3ef] h-48" />
-                ))}
-              </div>
-            ) : (
-              <>
-                {/* Gift boxes */}
-                {giftProducts.length > 0 && (
-                  <>
-                    <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                        Scatole regalo
-                      </span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      {giftProducts.map(p => (
-                        <div key={p.id} className="border border-[#eae6e0] rounded-xl overflow-hidden bg-white">
-                          <div className="relative aspect-square bg-white">
-                            {p.image && <Image src={p.image} alt={p.name} fill className="object-contain p-2" sizes="150px" />}
-                          </div>
-                          <div className="p-3">
-                            <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-2 mb-1.5">{p.name}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[15px] font-bold text-[#005667]">{formatPrice(p.price)} €</span>
-                              <button
-                                onClick={() => handleAddGift(p)}
-                                className="text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors"
-                              >
-                                + Aggiungi
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Greeting cards */}
-                {giftCards.length > 0 && (
-                  <>
-                    <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
-                        Biglietti di auguri
-                      </span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {giftCards.map(p => (
-                        <div key={p.id} className="border border-[#eae6e0] rounded-xl overflow-hidden bg-white">
-                          <div className="relative aspect-[4/3] bg-white">
-                            {p.image && <Image src={p.image} alt={p.name} fill className="object-contain p-2" sizes="150px" />}
-                          </div>
-                          <div className="p-3">
-                            <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-2 mb-1.5">{p.name}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[15px] font-bold text-[#005667]">{formatPrice(p.price)} €</span>
-                              <button
-                                onClick={() => handleAddGift(p)}
-                                className="text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors"
-                              >
-                                + Aggiungi
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Gift message */}
-                <div className="mb-4">
-                  <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-2">Messaggio regalo</p>
-                  <textarea
-                    value={giftMessage}
-                    onChange={e => setGiftMessage(e.target.value)}
-                    placeholder="Scrivi un messaggio da includere nel pacco..."
-                    rows={3}
-                    maxLength={200}
-                    className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
-                  />
-                  <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
-                </div>
-
-                {giftProducts.length === 0 && giftCards.length === 0 && (
-                  <div className="text-center py-6 bg-[#f8f6f1] rounded-xl">
-                    <svg className="w-8 h-8 mx-auto text-[#d9c39a] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                    <p className="text-[13px] font-semibold text-[#1a1a1a]">Scatole e biglietti in arrivo</p>
-                    <p className="text-[12px] text-[#888] mt-1">Puoi comunque aggiungere un messaggio regalo sopra</p>
+            <div className="space-y-4">
+              {/* Accordion 1: Scatola regalo */}
+              <div className="border border-[#e8e4dc] rounded-xl overflow-hidden">
+                <button onClick={() => setWantBox(!wantBox)} className="w-full flex items-center justify-between px-4 py-3.5 bg-white">
+                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi una scatola regalo?</span>
+                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantBox ? 'bg-[#005667] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantBox ? 'SÌ' : 'NO'}</span>
+                </button>
+                {wantBox && (
+                  <div className="px-4 pb-4 border-t border-[#f0ece4]">
+                    {loadingGifts ? (
+                      <div className="py-4 text-center text-[12px] text-[#888]">Caricamento...</div>
+                    ) : giftProducts.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        {giftProducts.map(p => (
+                          <button key={p.id} onClick={() => handleAddGift(p)} className="border border-[#eae6e0] rounded-lg p-2 text-left hover:border-[#005667] transition-colors">
+                            {p.image && <div className="relative aspect-square bg-white rounded mb-1.5"><Image src={p.image} alt={p.name} fill className="object-contain p-1" sizes="100px" /></div>}
+                            <p className="text-[11px] font-medium text-[#1a1a1a] line-clamp-2">{p.name}</p>
+                            <p className="text-[13px] font-bold text-[#005667] mt-0.5">{formatPrice(p.price)} €</p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-[#888] py-3">Scatole regalo in arrivo</p>
+                    )}
                   </div>
                 )}
+              </div>
 
-                <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
-                  ← Torna al carrello
+              {/* Accordion 2: Biglietto auguri */}
+              <div className="border border-[#e8e4dc] rounded-xl overflow-hidden">
+                <button onClick={() => setWantCard(!wantCard)} className="w-full flex items-center justify-between px-4 py-3.5 bg-white">
+                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi il biglietto di auguri?</span>
+                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantCard ? 'bg-[#005667] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantCard ? 'SÌ' : 'NO'}</span>
                 </button>
-              </>
-            )}
+                {wantCard && (
+                  <div className="px-4 pb-4 border-t border-[#f0ece4]">
+                    {giftCards.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mt-3 mb-3">
+                        {giftCards.map(p => (
+                          <button key={p.id} onClick={() => handleAddGift(p)} className="border border-[#eae6e0] rounded-lg p-2 text-left hover:border-[#005667] transition-colors">
+                            {p.image && <div className="relative aspect-[4/3] bg-white rounded mb-1.5"><Image src={p.image} alt={p.name} fill className="object-contain p-1" sizes="100px" /></div>}
+                            <p className="text-[11px] font-medium text-[#1a1a1a] line-clamp-2">{p.name}</p>
+                            <p className="text-[13px] font-bold text-[#005667] mt-0.5">{formatPrice(p.price)} €</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
+                      <textarea
+                        value={giftMessage}
+                        onChange={e => setGiftMessage(e.target.value)}
+                        placeholder="Scrivi la tua dedica..."
+                        rows={3}
+                        maxLength={200}
+                        className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
+                      />
+                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
+                ← Torna al carrello
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -620,9 +588,9 @@ function Step3Carrier() {
 
   const carriers = [
     { id: 'none', name: 'Nessuna preferenza', time: 'Sceglieremo il migliore per te', color: '#666', abbr: '—', desc: 'Lasceremo noi scegliere il corriere più adatto in base alla tua zona' },
-    { id: 'brt', name: 'BRT Corriere Espresso', time: 'Consegna 24-48h lavorativi', color: '#8B0000', abbr: 'BRT', desc: 'Il più veloce — consegna garantita in 24-48 ore lavorative in tutta Italia' },
-    { id: 'fedex', name: 'FedEx / TNT', time: 'Consegna 24-48h lavorativi', color: '#4D148C', abbr: 'FedEx', desc: 'Affidabile e puntuale — imballaggio premium per bottiglie fragili' },
-    { id: 'poste', name: 'Poste Italiane', time: 'Consegna 1-3 giorni lavorativi', color: '#003087', abbr: 'Poste', desc: 'Capillare su tutto il territorio — consegna anche in zone remote' },
+    { id: 'brt', name: 'BRT Corriere Espresso', time: '24-48h lavorativi', color: '#8B0000', abbr: 'BRT', desc: '' },
+    { id: 'fedex', name: 'FedEx / TNT', time: '24-48h lavorativi', color: '#4D148C', abbr: 'FedEx', desc: '' },
+    { id: 'poste', name: 'Poste Italiane', time: '1-3 giorni lavorativi', color: '#003087', abbr: 'Poste', desc: '' },
   ];
 
   const handleSelect = (id: string) => {

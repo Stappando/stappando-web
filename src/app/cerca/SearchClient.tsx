@@ -165,8 +165,8 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         if (!append) {
           const prices = allRaw.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
           if (prices.length > 0) {
-            setMinPrice(Math.floor(Math.min(...prices) / 5) * 5);
-            setMaxPrice(Math.ceil(Math.max(...prices) / 5) * 5);
+            setMinPrice(Math.floor(Math.min(...prices) / 2) * 2);
+            setMaxPrice(Math.ceil(Math.max(...prices) / 2) * 2);
           }
         }
       }
@@ -193,8 +193,8 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const filteredResults = useMemo(() => {
     let data = [...rawResults];
     const prices = rawResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
-    const dataMin = prices.length > 0 ? Math.floor(Math.min(...prices) / 5) * 5 : 0;
-    const dataMax = prices.length > 0 ? Math.ceil(Math.max(...prices) / 5) * 5 : 999;
+    const dataMin = prices.length > 0 ? Math.floor(Math.min(...prices) / 2) * 2 : 0;
+    const dataMax = prices.length > 0 ? Math.ceil(Math.max(...prices) / 2) * 2 : 999;
 
     // Client-side filters
     if (onSale) data = data.filter(r => r.on_sale);
@@ -268,15 +268,15 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       <div className="flex items-center gap-2 mb-3">
         {(() => {
           const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
-          const sliderMax = Math.ceil(dynMax / 5) * 5;
+          const sliderMax = Math.ceil(dynMax / 2) * 2;
           return (
             <>
               <span className="text-[10px] font-semibold text-[#005667] shrink-0 w-7 text-right">{minPrice}€</span>
               <div className="relative h-5 flex-1 flex items-center">
-                <input type="range" min={0} max={sliderMax} step={5} value={minPrice}
+                <input type="range" min={0} max={sliderMax} step={2} value={minPrice}
                   onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
                   className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
-                <input type="range" min={0} max={sliderMax} step={5} value={maxPrice}
+                <input type="range" min={0} max={sliderMax} step={2} value={maxPrice}
                   onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) setMaxPrice(v); }}
                   className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
                 <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
