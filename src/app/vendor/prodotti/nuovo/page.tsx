@@ -654,6 +654,7 @@ export default function NuovoProdottoPage() {
                   <span className="text-[13px] text-[#444]">{a.label}{a.hint && <span className="text-[10px] text-[#aaa] ml-1">{a.hint}</span>}</span>
                 </label>
               ))}
+            </div>
           </div>
         </div>
       )}
