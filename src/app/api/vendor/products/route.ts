@@ -41,50 +41,54 @@ export async function GET(req: NextRequest) {
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
   try {
-    // Fetch ALL products (published + draft) and filter by _vendor_id meta
-    // This is the most reliable way since post_author might not be set
-    const statuses = ['publish', 'draft', 'pending', 'private'];
-    const allProducts: WCProduct[] = [];
+    const productIds: number[] = [];
 
-    for (const status of statuses) {
-      const res = await fetch(
-        `${wc.baseUrl}/wp-json/wc/v3/products?status=${status}&per_page=100&${auth}`,
-      );
-      if (res.ok) {
-        const products: WCProduct[] = await res.json();
-        allProducts.push(...products);
-      }
-    }
-
-    // Filter by _vendor_id meta
-    const vendorProducts = allProducts.filter(p => {
-      const vendorMeta = p.meta_data?.find(m => m.key === '_vendor_id');
-      return vendorMeta?.value === vendorId;
-    });
-
-    // Also try WP REST API for products by author (catches products without _vendor_id)
+    // 1. Fast: WP REST API — get product IDs by author (supports draft/any status)
     try {
+      const wpAuth = process.env.WP_USER && process.env.WP_APP_PASSWORD
+        ? `Basic ${Buffer.from(`${process.env.WP_USER}:${process.env.WP_APP_PASSWORD}`).toString('base64')}`
+        : null;
+      const headers: Record<string, string> = {};
+      if (wpAuth) headers.Authorization = wpAuth;
+
       const wpRes = await fetch(
         `${wc.baseUrl}/wp-json/wp/v2/product?author=${vendorId}&per_page=50&status=any&_fields=id`,
+        { headers },
       );
       if (wpRes.ok) {
         const wpProducts: { id: number }[] = await wpRes.json();
-        const existingIds = new Set(vendorProducts.map(p => p.id));
-        const missingIds = wpProducts.filter(wp => !existingIds.has(wp.id)).map(wp => wp.id);
+        productIds.push(...wpProducts.map(p => p.id));
+      }
+    } catch { /* WP REST not available */ }
 
-        if (missingIds.length > 0) {
-          const wcRes = await fetch(
-            `${wc.baseUrl}/wp-json/wc/v3/products?include=${missingIds.join(',')}&per_page=50&${auth}`,
-          );
-          if (wcRes.ok) {
-            const extra: WCProduct[] = await wcRes.json();
-            vendorProducts.push(...extra);
+    // 2. Also check recent drafts for _vendor_id meta (catches products where author wasn't set)
+    try {
+      const draftRes = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/products?status=draft&per_page=20&${auth}`,
+      );
+      if (draftRes.ok) {
+        const drafts: WCProduct[] = await draftRes.json();
+        for (const d of drafts) {
+          const vid = d.meta_data?.find(m => m.key === '_vendor_id');
+          if (vid?.value === vendorId && !productIds.includes(d.id)) {
+            productIds.push(d.id);
           }
         }
       }
-    } catch { /* WP REST not available, use meta-based results only */ }
+    } catch { /* ignore */ }
 
-    return NextResponse.json(vendorProducts.map(mapProduct));
+    if (productIds.length === 0) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    // 3. Fetch full product data from WC API
+    const wcRes = await fetch(
+      `${wc.baseUrl}/wp-json/wc/v3/products?include=${productIds.join(',')}&per_page=50&orderby=date&order=desc&${auth}`,
+    );
+    if (!wcRes.ok) return NextResponse.json([], { status: 200 });
+
+    const products: WCProduct[] = await wcRes.json();
+    return NextResponse.json(products.map(mapProduct));
   } catch (err) {
     console.error('Vendor products fetch error:', err);
     return NextResponse.json([], { status: 200 });
