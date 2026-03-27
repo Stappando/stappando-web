@@ -5,7 +5,32 @@ import { sendEmail } from '@/lib/mail/mandrill';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/vendor/products?vendorId=123 — fetch products authored by vendor */
+interface WCProduct {
+  id: number;
+  name: string;
+  status: string;
+  regular_price?: string;
+  sale_price?: string;
+  stock_quantity?: number | null;
+  images?: { src: string }[];
+  categories?: { name: string }[];
+  meta_data?: { key: string; value: string }[];
+}
+
+function mapProduct(p: WCProduct) {
+  return {
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    price: p.regular_price || '',
+    sale_price: p.sale_price || '',
+    stock_quantity: p.stock_quantity,
+    images: (p.images || []).slice(0, 1),
+    categories: (p.categories || []).slice(0, 2),
+  };
+}
+
+/** GET /api/vendor/products?vendorId=123 — fetch products for vendor (including drafts) */
 export async function GET(req: NextRequest) {
   const vendorId = req.nextUrl.searchParams.get('vendorId');
   if (!isPositiveInt(vendorId)) {
@@ -16,47 +41,50 @@ export async function GET(req: NextRequest) {
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
   try {
-    // WC REST API doesn't support filtering by author directly,
-    // so we use the WordPress REST API to find products by author
-    const wpRes = await fetch(
-      `${wc.baseUrl}/wp-json/wp/v2/product?author=${vendorId}&per_page=50&status=any&_fields=id`,
-    );
+    // Fetch ALL products (published + draft) and filter by _vendor_id meta
+    // This is the most reliable way since post_author might not be set
+    const statuses = ['publish', 'draft', 'pending', 'private'];
+    const allProducts: WCProduct[] = [];
 
-    if (!wpRes.ok) {
-      // Fallback: fetch all recent products and filter by checking post_author
-      // This is less efficient but works without WP REST for products
-      const wcRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products?per_page=50&${auth}`);
-      if (!wcRes.ok) return NextResponse.json([], { status: 200 });
-      const allProducts = await wcRes.json();
-      // Can't filter by author with WC API, return empty for now
-      return NextResponse.json(allProducts.slice(0, 0), { status: 200 });
+    for (const status of statuses) {
+      const res = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/products?status=${status}&per_page=100&${auth}`,
+      );
+      if (res.ok) {
+        const products: WCProduct[] = await res.json();
+        allProducts.push(...products);
+      }
     }
 
-    const wpProducts: { id: number }[] = await wpRes.json();
-    if (wpProducts.length === 0) return NextResponse.json([], { status: 200 });
+    // Filter by _vendor_id meta
+    const vendorProducts = allProducts.filter(p => {
+      const vendorMeta = p.meta_data?.find(m => m.key === '_vendor_id');
+      return vendorMeta?.value === vendorId;
+    });
 
-    // Fetch full product data from WC API for each product
-    const productIds = wpProducts.map(p => p.id);
-    const includeParam = productIds.join(',');
-    const wcRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products?include=${includeParam}&per_page=50&${auth}`,
-    );
+    // Also try WP REST API for products by author (catches products without _vendor_id)
+    try {
+      const wpRes = await fetch(
+        `${wc.baseUrl}/wp-json/wp/v2/product?author=${vendorId}&per_page=50&status=any&_fields=id`,
+      );
+      if (wpRes.ok) {
+        const wpProducts: { id: number }[] = await wpRes.json();
+        const existingIds = new Set(vendorProducts.map(p => p.id));
+        const missingIds = wpProducts.filter(wp => !existingIds.has(wp.id)).map(wp => wp.id);
 
-    if (!wcRes.ok) return NextResponse.json([], { status: 200 });
-    const products = await wcRes.json();
+        if (missingIds.length > 0) {
+          const wcRes = await fetch(
+            `${wc.baseUrl}/wp-json/wc/v3/products?include=${missingIds.join(',')}&per_page=50&${auth}`,
+          );
+          if (wcRes.ok) {
+            const extra: WCProduct[] = await wcRes.json();
+            vendorProducts.push(...extra);
+          }
+        }
+      }
+    } catch { /* WP REST not available, use meta-based results only */ }
 
-    return NextResponse.json(
-      products.map((p: Record<string, unknown>) => ({
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        price: (p as { regular_price?: string }).regular_price || '',
-        sale_price: (p as { sale_price?: string }).sale_price || '',
-        stock_quantity: (p as { stock_quantity?: number | null }).stock_quantity,
-        images: ((p as { images?: { src: string }[] }).images || []).slice(0, 1),
-        categories: ((p as { categories?: { name: string }[] }).categories || []).slice(0, 2),
-      })),
-    );
+    return NextResponse.json(vendorProducts.map(mapProduct));
   } catch (err) {
     console.error('Vendor products fetch error:', err);
     return NextResponse.json([], { status: 200 });
@@ -67,6 +95,7 @@ export async function GET(req: NextRequest) {
 
 interface CreateProductBody {
   vendorId: number;
+  draftId?: number; // If set, update existing draft instead of creating new
   name: string;
   sku?: string;
   regular_price: string;
@@ -212,20 +241,23 @@ export async function POST(req: NextRequest) {
       meta_data: metaData,
     };
 
-    const createRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products?${auth}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(productPayload),
-      },
-    );
+    // Create or update product
+    const isUpdate = body.draftId && body.draftId > 0;
+    const url = isUpdate
+      ? `${wc.baseUrl}/wp-json/wc/v3/products/${body.draftId}?${auth}`
+      : `${wc.baseUrl}/wp-json/wc/v3/products?${auth}`;
+
+    const createRes = await fetch(url, {
+      method: isUpdate ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productPayload),
+    });
 
     if (!createRes.ok) {
       const errText = await createRes.text();
-      console.error('WC product creation failed:', errText);
+      console.error('WC product save failed:', errText);
       return NextResponse.json(
-        { error: 'Failed to create product' },
+        { error: 'Failed to save product' },
         { status: 502 },
       );
     }
@@ -247,8 +279,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Send notification email about new product pending review
-    try {
+    // Send notification email only for new products (not draft updates)
+    if (!isUpdate) try {
       await sendEmail({
         to: [{ email: 'assistenza@stappando.it', name: 'Stappando' }],
         subject: `Nuovo prodotto da approvare: ${sanitize(body.name, 200)}`,

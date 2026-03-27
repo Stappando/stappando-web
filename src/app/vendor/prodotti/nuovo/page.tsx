@@ -85,10 +85,24 @@ export default function NuovoProdottoPage() {
   const [gallery, setGallery] = useState<{ id: number; src: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftId, setDraftId] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [saveMsg, setSaveMsg] = useState('');
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => { setHydrated(true); }, []);
+
+  // Pre-fill produttore from profile cantina name
+  useEffect(() => {
+    if (!hydrated || !user?.id || form.produttore) return;
+    fetch(`/api/vendor/profile?vendorId=${user.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.cantina) setForm(f => ({ ...f, produttore: f.produttore || data.cantina }));
+      })
+      .catch(() => {});
+  }, [hydrated, user?.id, form.produttore]);
 
   // Fetch all taxonomies
   const fetchTaxonomies = useCallback(async () => {
@@ -145,65 +159,96 @@ export default function NuovoProdottoPage() {
     }
   };
 
-  // Submit
+  // Build API payload from current form state
+  const buildPayload = () => {
+    const allImages = [...images, ...gallery];
+    const attributes: { slug: string; terms: string[] }[] = [];
+
+    if (form.produttore) attributes.push({ slug: 'pa_produttore', terms: [form.produttore] });
+    if (form.annata) attributes.push({ slug: 'pa_annata', terms: [form.annata] });
+    if (form.nazione) attributes.push({ slug: 'pa_nazione', terms: [form.nazione] });
+    if (form.regione) attributes.push({ slug: 'pa_regione', terms: [form.regione] });
+    if (form.denominazione) attributes.push({ slug: 'pa_denominazione', terms: [form.denominazione] });
+    if (form.uvaggio.length) attributes.push({ slug: 'pa_uvaggio', terms: form.uvaggio });
+    if (form.formato) attributes.push({ slug: 'pa_formato', terms: [form.formato] });
+    if (form.gradazione) attributes.push({ slug: 'pa_gradazione-alcolica', terms: [form.gradazione] });
+    if (form.momento_consumo.length) attributes.push({ slug: 'pa_momento-di-consumo', terms: form.momento_consumo });
+    if (form.abbinamenti.length) attributes.push({ slug: 'pa_abbinamenti', terms: form.abbinamenti });
+    if (form.temperatura_servizio) attributes.push({ slug: 'pa_temperatura-di-servizio', terms: [form.temperatura_servizio] });
+    if (form.metodo_produttivo) attributes.push({ slug: 'pa_metodo-produttivo', terms: [form.metodo_produttivo] });
+    if (form.dosaggio) attributes.push({ slug: 'pa_dosaggio', terms: [form.dosaggio] });
+    if (form.spumantizzazione) attributes.push({ slug: 'pa_spumantizzazione', terms: [form.spumantizzazione] });
+    if (form.raccolta) attributes.push({ slug: 'pa_raccolta', terms: [form.raccolta] });
+    if (form.tipo_vigneto) attributes.push({ slug: 'pa_tipo-di-vigneto', terms: [form.tipo_vigneto] });
+    if (form.certificazioni.length) attributes.push({ slug: 'pa_certificazioni', terms: form.certificazioni });
+
+    const allergeni: string[] = ['Contiene solfiti'];
+    if (form.allergeni_uova) allergeni.push('Uova');
+    if (form.allergeni_latte) allergeni.push('Latte');
+    if (form.allergeni_pesce) allergeni.push('Pesce');
+
+    return {
+      vendorId: user!.id,
+      name: form.name || 'Bozza senza nome',
+      sku: form.sku || undefined,
+      regular_price: form.regular_price || '0',
+      sale_price: form.sale_price || undefined,
+      stock_quantity: parseInt(form.stock_quantity) || 0,
+      short_description: form.short_description,
+      description: form.description || form.short_description,
+      categories: form.category ? [parseInt(form.category)] : [],
+      images: allImages.map(img => ({ id: img.id, src: img.src })),
+      attributes,
+      acf: {
+        alla_vista: form.alla_vista,
+        al_naso: form.al_naso,
+        al_palato: form.al_palato,
+        vinificazione: form.vinificazione,
+        affinamento: form.affinamento,
+        vendemmia: form.vendemmia,
+        allergeni: allergeni.join(', '),
+      },
+      ...(draftId ? { draftId } : {}),
+    };
+  };
+
+  // Save draft at any point
+  const handleSaveDraft = async () => {
+    if (!user?.id) return;
+    setSavingDraft(true);
+    setSaveMsg('');
+    setError('');
+    try {
+      const res = await fetch('/api/vendor/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload()),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.productId && !draftId) setDraftId(data.productId);
+        setSaveMsg('Bozza salvata!');
+        setTimeout(() => setSaveMsg(''), 4000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Errore nel salvataggio bozza');
+      }
+    } catch {
+      setError('Errore di rete. Riprova.');
+    }
+    setSavingDraft(false);
+  };
+
+  // Final submit
   const handleSubmit = async () => {
     if (!user?.id) return;
     setSubmitting(true);
     setError('');
     try {
-      const allImages = [...images, ...gallery];
-      const attributes: { slug: string; terms: string[] }[] = [];
-
-      // Map form fields to WC attributes
-      if (form.produttore) attributes.push({ slug: 'pa_produttore', terms: [form.produttore] });
-      if (form.annata) attributes.push({ slug: 'pa_annata', terms: [form.annata] });
-      if (form.nazione) attributes.push({ slug: 'pa_nazione', terms: [form.nazione] });
-      if (form.regione) attributes.push({ slug: 'pa_regione', terms: [form.regione] });
-      if (form.denominazione) attributes.push({ slug: 'pa_denominazione', terms: [form.denominazione] });
-      if (form.uvaggio.length) attributes.push({ slug: 'pa_uvaggio', terms: form.uvaggio });
-      if (form.formato) attributes.push({ slug: 'pa_formato', terms: [form.formato] });
-      if (form.gradazione) attributes.push({ slug: 'pa_gradazione-alcolica', terms: [form.gradazione] });
-      if (form.momento_consumo.length) attributes.push({ slug: 'pa_momento-di-consumo', terms: form.momento_consumo });
-      if (form.abbinamenti.length) attributes.push({ slug: 'pa_abbinamenti', terms: form.abbinamenti });
-      if (form.temperatura_servizio) attributes.push({ slug: 'pa_temperatura-di-servizio', terms: [form.temperatura_servizio] });
-      if (form.metodo_produttivo) attributes.push({ slug: 'pa_metodo-produttivo', terms: [form.metodo_produttivo] });
-      if (form.dosaggio) attributes.push({ slug: 'pa_dosaggio', terms: [form.dosaggio] });
-      if (form.spumantizzazione) attributes.push({ slug: 'pa_spumantizzazione', terms: [form.spumantizzazione] });
-      if (form.raccolta) attributes.push({ slug: 'pa_raccolta', terms: [form.raccolta] });
-      if (form.tipo_vigneto) attributes.push({ slug: 'pa_tipo-di-vigneto', terms: [form.tipo_vigneto] });
-      if (form.certificazioni.length) attributes.push({ slug: 'pa_certificazioni', terms: form.certificazioni });
-
-      // Allergeni string
-      const allergeni: string[] = ['Contiene solfiti'];
-      if (form.allergeni_uova) allergeni.push('Uova');
-      if (form.allergeni_latte) allergeni.push('Latte');
-      if (form.allergeni_pesce) allergeni.push('Pesce');
-
       const res = await fetch('/api/vendor/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vendorId: user.id,
-          name: form.name,
-          sku: form.sku || undefined,
-          regular_price: form.regular_price,
-          sale_price: form.sale_price || undefined,
-          stock_quantity: parseInt(form.stock_quantity) || 0,
-          short_description: form.short_description,
-          description: form.description || form.short_description,
-          categories: form.category ? [parseInt(form.category)] : [],
-          images: allImages.map(img => ({ id: img.id, src: img.src })),
-          attributes,
-          acf: {
-            alla_vista: form.alla_vista,
-            al_naso: form.al_naso,
-            al_palato: form.al_palato,
-            vinificazione: form.vinificazione,
-            affinamento: form.affinamento,
-            vendemmia: form.vendemmia,
-            allergeni: allergeni.join(', '),
-          },
-        }),
+        body: JSON.stringify(buildPayload()),
       });
 
       if (!res.ok) {
@@ -583,34 +628,56 @@ export default function NuovoProdottoPage() {
         </div>
       )}
 
-      {/* ═══ Navigation buttons ═══ */}
-      <div className="flex items-center justify-between mt-8 max-w-2xl pb-8">
-        <button
-          onClick={() => setStep(s => s - 1)}
-          disabled={step === 0}
-          className="text-[13px] text-[#888] hover:text-[#005667] disabled:invisible"
-        >
-          ← Indietro
-        </button>
+      {/* ═══ Save message ═══ */}
+      {saveMsg && (
+        <div className="max-w-2xl mt-4 rounded-xl p-3 bg-[#065f46] text-white text-[13px] font-semibold text-center">{saveMsg}</div>
+      )}
 
-        <div className="flex items-center gap-3">
-          {step < 3 ? (
+      {/* ═══ Navigation buttons ═══ */}
+      <div className="sticky bottom-0 z-10 bg-[#f8f6f1]/95 backdrop-blur-sm pt-4 pb-6 border-t border-[#e8e4dc] mt-6 max-w-2xl">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setStep(s => s - 1)}
+            disabled={step === 0}
+            className="text-[13px] text-[#888] hover:text-[#005667] disabled:invisible"
+          >
+            ← Indietro
+          </button>
+
+          <div className="flex items-center gap-3">
+            {/* Save draft — always available */}
             <button
-              onClick={() => setStep(s => s + 1)}
-              disabled={(step === 0 && !step1Valid) || (step === 1 && !step2Valid)}
-              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSaveDraft}
+              disabled={savingDraft || !form.name.trim()}
+              className="border border-[#005667] text-[#005667] rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-[#005667]/5 transition-colors disabled:opacity-40 flex items-center gap-2"
             >
-              Continua →
+              {savingDraft ? (
+                <><div className="w-3.5 h-3.5 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /> Salvataggio...</>
+              ) : (
+                <>{draftId ? 'Aggiorna bozza' : 'Salva bozza'}</>
+              )}
             </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
-            >
-              {submitting ? 'Invio in corso...' : 'Invia per approvazione'}
-            </button>
-          )}
+
+            {step < 3 ? (
+              <button
+                onClick={() => setStep(s => s + 1)}
+                disabled={(step === 0 && !step1Valid) || (step === 1 && !step2Valid)}
+                className="bg-[#005667] text-white rounded-lg px-6 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continua →
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="bg-[#005667] text-white rounded-lg px-6 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {submitting ? (
+                  <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Invio...</>
+                ) : 'Invia per approvazione'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
