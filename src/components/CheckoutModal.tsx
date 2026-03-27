@@ -213,7 +213,7 @@ function Step1Cart() {
           >
             <span className="inline-flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-              Regali
+              Regali scatole e biglietti
             </span>
           </button>
         </div>
@@ -401,9 +401,25 @@ function Step1Cart() {
                   </>
                 )}
 
+                {/* Gift message */}
+                <div className="mb-4">
+                  <p className="text-[12px] font-bold text-[#005667] uppercase tracking-wider mb-2">Messaggio regalo</p>
+                  <textarea
+                    value={giftMessage}
+                    onChange={e => setGiftMessage(e.target.value)}
+                    placeholder="Scrivi un messaggio da includere nel pacco..."
+                    rows={3}
+                    maxLength={200}
+                    className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
+                  />
+                  <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                </div>
+
                 {giftProducts.length === 0 && giftCards.length === 0 && (
-                  <div className="text-center py-10">
-                    <p className="text-[14px] text-[#999]">Nessun prodotto regalo disponibile al momento</p>
+                  <div className="text-center py-6 bg-[#f8f6f1] rounded-xl">
+                    <svg className="w-8 h-8 mx-auto text-[#d9c39a] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                    <p className="text-[13px] font-semibold text-[#1a1a1a]">Scatole e biglietti in arrivo</p>
+                    <p className="text-[12px] text-[#888] mt-1">Puoi comunque aggiungere un messaggio regalo sopra</p>
                   </div>
                 )}
 
