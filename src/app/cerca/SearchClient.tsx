@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
@@ -101,7 +101,7 @@ interface Props {
 }
 
 export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, categories }: Props) {
-  const [results, setResults] = useState<SearchResult[]>([]);
+  // results derived from filteredResults useMemo below
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(initialTag);
@@ -125,13 +125,18 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   }, [query, tag, vendor]);
 
   // Fetch results from API — no price/sort in deps to avoid loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const searchRef = useRef({ rawResults: [] as SearchResult[], searching: false });
+
   const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
     if (!term && !onSale) {
-      setResults([]);
       setRawResults([]);
       setSearched(false);
+      searchRef.current.rawResults = [];
       return;
     }
+    if (searchRef.current.searching) return;
+    searchRef.current.searching = true;
 
     if (append) setLoadingMore(true); else setLoading(true);
     try {
@@ -146,41 +151,40 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         const data = await res.json();
         const raw: SearchResult[] = Array.isArray(data) ? data : (data.products || []);
         const more = Array.isArray(data) ? false : !!data.hasMore;
+
+        const allRaw = append ? [...searchRef.current.rawResults, ...raw] : raw;
+        searchRef.current.rawResults = allRaw;
+
+        setRawResults(allRaw);
         setHasMore(more);
 
-        setRawResults(prev => {
-          const allRaw = append ? [...prev, ...raw] : raw;
-
-          // Set price range from results
+        // Set price range on new search only
+        if (!append) {
           const prices = allRaw.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
-          if (prices.length > 0 && !append) {
-            const lo = Math.floor(Math.min(...prices) / 5) * 5;
-            const hi = Math.ceil(Math.max(...prices) / 5) * 5;
-            setMinPrice(lo);
-            setMaxPrice(hi);
+          if (prices.length > 0) {
+            setMinPrice(Math.floor(Math.min(...prices) / 5) * 5);
+            setMaxPrice(Math.ceil(Math.max(...prices) / 5) * 5);
           }
-
-          return allRaw;
-        });
-
-        // Set results without filtering (filtering happens in useMemo below)
-        setResults(append ? prev => [...prev, ...raw] : raw);
+        }
       }
     } catch {
-      if (!append) { setResults([]); setRawResults([]); }
+      if (!append) { setRawResults([]); searchRef.current.rawResults = []; }
     } finally {
       setLoading(false);
       setLoadingMore(false);
       setSearched(true);
+      searchRef.current.searching = false;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSale]);
 
-  // Initial search on mount / param change
+  // Initial search — runs once per searchTerm/onSale change
   useEffect(() => {
     if (searchTerm || onSale) {
       doSearch(searchTerm);
     }
-  }, [searchTerm, onSale, doSearch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, onSale]);
 
   // Filtered + sorted results (derived from raw, no re-fetch needed)
   const filteredResults = useMemo(() => {
