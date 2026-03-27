@@ -344,13 +344,18 @@ function Step1Cart() {
                     {loadingGifts ? (
                       <div className="py-4 text-center text-[12px] text-[#888]">Caricamento...</div>
                     ) : giftProducts.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="space-y-2 mt-3">
                         {giftProducts.map(p => (
-                          <button key={p.id} onClick={() => handleAddGift(p)} className="border border-[#eae6e0] rounded-lg p-2 text-left hover:border-[#005667] transition-colors">
-                            {p.image && <div className="relative aspect-square bg-white rounded mb-1.5"><Image src={p.image} alt={p.name} fill className="object-contain p-1" sizes="100px" /></div>}
-                            <p className="text-[11px] font-medium text-[#1a1a1a] line-clamp-2">{p.name}</p>
-                            <p className="text-[13px] font-bold text-[#005667] mt-0.5">{formatPrice(p.price)} €</p>
-                          </button>
+                          <div key={p.id} className="flex items-center gap-3 border border-[#eae6e0] rounded-lg p-3">
+                            {p.image && <div className="relative w-12 h-12 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="48px" /></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                              <p className="text-[14px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                            </div>
+                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-2 rounded-lg hover:bg-[#004555] transition-colors">
+                              + Carrello
+                            </button>
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -369,13 +374,18 @@ function Step1Cart() {
                 {wantCard && (
                   <div className="px-4 pb-4 border-t border-[#f0ece4]">
                     {giftCards.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mt-3 mb-3">
+                      <div className="space-y-2 mt-3 mb-3">
                         {giftCards.map(p => (
-                          <button key={p.id} onClick={() => handleAddGift(p)} className="border border-[#eae6e0] rounded-lg p-2 text-left hover:border-[#005667] transition-colors">
-                            {p.image && <div className="relative aspect-[4/3] bg-white rounded mb-1.5"><Image src={p.image} alt={p.name} fill className="object-contain p-1" sizes="100px" /></div>}
-                            <p className="text-[11px] font-medium text-[#1a1a1a] line-clamp-2">{p.name}</p>
-                            <p className="text-[13px] font-bold text-[#005667] mt-0.5">{formatPrice(p.price)} €</p>
-                          </button>
+                          <div key={p.id} className="flex items-center gap-3 border border-[#eae6e0] rounded-lg p-3">
+                            {p.image && <div className="relative w-12 h-12 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="48px" /></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                              <p className="text-[14px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                            </div>
+                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-2 rounded-lg hover:bg-[#004555] transition-colors">
+                              + Carrello
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
