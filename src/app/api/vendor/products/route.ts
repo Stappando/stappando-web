@@ -246,7 +246,10 @@ export async function POST(req: NextRequest) {
     if (body.short_description) productPayload.short_description = sanitize(body.short_description, 2000);
     if (body.description) productPayload.description = sanitize(body.description, 10000);
     if (body.stock_quantity != null) productPayload.stock_quantity = body.stock_quantity;
-    if (body.categories?.length) productPayload.categories = body.categories.map((id: number) => ({ id }));
+    if (body.categories?.length) {
+      const validCats = body.categories.map((id: number | string) => parseInt(String(id))).filter((id: number) => !isNaN(id) && id > 0);
+      if (validCats.length > 0) productPayload.categories = validCats.map((id: number) => ({ id }));
+    }
     if (imagePayload.length) productPayload.images = imagePayload;
     const url = isUpdate
       ? `${wc.baseUrl}/wp-json/wc/v3/products/${body.draftId}?${auth}`

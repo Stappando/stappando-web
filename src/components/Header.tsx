@@ -375,8 +375,8 @@ export default function Header() {
                 <span className="bg-[#005667] text-white text-[9px] sm:text-[10px] font-semibold px-2 py-1 rounded-full shrink-0">Cerca</span>
               </button>
 
-              {/* Account — desktop only (mobile in burger) */}
-              <div className="hidden sm:block shrink-0">
+              {/* Account — always visible */}
+              <div className="shrink-0">
                 <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
               </div>
 

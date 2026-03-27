@@ -82,7 +82,7 @@ const TAX_SLUGS = [
   'pa_uvaggio', 'pa_formato', 'pa_gradazione-alcolica', 'pa_momento-di-consumo',
   'pa_abbinamenti', 'pa_temperatura-di-servizio', 'pa_metodo-produttivo',
   'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto',
-  'pa_certificazioni', 'pa_filosofia',
+  'pa_filosofia',
 ];
 
 /* ── Component ──────────────────────────────────────── */
@@ -382,12 +382,14 @@ export default function NuovoProdottoPage() {
 
   const renderDropdown = (label: string, taxSlug: string, formKey: keyof ProductForm, required = true) => {
     const terms = taxes[taxSlug] || [];
+    // Categories use ID as value, attributes use name
+    const useId = taxSlug === 'product_cat';
     return (
       <div>
         <label className={labelClass}>{label} {required && star}</label>
         <select value={form[formKey] as string} onChange={set(formKey)} className={inputClass}>
           <option value="">— Seleziona —</option>
-          {terms.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+          {terms.map(t => <option key={t.id} value={useId ? String(t.id) : t.name}>{t.name}</option>)}
         </select>
         {taxMissing(taxSlug)}
       </div>
