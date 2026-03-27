@@ -1,67 +1,76 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
-interface CantineEntry {
-  name: string;
-  slug: string;
-  description: string;
-  count: number;
-  image: string | null;
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** GET /api/cantine — fast endpoint for cantine page */
-export async function GET() {
+/** GET /api/cantine — fast endpoint, supports pagination + region filter */
+export async function GET(req: NextRequest) {
   const wc = getWCSecrets();
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+  const pageParam = Math.max(parseInt(req.nextUrl.searchParams.get('page') || '1'), 1);
+  const perPage = 24;
+  const search = req.nextUrl.searchParams.get('search')?.trim() || '';
 
   try {
-    // Fetch all produttore terms from WC (fast, no product data needed)
-    const res = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&${auth}`,
-    );
-    if (!res.ok) return NextResponse.json([], { status: 200 });
+    // Fetch produttore terms (paginated)
+    let url = `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&orderby=count&order=desc&${auth}`;
+    const res = await fetch(url);
+    if (!res.ok) return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
 
-    const terms: { id: number; name: string; slug: string; description: string; count: number }[] = await res.json();
+    let allTerms: { id: number; name: string; slug: string; description: string; count: number }[] = await res.json();
 
-    // Filter out terms with 0 products, sort by count desc
-    const cantine: CantineEntry[] = terms
-      .filter(t => t.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .map(t => ({
-        name: t.name,
-        slug: t.slug,
-        description: (t.description || '').slice(0, 160),
-        count: t.count,
-        image: null, // Will try to get from term meta
-      }));
+    // Filter by count > 0
+    allTerms = allTerms.filter(t => t.count > 0);
 
-    // Try to get logo images from term meta (thumbnail_id)
-    // WC doesn't expose term meta directly, so we check if there's a custom endpoint
-    // For now, fetch first product image per producer for the top 20
-    const top20 = cantine.slice(0, 40);
-    const imagePromises = top20.map(async (cantina) => {
-      try {
-        const prodRes = await fetch(
-          `${wc.baseUrl}/wp-json/wc/v3/products?attribute=pa_produttore&attribute_term=${encodeURIComponent(cantina.name)}&per_page=1&${auth}`,
-        );
-        if (prodRes.ok) {
-          const products = await prodRes.json();
-          if (products[0]?.images?.[0]?.src) {
-            cantina.image = products[0].images[0].src;
+    // Search filter
+    if (search) {
+      const q = search.toLowerCase();
+      allTerms = allTerms.filter(t => t.name.toLowerCase().includes(q) || stripHtml(t.description).toLowerCase().includes(q));
+    }
+
+    const total = allTerms.length;
+    const paginated = allTerms.slice((pageParam - 1) * perPage, pageParam * perPage);
+
+    // For each term, get first product to extract region + image
+    const cantine = await Promise.all(
+      paginated.map(async (t) => {
+        let image: string | null = null;
+        let region = '';
+        try {
+          const prodRes = await fetch(
+            `${wc.baseUrl}/wp-json/wc/v3/products?attribute=pa_produttore&attribute_term=${t.id}&per_page=1&status=publish&_fields=images,attributes&${auth}`,
+          );
+          if (prodRes.ok) {
+            const prods = await prodRes.json();
+            if (prods[0]) {
+              image = prods[0].images?.[0]?.src || null;
+              const regionAttr = prods[0].attributes?.find((a: { name: string }) => a.name === 'Regione');
+              region = regionAttr?.options?.[0] || '';
+            }
           }
-        }
-      } catch { /* ignore */ }
-    });
+        } catch { /* skip */ }
 
-    await Promise.all(imagePromises);
+        return {
+          name: t.name,
+          slug: t.slug,
+          description: stripHtml(t.description).slice(0, 160),
+          count: t.count,
+          image,
+          region,
+        };
+      }),
+    );
 
-    return NextResponse.json(cantine, {
-      headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200' },
-    });
+    return NextResponse.json(
+      { cantine, total, page: pageParam, hasMore: pageParam * perPage < total },
+      { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200' } },
+    );
   } catch (err) {
     console.error('Cantine fetch error:', err);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
   }
 }
