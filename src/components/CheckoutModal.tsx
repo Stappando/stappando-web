@@ -446,7 +446,7 @@ function Step2Shipping() {
   }));
   const [prefilled, setPrefilled] = useState(!!savedShipping);
 
-  // Pre-fill from logged user (only if no saved data)
+  // Pre-fill from logged user + WC customer address
   useEffect(() => {
     if (isLogged && user && !prefilled) {
       setForm(f => ({
@@ -456,6 +456,26 @@ function Step2Shipping() {
         email: f.email || user.email || '',
       }));
       setPrefilled(true);
+      // Fetch full customer data for address
+      if (user.id) {
+        fetch(`/api/customers?id=${user.id}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (!data) return;
+            const b = data.billing || data.shipping || {};
+            setForm(f => ({
+              ...f,
+              firstName: f.firstName || b.first_name || user.firstName || '',
+              lastName: f.lastName || b.last_name || user.lastName || '',
+              email: f.email || b.email || user.email || '',
+              phone: f.phone || b.phone || '',
+              address: f.address || b.address_1 || '',
+              zip: f.zip || b.postcode || '',
+              city: f.city || b.city || '',
+            }));
+          })
+          .catch(() => {});
+      }
     }
   }, [isLogged, user, prefilled]);
 
@@ -572,14 +592,15 @@ function Step2Shipping() {
 function Step3Carrier() {
   const { setCheckoutStep, getTotal, items, getSubtotal, getTotalShipping } = useCartStore();
   const [carrier, setCarrier] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'brt';
-    return 'brt';
+    if (typeof window !== 'undefined') return localStorage.getItem('stappando_carrier') || 'none';
+    return 'none';
   });
 
   const total = getTotal();
   const popPoints = Math.round(total);
 
   const carriers = [
+    { id: 'none', name: 'Nessuna preferenza', time: 'Sceglieremo il migliore per te', color: '#666', abbr: '—', desc: 'Lasceremo noi scegliere il corriere più adatto in base alla tua zona' },
     { id: 'brt', name: 'BRT Corriere Espresso', time: 'Consegna 24-48h lavorativi', color: '#8B0000', abbr: 'BRT', desc: 'Il più veloce — consegna garantita in 24-48 ore lavorative in tutta Italia' },
     { id: 'fedex', name: 'FedEx / TNT', time: 'Consegna 24-48h lavorativi', color: '#4D148C', abbr: 'FedEx', desc: 'Affidabile e puntuale — imballaggio premium per bottiglie fragili' },
     { id: 'poste', name: 'Poste Italiane', time: 'Consegna 1-3 giorni lavorativi', color: '#003087', abbr: 'Poste', desc: 'Capillare su tutto il territorio — consegna anche in zone remote' },
