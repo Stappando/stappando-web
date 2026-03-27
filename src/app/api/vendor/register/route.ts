@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
           { key: '_vendor_sito', value: sito },
           { key: '_vendor_status', value: 'pending_contract' },
           { key: '_vendor_registered_at', value: new Date().toISOString() },
+          { key: '_vendor_profile_json', value: JSON.stringify({ cantina, regione, piva, telefono: telefono }) },
+          { key: '_vendor_shop_logo', value: '' },
+          { key: '_vendor_shop_banner', value: '' },
+          { key: '_vendor_shop_descrizione', value: '' },
         ],
       }),
     });
