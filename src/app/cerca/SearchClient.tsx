@@ -108,7 +108,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const [vendor, setVendor] = useState(initialVendor);
   const [onSale, setOnSale] = useState(initialOnSale);
   const [orderBy, setOrderBy] = useState('popularity');
-  const [maxPrice, setMaxPrice] = useState(500);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(999);
+  const [rawResults, setRawResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
 
   // Build WC API search term from all active filters
@@ -136,11 +138,19 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
       const res = await fetch(`/api/search?${params.toString()}`);
       if (res.ok) {
-        let data: SearchResult[] = await res.json();
+        const raw: SearchResult[] = await res.json();
+        setRawResults(raw);
 
-        // Client-side filters on top of API results
+        // Set max price dynamically from results (round up to nearest 5)
+        const highestPrice = Math.max(...raw.map(r => parseFloat(r.price) || 0), 10);
+        const roundedMax = Math.ceil(highestPrice / 5) * 5;
+        if (maxPrice === 999 || maxPrice > roundedMax) setMaxPrice(roundedMax);
+
+        // Client-side filters
+        let data = [...raw];
         if (onSale) data = data.filter(r => r.on_sale);
-        if (maxPrice < 500) data = data.filter(r => parseFloat(r.price) <= maxPrice);
+        if (minPrice > 0) data = data.filter(r => parseFloat(r.price) >= minPrice);
+        if (maxPrice < roundedMax) data = data.filter(r => parseFloat(r.price) <= maxPrice);
 
         // Sort
         if (orderBy === 'price-asc') data.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
@@ -155,7 +165,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       setLoading(false);
       setSearched(true);
     }
-  }, [onSale, maxPrice, orderBy]);
+  }, [onSale, minPrice, maxPrice, orderBy]);
 
   // Initial search on mount / param change
   useEffect(() => {
@@ -189,24 +199,45 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         <div className="w-px h-5 bg-gray-200 shrink-0" />
 
         <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-7 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#055667] shrink-0">
+          <option value="" disabled>ORDINA PER</option>
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] text-gray-500">max</span>
-          <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-16 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-          <span className="text-[10px] font-semibold text-[#055667] w-7">{maxPrice}€</span>
-        </div>
 
         <span className="text-[10px] text-gray-400 shrink-0">{results.length} prodotti</span>
       </div>
 
-      {/* Mobile price */}
-      <div className="sm:hidden flex items-center gap-2 mb-3">
-        <span className="text-[10px] text-gray-500">max</span>
-        <input type="range" min={5} max={500} step={5} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#055667]" />
-        <span className="text-[10px] font-semibold text-[#055667]">{maxPrice}€</span>
-      </div>
+      {/* Price range — dual slider */}
+      {(() => {
+        const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
+        const sliderMax = Math.ceil(dynMax / 5) * 5;
+        return (
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[10px] font-semibold text-[#055667] w-8 text-right">{minPrice}€</span>
+            <div className="flex-1 relative h-6 flex items-center">
+              {/* Min range */}
+              <input
+                type="range" min={0} max={sliderMax} step={5} value={minPrice}
+                onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
+                className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
+              />
+              {/* Max range */}
+              <input
+                type="range" min={0} max={sliderMax} step={5} value={maxPrice}
+                onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) setMaxPrice(v); }}
+                className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
+              />
+              {/* Track background */}
+              <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
+              {/* Active track */}
+              <div
+                className="absolute h-1 bg-[#005667] rounded-full"
+                style={{ left: `${(minPrice / sliderMax) * 100}%`, right: `${100 - (maxPrice / sliderMax) * 100}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-semibold text-[#055667] w-8">{maxPrice}€</span>
+          </div>
+        );
+      })()}
 
       {/* Active filter label */}
       {(tag || vendor) && (
