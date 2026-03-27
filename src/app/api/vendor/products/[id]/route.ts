@@ -22,15 +22,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const getMeta = (key: string) => meta.find(m => m.key === key)?.value || '';
 
     // Extract attribute values
-    const attrs = (p.attributes || []) as { slug: string; options: string[] }[];
-    const getAttr = (slug: string): string => {
-      const a = attrs.find(a => a.slug === slug);
-      return a?.options?.[0] || '';
+    const attrs = (p.attributes || []) as { slug: string; name: string; options: string[] }[];
+    // WC stores attribute slug inconsistently: sometimes 'pa_annata', sometimes 'Annata', sometimes 'annata'
+    const findAttr = (slug: string) => {
+      const noPa = slug.startsWith('pa_') ? slug.slice(3) : slug;
+      const withPa = slug.startsWith('pa_') ? slug : `pa_${slug}`;
+      const displayName = noPa.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return attrs.find(a =>
+        a.slug === slug || a.slug === noPa || a.slug === withPa ||
+        a.slug.toLowerCase() === noPa.toLowerCase() ||
+        a.name?.toLowerCase() === noPa.replace(/-/g, ' ').toLowerCase() ||
+        a.name === displayName
+      );
     };
-    const getAttrMulti = (slug: string): string[] => {
-      const a = attrs.find(a => a.slug === slug);
-      return a?.options || [];
-    };
+    const getAttr = (slug: string): string => findAttr(slug)?.options?.[0] || '';
+    const getAttrMulti = (slug: string): string[] => findAttr(slug)?.options || [];
 
     return NextResponse.json({
       id: p.id,
