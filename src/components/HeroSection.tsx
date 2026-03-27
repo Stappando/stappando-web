@@ -13,19 +13,19 @@ interface Props {
 
 const OCCASIONS_DESKTOP = [
   { label: 'Aperitivo', href: '/cerca?tag=occasione&q=aperitivo', bg: '#005667', color: '#fff' },
-  { label: 'Cena speciale', href: '/cerca?tag=occasione&q=cena', bg: '#3D2B1A', color: '#e8ddd0' },
-  { label: 'Idea regalo', href: '/cerca?tag=regali', bg: '#5C3317', color: '#f0e0d0' },
-  { label: 'Sotto 15€', href: '/cerca?max=15', bg: '#2C2C2A', color: '#d3d1c7' },
+  { label: 'Tutti i giorni', href: '/cerca?max=10', bg: '#3D2B1A', color: '#e8ddd0' },
+  { label: 'Scorta', href: '/cerca?tag=occasione&q=scorta', bg: '#2C2C2A', color: '#d3d1c7' },
+  { label: 'Regalo', href: '/cerca?tag=regali', bg: '#5C3317', color: '#f0e0d0' },
   { label: 'Bollicine', href: '/cerca?q=bollicine', bg: '#d9c39a', color: '#3D2B1A' },
-  { label: 'Best seller', href: '/cerca?sort=bestseller', bg: '#1C3A2A', color: '#c8e6d4' },
+  { label: 'Sotto i 15€', href: '/cerca?max=15', bg: '#1C3A2A', color: '#c8e6d4' },
 ];
 
 const OCCASIONS_MOBILE = [
   OCCASIONS_DESKTOP[0], // Aperitivo
-  { label: 'Regalo', href: '/cerca?tag=regali', bg: '#5C3317', color: '#f0e0d0' },
-  OCCASIONS_DESKTOP[3], // Sotto 15€
+  OCCASIONS_DESKTOP[1], // Tutti i giorni
+  OCCASIONS_DESKTOP[3], // Regalo
   OCCASIONS_DESKTOP[4], // Bollicine
-  { label: 'Cena', href: '/cerca?tag=occasione&q=cena', bg: '#3D2B1A', color: '#e8ddd0' },
+  OCCASIONS_DESKTOP[5], // Sotto i 15€
 ];
 
 /* ── Trust badges ───────────────────────────────────────── */

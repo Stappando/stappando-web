@@ -13,11 +13,12 @@ import SearchOverlay from '@/components/SearchOverlay';
    NAV — 5 voci esatte, nessun link esterno
    ══════════════════════════════════════════════════════════ */
 const NAV = [
-  { label: 'Per occasione', href: '/cerca?tag=occasione' },
-  { label: 'Best seller',   href: '/cerca?tag=best-seller' },
-  { label: 'Regali',        href: '/cerca?tag=regali' },
-  { label: 'Offerte',       href: '/cerca?on_sale=true' },
+  { label: 'Best seller',   href: '/cerca?sort=bestseller' },
+  { label: 'Regalo',        href: '/cerca?tag=regali' },
+  { label: 'Promo',         href: '/cerca?on_sale=true' },
+  { label: 'Quotidiani',    href: '/cerca?max=8' },
   { label: 'Cantine',       href: '/cantine' },
+  { label: 'Degustazioni',  href: 'https://app.vineis.eu', external: true },
 ] as const;
 
 /* ══════════════════════════════════════════════════════════
@@ -198,21 +199,24 @@ function MobileDrawer({ isOpen, onClose, onOpenAuth, onOpenVendorAuth }: { isOpe
         {/* Divider */}
         <div className="h-px bg-gray-100 mx-4" />
 
-        {/* Nav — 5 voci, font-size 15px, padding 14px 16px */}
+        {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-1">
-          {NAV.map((item, i) => {
-            const isActive = pathname === item.href.split('?')[0] || pathname === item.href;
+          {NAV.map((item) => {
+            const isExternal = 'external' in item && item.external;
+            const isActive = !isExternal && (pathname === item.href.split('?')[0] || pathname === item.href);
+            if (isExternal) {
+              return (
+                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" onClick={onClose}
+                  className="block px-4 py-[14px] text-[15px] text-gray-700 hover:text-[#005667] hover:bg-gray-50 transition-colors">
+                  {item.label} <span className="text-[11px] text-[#ccc]">↗</span>
+                </a>
+              );
+            }
             return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={onClose}
+              <Link key={item.label} href={item.href} onClick={onClose}
                 className={`block px-4 py-[14px] text-[15px] transition-colors ${
-                  isActive
-                    ? 'text-[#005667] font-medium'
-                    : 'text-gray-700 hover:text-[#005667] hover:bg-gray-50'
-                }`}
-              >
+                  isActive ? 'text-[#005667] font-medium' : 'text-gray-700 hover:text-[#005667] hover:bg-gray-50'
+                }`}>
                 {item.label}
               </Link>
             );
@@ -316,21 +320,25 @@ export default function Header() {
               </div>
             </div>
 
-            {/* CENTER — Nav desktop, 13px, 5 voci */}
+            {/* CENTER — Nav desktop */}
             <nav className="hidden lg:flex items-center gap-0.5">
               {NAV.map(item => {
+                const isExternal = 'external' in item && item.external;
                 const base = item.href.split('?')[0];
-                const isActive = pathname === base || pathname === item.href;
+                const isActive = !isExternal && (pathname === base || pathname === item.href);
+                if (isExternal) {
+                  return (
+                    <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-[13px] rounded-lg text-gray-700 hover:text-[#005667] transition-colors whitespace-nowrap">
+                      {item.label}
+                    </a>
+                  );
+                }
                 return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
+                  <Link key={item.label} href={item.href}
                     className={`px-3 py-1.5 text-[13px] rounded-lg transition-colors whitespace-nowrap ${
-                      isActive
-                        ? 'text-[#005667] font-medium underline underline-offset-[3px] decoration-[#005667] decoration-[1.5px]'
-                        : 'text-gray-700 hover:text-[#005667]'
-                    }`}
-                  >
+                      isActive ? 'text-[#005667] font-medium underline underline-offset-[3px] decoration-[#005667] decoration-[1.5px]' : 'text-gray-700 hover:text-[#005667]'
+                    }`}>
                     {item.label}
                   </Link>
                 );
@@ -342,16 +350,24 @@ export default function Header() {
 
             {/* RIGHT — Actions */}
             <div className="flex items-center">
-              {/* Search — 44x44, desktop: overlay under header, mobile: fullscreen */}
+              {/* Search pill — desktop: wide, mobile: icon only */}
               <button
                 onClick={() => {
                   const mobile = window.innerWidth < 640;
                   if (mobile) setMobileSearchOpen(true);
                   else setSearchOpen(!searchOpen);
                 }}
-                className={`flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${
-                  searchOpen ? 'text-[#005667] bg-gray-100' : 'text-gray-500 hover:text-[#005667] hover:bg-gray-50'
+                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors mr-1 ${
+                  searchOpen ? 'border-[#005667] bg-[#005667]/5 text-[#005667]' : 'border-[#e5e5e5] text-[#888] hover:border-[#005667] hover:text-[#005667]'
                 }`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[13px]">Cosa vuoi cercare?</span>
+              </button>
+              {/* Mobile search icon */}
+              <button
+                onClick={() => setMobileSearchOpen(true)}
+                className="sm:hidden flex items-center justify-center w-11 h-11 rounded-lg text-gray-500 hover:text-[#005667] hover:bg-gray-50 transition-colors"
                 aria-label="Cerca"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
