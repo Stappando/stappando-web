@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 /* ── Types ─────────────────────────────────────────── */
@@ -78,6 +78,8 @@ const TAX_SLUGS = [
 export default function NuovoProdottoPage() {
   const { user } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editDraftId = searchParams.get('draft');
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [taxes, setTaxes] = useState<Record<string, TaxTerm[]>>({});
@@ -90,8 +92,59 @@ export default function NuovoProdottoPage() {
   const [error, setError] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [hydrated, setHydrated] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(false);
 
   useEffect(() => { setHydrated(true); }, []);
+
+  // Load existing draft if ?draft=ID
+  useEffect(() => {
+    if (!hydrated || !editDraftId) return;
+    setLoadingDraft(true);
+    setDraftId(parseInt(editDraftId));
+    fetch(`/api/vendor/products/${editDraftId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        setForm(f => ({
+          ...f,
+          produttore: data.produttore || f.produttore,
+          name: data.name || '',
+          sku: data.sku || '',
+          regular_price: data.regular_price || '',
+          sale_price: data.sale_price || '',
+          stock_quantity: data.stock_quantity != null ? String(data.stock_quantity) : '',
+          category: data.category_id ? String(data.category_id) : '',
+          short_description: data.short_description || '',
+          description: data.description || '',
+          annata: data.annata || '',
+          nazione: data.nazione || '',
+          regione: data.regione || '',
+          denominazione: data.denominazione || '',
+          uvaggio: data.uvaggio || [],
+          formato: data.formato || '',
+          gradazione: data.gradazione || '',
+          momento_consumo: data.momento_consumo || [],
+          abbinamenti: data.abbinamenti || [],
+          temperatura_servizio: data.temperatura_servizio || '',
+          metodo_produttivo: data.metodo_produttivo || '',
+          dosaggio: data.dosaggio || '',
+          spumantizzazione: data.spumantizzazione || '',
+          raccolta: data.raccolta || '',
+          tipo_vigneto: data.tipo_vigneto || '',
+          certificazioni: data.certificazioni || [],
+          alla_vista: data.alla_vista || '',
+          al_naso: data.al_naso || '',
+          al_palato: data.al_palato || '',
+          vinificazione: data.vinificazione || '',
+          affinamento: data.affinamento || '',
+          vendemmia: data.vendemmia || '',
+        }));
+        if (data.images?.length > 0) setImages([data.images[0]]);
+        if (data.images?.length > 1) setGallery(data.images.slice(1));
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDraft(false));
+  }, [hydrated, editDraftId]);
 
   // Pre-fill produttore from profile cantina name (cached in localStorage for speed)
   useEffect(() => {
@@ -275,7 +328,13 @@ export default function NuovoProdottoPage() {
     }
   };
 
-  if (!hydrated) return null;
+  if (!hydrated || loadingDraft) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const inputClass = "h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 w-full bg-white";
   const labelClass = "block text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-1.5";

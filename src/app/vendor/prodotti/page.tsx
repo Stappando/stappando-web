@@ -86,7 +86,7 @@ export default function VendorProdottiPage() {
             const s = STATUS_MAP[p.status] || { label: p.status, color: '#6b7280', bg: '#f3f4f6' };
             const img = p.images?.[0]?.src;
             return (
-              <div key={p.id} className="bg-white border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 hover:border-[#005667]/30 transition-colors">
+              <Link key={p.id} href={`/vendor/prodotti/nuovo?draft=${p.id}`} className="bg-white border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 hover:border-[#005667]/30 transition-colors cursor-pointer block">
                 <div className="w-14 h-14 rounded-lg bg-[#f8f6f1] flex items-center justify-center shrink-0 overflow-hidden">
                   {img ? (
                     <img src={img} alt={p.name} className="w-full h-full object-cover rounded-lg" />
@@ -119,7 +119,7 @@ export default function VendorProdottiPage() {
                     {s.label}
                   </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
