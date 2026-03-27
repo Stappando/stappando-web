@@ -508,7 +508,7 @@ function Step2Shipping() {
             {/* Logged user greeting */}
             {isLogged && (
               <div className="bg-[#f8f6f1] rounded-lg px-4 py-2.5 mb-1">
-                <span className="text-[13px] text-[#444]">Ciao <strong>{user?.firstName}</strong>, dati pre-compilati</span>
+                <span className="text-[13px] text-[#444]">Ciao <strong>{user?.firstName}</strong>, ecco i tuoi dati</span>
               </div>
             )}
 
