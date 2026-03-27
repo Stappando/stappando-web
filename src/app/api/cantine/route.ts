@@ -51,24 +51,7 @@ export async function GET(req: NextRequest) {
     const total = allCantine.length;
     const paginated = allCantine.slice((pageParam - 1) * perPage, pageParam * perPage);
 
-    // Enrich with region from first product (only for current page)
-    const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
-    await Promise.all(
-      paginated.map(async (c) => {
-        try {
-          const prodRes = await fetch(
-            `${wc.baseUrl}/wp-json/wc/v3/products?attribute=pa_produttore&attribute_term=${encodeURIComponent(c.name)}&per_page=1&status=publish&_fields=attributes&${auth}`,
-          );
-          if (prodRes.ok) {
-            const prods = await prodRes.json();
-            if (prods[0]) {
-              const regionAttr = prods[0].attributes?.find((a: { name: string }) => a.name === 'Regione');
-              c.region = regionAttr?.options?.[0] || '';
-            }
-          }
-        } catch { /* skip */ }
-      }),
-    );
+    // Region will be added later via PHP snippet — skip extra API calls for speed
 
     return NextResponse.json(
       { cantine: paginated, total, page: pageParam, hasMore: pageParam * perPage < total },
