@@ -30,6 +30,7 @@ interface SearchResult {
   regular_price: string;
   sale_price: string;
   image: string | null;
+  producer: string;
   vendor: string;
   region: string;
   on_sale: boolean;
@@ -43,7 +44,7 @@ function toWCProduct(r: SearchResult): WCProduct {
     regular_price: r.regular_price, sale_price: r.sale_price, on_sale: r.on_sale,
     images: r.image ? [{ id: 0, src: r.image, alt: r.name }] : [],
     attributes: [
-      ...(r.vendor ? [{ id: 0, name: 'Produttore', options: [r.vendor] }] : []),
+      ...(r.producer ? [{ id: 0, name: 'Produttore', options: [r.producer] }] : []),
       ...(r.region ? [{ id: 0, name: 'Regione', options: [r.region] }] : []),
     ],
     tags: r.is_circuito ? [{ id: 21993, name: 'circuito', slug: 'circuito' }] : [],
