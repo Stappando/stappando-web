@@ -98,10 +98,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ products: [], hasMore: false });
   }
 
-  // If tag search (e.g. best-seller, quotidiani)
+  // If tag search (e.g. best-seller, quotidiani) — resolve slug to ID first
   if (tagParam && (!q || q.length < 2)) {
     const wc = getWCSecrets();
-    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&tag=${encodeURIComponent(tagParam)}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+    // Resolve tag slug to ID
+    let tagId = tagParam;
+    if (isNaN(Number(tagParam))) {
+      try {
+        const tagRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/tags?slug=${encodeURIComponent(tagParam)}&${wcAuth}`);
+        if (tagRes.ok) {
+          const tags = await tagRes.json();
+          if (tags[0]?.id) tagId = String(tags[0].id);
+        }
+      } catch { /* use as-is */ }
+    }
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?${wcAuth}&tag=${tagId}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
     try {
       const res = await fetch(url);
       if (res.ok) {
