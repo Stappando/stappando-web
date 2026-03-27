@@ -100,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(data.message || 'Credenziali non valide');
           }
 
-          set({ user: data.user, token: data.token, role: data.role || 'customer', isLoading: false, error: null });
+          set({ user: data.user, token: data.token, role: data.role || 'customer', vendorStatus: data.vendorStatus || null, isLoading: false, error: null });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Errore durante il login';
           set({ isLoading: false, error: message });
@@ -148,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'stappando-auth',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      partialize: (state) => ({ user: state.user, token: state.token, role: state.role, vendorStatus: state.vendorStatus }),
     },
   ),
 );

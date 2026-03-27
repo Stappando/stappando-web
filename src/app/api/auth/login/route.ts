@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     let custLastName = lastName;
     let custId = userId;
     let custRole = 'customer';
+    let vendorStatus: string | null = null;
     try {
       const custUrl = `${wc.baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
       const custRes = await fetch(custUrl);
@@ -54,7 +55,11 @@ export async function POST(req: NextRequest) {
           custLastName = customers[0].last_name || custLastName;
           custId = customers[0].id || custId;
           const isVendorMeta = customers[0].meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
-          custRole = isVendorMeta ? 'vendor' : (customers[0].role || 'customer');
+          custRole = isVendorMeta || ['vendor', 'wcfm_vendor', 'dc_vendor', 'seller'].includes(customers[0].role) ? 'vendor' : (customers[0].role || 'customer');
+          const vendorStatusMeta = customers[0].meta_data?.find((m: { key: string; value: string }) => m.key === '_vendor_status');
+          if (vendorStatusMeta) {
+            vendorStatus = vendorStatusMeta.value;
+          }
         }
       }
     } catch { /* use JWT data */ }
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest) {
       },
       token,
       role: custRole,
+      vendorStatus,
     });
   } catch {
     return NextResponse.json({ message: 'Errore del server' }, { status: 500 });
