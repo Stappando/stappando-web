@@ -186,9 +186,8 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      {/* Toolbar — single row */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        {/* Category dropdown */}
+      {/* Toolbar row 1: category + offerte + ordina */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <select
           value={activeCategory}
           onChange={(e) => handleCategory(e.target.value)}
@@ -203,27 +202,27 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           ))}
         </select>
 
-        {/* Offerte */}
         <button onClick={() => handleCategory('offerte')} className={`h-8 px-3 rounded-lg text-[12px] font-semibold shrink-0 transition-all ${onSale ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>Offerte</button>
 
         <div className="w-px h-5 bg-gray-200 shrink-0" />
 
-        {/* Ordina */}
         <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#005667] shrink-0">
           <option value="" disabled>ORDINA PER</option>
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
-        <div className="w-px h-5 bg-gray-200 shrink-0" />
+        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">{results.length} prodotti</span>
+      </div>
 
-        {/* Price range inline */}
+      {/* Toolbar row 2: price range full width */}
+      <div className="flex items-center gap-2 mb-3">
         {(() => {
           const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
           const sliderMax = Math.ceil(dynMax / 5) * 5;
           return (
             <>
-              <span className="text-[10px] font-semibold text-[#005667] shrink-0">{minPrice}€</span>
-              <div className="relative h-5 w-20 sm:w-28 flex items-center shrink-0">
+              <span className="text-[10px] font-semibold text-[#005667] shrink-0 w-7 text-right">{minPrice}€</span>
+              <div className="relative h-5 flex-1 flex items-center">
                 <input type="range" min={0} max={sliderMax} step={5} value={minPrice}
                   onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
                   className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
@@ -237,8 +236,6 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
             </>
           );
         })()}
-
-        <span className="text-[10px] text-gray-400 shrink-0">{results.length} prodotti</span>
       </div>
 
       {/* Active filter label */}

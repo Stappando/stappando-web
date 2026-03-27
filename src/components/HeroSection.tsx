@@ -13,11 +13,11 @@ interface Props {
 
 const OCCASIONS_DESKTOP = [
   { label: 'Aperitivo', href: '/cerca?tag=occasione&q=aperitivo', bg: '#005667', color: '#fff' },
-  { label: 'Tutti i giorni', href: '/cerca?max=10', bg: '#3D2B1A', color: '#e8ddd0' },
+  { label: 'Tutti i giorni', href: '/cerca?tag=quotidiani', bg: '#3D2B1A', color: '#e8ddd0' },
   { label: 'Scorta', href: '/cerca?tag=occasione&q=scorta', bg: '#2C2C2A', color: '#d3d1c7' },
   { label: 'Regalo', href: '/cerca?tag=regali', bg: '#5C3317', color: '#f0e0d0' },
   { label: 'Bollicine', href: '/cerca?q=bollicine', bg: '#d9c39a', color: '#3D2B1A' },
-  { label: 'Sotto i 15€', href: '/cerca?max=15', bg: '#1C3A2A', color: '#c8e6d4' },
+  { label: 'Sotto i 15€', href: '/cerca?tag=sotto-15', bg: '#1C3A2A', color: '#c8e6d4' },
 ];
 
 const OCCASIONS_MOBILE = [

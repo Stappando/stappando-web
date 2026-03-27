@@ -81,8 +81,7 @@ const TAX_SLUGS = [
   'product_cat', 'pa_annata', 'pa_nazione', 'pa_regione', 'pa_denominazione',
   'pa_uvaggio', 'pa_formato', 'pa_gradazione-alcolica', 'pa_momento-di-consumo',
   'pa_abbinamenti', 'pa_temperatura-di-servizio', 'pa_metodo-produttivo',
-  'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto',
-  'pa_filosofia',
+  'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto', 'pa_filosofia',
 ];
 
 /* ── Component ──────────────────────────────────────── */
