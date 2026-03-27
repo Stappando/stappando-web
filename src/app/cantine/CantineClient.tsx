@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface Cantina {
   name: string;
@@ -12,7 +11,6 @@ interface Cantina {
   image: string | null;
   region: string;
 }
-
 
 export default function CantineClient() {
   const [cantine, setCantine] = useState<Cantina[]>([]);
@@ -24,12 +22,12 @@ export default function CantineClient() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchPage = async (p: number, append = false) => {
-    if (append) setLoadingMore(true); else setReady(false);
+    if (append) setLoadingMore(true);
     try {
-      const params = new URLSearchParams({ page: String(p) });
-      const res = await fetch(`/api/cantine?${params}`);
+      const res = await fetch(`/api/cantine?page=${p}`);
       const data = await res.json();
-      setCantine(prev => append ? [...prev, ...(data.cantine || [])] : (data.cantine || []));
+      const newCantine = data.cantine || [];
+      setCantine(prev => append ? [...prev, ...newCantine] : newCantine);
       setTotal(data.total || 0);
       setHasMore(!!data.hasMore);
     } catch { /* */ }
@@ -37,34 +35,36 @@ export default function CantineClient() {
     setLoadingMore(false);
   };
 
-  useEffect(() => {
-    fetchPage(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchPage(1); }, []);
 
-  // Extract unique regions for filter
   const regions = useMemo(() => {
     const set = new Set(cantine.map(c => c.region).filter(Boolean));
     return Array.from(set).sort();
   }, [cantine]);
 
-  // Filter + sort
   const displayed = useMemo(() => {
-    let list = [...cantine];
-    if (regionFilter) list = list.filter(c => c.region === regionFilter);
-    return list;
+    if (!regionFilter) return cantine;
+    return cantine.filter(c => c.region === regionFilter);
   }, [cantine, regionFilter]);
+
+  if (!ready) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col items-center justify-center py-16 gap-2">
+          <div className="w-6 h-6 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+          <p className="text-xs text-gray-400">Caricamento cantine...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a]">Le nostre Cantine</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {ready ? `${total} produttori selezionati dal nostro sommelier` : 'Caricamento...'}
-        </p>
+        <p className="text-sm text-gray-500 mt-1">{total} produttori selezionati dal nostro sommelier</p>
       </div>
 
-      {/* Filter row — only region */}
       <div className="flex items-center gap-2 mb-6">
         {regions.length > 0 && (
           <select
@@ -79,16 +79,7 @@ export default function CantineClient() {
         <span className="text-[11px] text-gray-400 ml-auto">{displayed.length} cantine</span>
       </div>
 
-      {/* Loading */}
-      {!ready && (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <div className="w-6 h-6 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Caricamento cantine...</p>
-        </div>
-      )}
-
-      {/* Grid */}
-      {ready && displayed.length > 0 && (
+      {displayed.length > 0 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {displayed.map(cantina => (
@@ -97,15 +88,13 @@ export default function CantineClient() {
                 href={`/cantine/${cantina.slug}`}
                 className="group rounded-xl border border-[#e8e4dc] bg-white overflow-hidden hover:border-[#d9c39a] hover:shadow-md transition-all"
               >
-                {/* Logo centered */}
                 <div className="aspect-square bg-white flex items-center justify-center p-6 border-b border-[#f0ece4]">
                   {cantina.image ? (
-                    <Image
+                    <img
                       src={cantina.image}
                       alt={cantina.name}
-                      width={120}
-                      height={120}
-                      className="object-contain max-h-[80px] group-hover:scale-105 transition-transform duration-300"
+                      className="max-h-[80px] max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                   ) : (
                     <span className="text-4xl font-bold text-[#005667]/10">{cantina.name.charAt(0)}</span>
@@ -116,17 +105,18 @@ export default function CantineClient() {
                     {cantina.name}
                   </h3>
                   <div className="flex items-center justify-between mt-1">
-                    {cantina.region && (
+                    {cantina.region ? (
                       <span className="text-[10px] text-[#005667] font-medium">{cantina.region}</span>
+                    ) : <span />}
+                    {cantina.count > 0 && (
+                      <span className="text-[10px] text-[#888]">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
                     )}
-                    <span className="text-[10px] text-[#888]">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
 
-          {/* Load more */}
           {hasMore && (
             <div className="flex justify-center mt-6">
               <button
@@ -141,11 +131,10 @@ export default function CantineClient() {
         </>
       )}
 
-      {/* Empty */}
-      {ready && displayed.length === 0 && (
+      {displayed.length === 0 && (
         <div className="text-center py-16">
           <p className="text-sm font-semibold text-gray-700">Nessuna cantina trovata</p>
-          <p className="text-xs text-gray-500 mt-1">Prova con un altro termine</p>
+          <p className="text-xs text-gray-500 mt-1">Prova con un&apos;altra regione</p>
         </div>
       )}
     </div>
