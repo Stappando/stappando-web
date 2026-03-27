@@ -205,7 +205,6 @@ export async function POST(req: NextRequest) {
     const isUpdate = body.draftId && body.draftId > 0;
 
     // Images: for update use {id} to keep existing, for create use {src}
-    // Filter out invalid entries and handle both cases
     const imagePayload = (body.images || [])
       .filter((img: { id?: number; src?: string }) => img.id || img.src)
       .map((img: { id?: number; src?: string }) => {
@@ -215,22 +214,40 @@ export async function POST(req: NextRequest) {
       })
       .filter(Boolean);
 
-    const productPayload = {
+    // For updates: merge new attributes with existing ones (WC replaces all on PUT)
+    let finalAttributes = wcAttributes;
+    if (isUpdate) {
+      try {
+        const existingRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/${body.draftId}?${auth}`);
+        if (existingRes.ok) {
+          const existing = await existingRes.json();
+          const existingAttrs = (existing.attributes || []) as { name: string; slug: string; options: string[]; visible: boolean }[];
+          // Keep existing attributes that are NOT in the new payload
+          const newSlugs = new Set(wcAttributes.map((a: { slug: string }) => a.slug.toLowerCase()));
+          const kept = existingAttrs.filter(a => !newSlugs.has(a.slug.toLowerCase()) && !newSlugs.has(`pa_${a.slug}`.toLowerCase()) && !newSlugs.has(a.slug.replace(/^pa_/, '').toLowerCase()));
+          finalAttributes = [...kept.map(a => ({ ...a, visible: true, variation: false })), ...wcAttributes];
+        }
+      } catch { /* proceed with new attributes only */ }
+    }
+
+    // Build payload — only include fields that have values (don't overwrite with empty)
+    const productPayload: Record<string, unknown> = {
       name: sanitize(body.name, 500),
       status: 'draft',
       type: 'simple',
-      regular_price: body.regular_price,
-      sale_price: body.sale_price || '',
-      ...(body.sku ? { sku: sanitize(body.sku, 100) } : {}),
-      short_description: sanitize(body.short_description || '', 2000),
-      description: sanitize(body.description || '', 10000),
       manage_stock: true,
-      stock_quantity: body.stock_quantity ?? 0,
-      categories: (body.categories || []).map((id: number) => ({ id })),
-      images: imagePayload,
-      attributes: wcAttributes,
+      attributes: finalAttributes,
       meta_data: metaData,
     };
+    // Only set fields that have actual values
+    if (body.regular_price) productPayload.regular_price = body.regular_price;
+    if (body.sale_price) productPayload.sale_price = body.sale_price;
+    if (body.sku) productPayload.sku = sanitize(body.sku, 100);
+    if (body.short_description) productPayload.short_description = sanitize(body.short_description, 2000);
+    if (body.description) productPayload.description = sanitize(body.description, 10000);
+    if (body.stock_quantity != null) productPayload.stock_quantity = body.stock_quantity;
+    if (body.categories?.length) productPayload.categories = body.categories.map((id: number) => ({ id }));
+    if (imagePayload.length) productPayload.images = imagePayload;
     const url = isUpdate
       ? `${wc.baseUrl}/wp-json/wc/v3/products/${body.draftId}?${auth}`
       : `${wc.baseUrl}/wp-json/wc/v3/products?${auth}`;
