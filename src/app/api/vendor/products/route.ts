@@ -294,10 +294,7 @@ export async function POST(req: NextRequest) {
       if (isNew) {
         console.log(`Sending product review email for #${created.id} to ordini@stappando.it`);
         await sendEmail({
-          to: [
-            { email: 'ordini@stappando.it', name: 'Stappando Ordini' },
-            { email: 'assistenza@stappando.it', name: 'Stappando' },
-          ],
+          to: [{ email: 'ordini@stappando.it', name: 'Stappando Ordini' }],
           subject: `📦 Nuovo prodotto da approvare: ${sanitize(body.name, 200)}`,
           html: `
             <h2>Nuovo prodotto in attesa di revisione</h2>
