@@ -229,9 +229,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         <span className="text-[10px] text-gray-400 shrink-0">{results.length} prodotti</span>
       </div>
 
-      {(() => { return null; /* price range removed from separate row */ })()}
-        );
-      })()}
+      {/* price range is now inline above */}
 
       {/* Active filter label */}
       {(tag || vendor) && (
