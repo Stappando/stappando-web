@@ -70,7 +70,7 @@ const TAX_SLUGS = [
   'pa_uvaggio', 'pa_formato', 'pa_gradazione-alcolica', 'pa_momento-di-consumo',
   'pa_abbinamenti', 'pa_temperatura-di-servizio', 'pa_metodo-produttivo',
   'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto',
-  'pa_certificazioni', 'pa_produttore',
+  'pa_certificazioni',
 ];
 
 /* ── Component ──────────────────────────────────────── */
@@ -273,7 +273,7 @@ export default function NuovoProdottoPage() {
   };
 
   // Step validation
-  const step1Valid = form.name.trim() && form.regular_price && form.stock_quantity && form.category && form.annata && form.short_description.trim() && images.length > 0;
+  const step1Valid = form.produttore.trim() && form.name.trim() && form.regular_price && form.stock_quantity && form.category && form.annata && form.short_description.trim() && images.length > 0;
   const step2Valid = form.nazione && form.regione && form.denominazione && form.uvaggio.length > 0 && form.formato && form.gradazione && form.momento_consumo.length > 0 && form.abbinamenti.length > 0;
 
   return (
@@ -303,7 +303,11 @@ export default function NuovoProdottoPage() {
           <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
             <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Informazioni base</p>
 
-            {renderDropdown('Produttore / Cantina', 'pa_produttore', 'produttore', true)}
+            <div>
+              <label className={labelClass}>Produttore / Cantina {star}</label>
+              <input value={form.produttore} onChange={set('produttore')} className={inputClass} placeholder="Es. Cantina Merlotta" />
+              <p className="text-[10px] text-[#aaa] mt-1">Questo nome apparirà su ogni prodotto — se non presente verrà creato automaticamente</p>
+            </div>
 
             <div>
               <label className={labelClass}>Nome prodotto {star}</label>
