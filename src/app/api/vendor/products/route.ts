@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
             <p><strong>Prezzo:</strong> &euro;${body.regular_price}</p>
             <p><strong>SKU:</strong> ${body.sku || 'N/A'}</p>
             <p><strong>Product ID:</strong> ${created.id}</p>
-            <p><a href="https://stappando.it/wp-admin/post.php?post=${created.id}&action=edit">Apri su WooCommerce →</a></p>
+            <p><a href="https://stappando.it/wp-admin/edit.php?post_type=product&post_status=draft">Vedi prodotti da approvare →</a></p>
           `,
           tags: ['vendor-product-review'],
         });
