@@ -354,7 +354,8 @@ export default function NuovoProdottoPage() {
         return;
       }
 
-      router.push('/vendor/prodotti?created=1');
+      setSaveMsg('Prodotto inviato per approvazione!');
+      setTimeout(() => router.push('/vendor/prodotti?created=1'), 2000);
     } catch (err) {
       setError('Errore di rete. Riprova.');
     } finally {

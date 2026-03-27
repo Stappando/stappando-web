@@ -288,24 +288,32 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Send notification email only for new products (not draft updates)
-    if (!isUpdate) try {
-      await sendEmail({
-        to: [{ email: 'assistenza@stappando.it', name: 'Stappando' }],
-        subject: `Nuovo prodotto da approvare: ${sanitize(body.name, 200)}`,
-        html: `
-          <h2>Nuovo prodotto in attesa di revisione</h2>
-          <p><strong>Prodotto:</strong> ${sanitize(body.name, 200)}</p>
-          <p><strong>Vendor ID:</strong> ${body.vendorId}</p>
-          <p><strong>Prezzo:</strong> &euro;${body.regular_price}</p>
-          <p><strong>SKU:</strong> ${body.sku || 'N/A'}</p>
-          <p><strong>Product ID:</strong> ${created.id}</p>
-          <p>Accedi al pannello di amministrazione per approvare o rifiutare il prodotto.</p>
-        `,
-        tags: ['vendor-product-review'],
-      });
+    // Send notification email for new products AND final submissions
+    try {
+      const isNew = !isUpdate;
+      if (isNew) {
+        console.log(`Sending product review email for #${created.id} to ordini@stappando.it`);
+        await sendEmail({
+          to: [
+            { email: 'ordini@stappando.it', name: 'Stappando Ordini' },
+            { email: 'assistenza@stappando.it', name: 'Stappando' },
+          ],
+          subject: `📦 Nuovo prodotto da approvare: ${sanitize(body.name, 200)}`,
+          html: `
+            <h2>Nuovo prodotto in attesa di revisione</h2>
+            <p><strong>Prodotto:</strong> ${sanitize(body.name, 200)}</p>
+            <p><strong>Vendor ID:</strong> ${body.vendorId}</p>
+            <p><strong>Prezzo:</strong> &euro;${body.regular_price}</p>
+            <p><strong>SKU:</strong> ${body.sku || 'N/A'}</p>
+            <p><strong>Product ID:</strong> ${created.id}</p>
+            <p><a href="https://stappando.it/wp-admin/post.php?post=${created.id}&action=edit">Apri su WooCommerce →</a></p>
+          `,
+          tags: ['vendor-product-review'],
+        });
+        console.log('Product review email sent');
+      }
     } catch (emailErr) {
-      // Don't fail the request if email fails
+      console.error('Product review email failed:', emailErr);
       console.error('Notification email failed:', emailErr);
     }
 

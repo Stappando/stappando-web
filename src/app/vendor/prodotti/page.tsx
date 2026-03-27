@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
 
@@ -16,14 +17,17 @@ interface VendorProduct {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  publish: { label: 'Attivo', color: '#065f46', bg: '#d1fae5' },
-  draft: { label: 'Bozza', color: '#6b7280', bg: '#f3f4f6' },
-  pending: { label: 'In revisione', color: '#92400e', bg: '#fef3c7' },
-  private: { label: 'Privato', color: '#6b7280', bg: '#f3f4f6' },
+  publish: { label: 'Approvato', color: '#065f46', bg: '#d1fae5' },
+  draft: { label: 'In approvazione', color: '#92400e', bg: '#fef3c7' },
+  pending: { label: 'In approvazione', color: '#92400e', bg: '#fef3c7' },
+  private: { label: 'Oscurato', color: '#6b7280', bg: '#f3f4f6' },
+  trash: { label: 'Rifiutato', color: '#991b1b', bg: '#fee2e2' },
 };
 
 export default function VendorProdottiPage() {
   const { user } = useAuthStore();
+  const searchParams = useSearchParams();
+  const justCreated = searchParams.get('created') === '1';
   const [products, setProducts] = useState<VendorProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
@@ -55,6 +59,12 @@ export default function VendorProdottiPage() {
           + Aggiungi vino
         </Link>
       </div>
+
+      {justCreated && (
+        <div className="mb-4 p-4 bg-[#065f46] text-white rounded-xl text-[14px] font-semibold">
+          Prodotto inviato per approvazione! Riceverai una notifica quando sarà approvato.
+        </div>
+      )}
 
       {loading && (
         <div className="flex items-center justify-center py-20">
