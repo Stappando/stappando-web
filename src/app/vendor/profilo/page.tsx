@@ -81,6 +81,10 @@ export default function VendorProfiloPage() {
         body: JSON.stringify({ vendorId: user.id, ...profile }),
       });
       if (res.ok) {
+        // Cache cantina name for fast prefill in product wizard
+        if (profile.cantina && typeof window !== 'undefined') {
+          localStorage.setItem('stappando-vendor-cantina', profile.cantina);
+        }
         if (missingFields.length === 0) {
           setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE! Redirect alla dashboard...' });
           setTimeout(() => router.push('/vendor/dashboard'), 2000);

@@ -93,13 +93,23 @@ export default function NuovoProdottoPage() {
 
   useEffect(() => { setHydrated(true); }, []);
 
-  // Pre-fill produttore from profile cantina name
+  // Pre-fill produttore from profile cantina name (cached in localStorage for speed)
   useEffect(() => {
     if (!hydrated || !user?.id || form.produttore) return;
+    // Try localStorage first (instant)
+    const cached = typeof window !== 'undefined' ? localStorage.getItem('stappando-vendor-cantina') : null;
+    if (cached) {
+      setForm(f => ({ ...f, produttore: f.produttore || cached }));
+      return;
+    }
+    // Fallback: fetch from API
     fetch(`/api/vendor/profile?vendorId=${user.id}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.cantina) setForm(f => ({ ...f, produttore: f.produttore || data.cantina }));
+        if (data?.cantina) {
+          setForm(f => ({ ...f, produttore: f.produttore || data.cantina }));
+          localStorage.setItem('stappando-vendor-cantina', data.cantina);
+        }
       })
       .catch(() => {});
   }, [hydrated, user?.id, form.produttore]);
