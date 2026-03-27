@@ -80,14 +80,21 @@ export default function VendorProfiloPage() {
       });
       if (res.ok) {
         if (missingFields.length === 0) {
-          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE! 🎉' });
+          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE!' });
         } else if (missingFields.length <= 3) {
           setSaveAlert({ type: 'progress', message: `Salvato! Ancora ${missingFields.length} camp${missingFields.length === 1 ? 'o' : 'i'} e sei live: ${missingFields.map(f => f.label).join(', ')}` });
         } else {
           setSaveAlert({ type: 'progress', message: `Salvato! Mancano ancora ${missingFields.length} campi obbligatori` });
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Profile save error:', res.status, errData);
+        setSaveAlert({ type: 'progress', message: `Errore nel salvataggio (${res.status}). Riprova.` });
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Profile save network error:', err);
+      setSaveAlert({ type: 'progress', message: 'Errore di rete. Riprova.' });
+    }
     setSaving(false);
     setTimeout(() => setSaveAlert(null), 6000);
   };
@@ -124,10 +131,36 @@ export default function VendorProfiloPage() {
 
   return (
     <div>
+      {/* Header + progress bar + alert — always visible at top */}
       <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-[#1a1a1a]">Profilo cantina</h1>
-        <p className="text-[13px] text-[#888] mt-0.5">Completa tutti i campi obbligatori per poter ricevere ordini e pagamenti</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[22px] font-bold text-[#1a1a1a]">Profilo cantina</h1>
+            <p className="text-[13px] text-[#888] mt-0.5">Completa tutti i campi obbligatori per poter ricevere ordini e pagamenti</p>
+          </div>
+          <div className="text-right hidden sm:block">
+            <span className={`text-[22px] font-bold ${completionPercent === 100 ? 'text-[#065f46]' : 'text-[#005667]'}`}>{completionPercent}%</span>
+            <p className="text-[11px] text-[#888]">{completionPercent === 100 ? 'Completo' : `${missingFields.length} campi mancanti`}</p>
+          </div>
+        </div>
+        <div className="h-2 bg-[#e8e4dc] rounded-full overflow-hidden mt-3">
+          <div className={`h-full rounded-full transition-all duration-500 ${completionPercent === 100 ? 'bg-[#065f46]' : 'bg-[#005667]'}`} style={{ width: `${completionPercent}%` }} />
+        </div>
+        {!loading && missingFields.length > 0 && missingFields.length <= 4 && (
+          <p className="text-[11px] text-[#888] mt-1.5">Mancano: {missingFields.map(f => f.label).join(', ')}</p>
+        )}
       </div>
+
+      {/* Alert dopo salvataggio */}
+      {saveAlert && (
+        <div className={`rounded-xl p-4 mb-6 border ${
+          saveAlert.type === 'success'
+            ? 'bg-[#065f46] border-[#065f46] text-white'
+            : 'bg-[#fef3c7] border-[#f59e0b]/30 text-[#92400e]'
+        }`}>
+          <p className="text-[14px] font-semibold">{saveAlert.message}</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -248,48 +281,12 @@ export default function VendorProfiloPage() {
             </div>
           </div>
 
-          {/* ── Progress bar ── */}
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[12px] font-semibold text-[#444]">Completamento profilo</span>
-              <span className={`text-[13px] font-bold ${completionPercent === 100 ? 'text-[#065f46]' : 'text-[#005667]'}`}>{completionPercent}%</span>
-            </div>
-            <div className="h-2 bg-[#e8e4dc] rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-500 ${completionPercent === 100 ? 'bg-[#065f46]' : 'bg-[#005667]'}`} style={{ width: `${completionPercent}%` }} />
-            </div>
-            {missingFields.length > 0 && missingFields.length <= 3 && (
-              <p className="text-[11px] text-[#888] mt-2">Mancano: {missingFields.map(f => f.label).join(', ')}</p>
-            )}
-          </div>
-
-          {/* ── Alert dopo salvataggio ── */}
-          {saveAlert && (
-            <div className={`rounded-xl p-5 border ${
-              saveAlert.type === 'success'
-                ? 'bg-[#065f46] border-[#065f46] text-white'
-                : 'bg-[#fef3c7] border-[#f59e0b]/30 text-[#92400e]'
-            }`}>
-              <div className="flex items-center gap-3">
-                {saveAlert.type === 'success' ? (
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#f59e0b]/20 flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-                  </div>
-                )}
-                <p className={`text-[14px] font-semibold ${saveAlert.type === 'success' ? '' : ''}`}>{saveAlert.message}</p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Save button ── */}
-          <div className="flex items-center gap-3 pb-8">
+          {/* ── Save button sticky bottom ── */}
+          <div className="sticky bottom-0 bg-[#f8f6f1] pt-4 pb-6 -mx-6 px-6 border-t border-[#e8e4dc] mt-4">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
             >
               {saving ? 'Salvataggio...' : 'Salva profilo'}
             </button>
