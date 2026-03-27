@@ -18,7 +18,6 @@ type SortBy = 'count' | 'name';
 export default function CantineClient() {
   const [cantine, setCantine] = useState<Cantina[]>([]);
   const [ready, setReady] = useState(false);
-  const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('count');
   const [page, setPage] = useState(1);
@@ -30,7 +29,6 @@ export default function CantineClient() {
     if (append) setLoadingMore(true); else setReady(false);
     try {
       const params = new URLSearchParams({ page: String(p) });
-      if (search) params.set('search', search);
       const res = await fetch(`/api/cantine?${params}`);
       const data = await res.json();
       setCantine(prev => append ? [...prev, ...(data.cantine || [])] : (data.cantine || []));
@@ -42,10 +40,9 @@ export default function CantineClient() {
   };
 
   useEffect(() => {
-    setPage(1);
     fetchPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, []);
 
   // Extract unique regions for filter
   const regions = useMemo(() => {
@@ -71,32 +68,18 @@ export default function CantineClient() {
         </p>
       </div>
 
-      {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Cerca cantina..."
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#005667]"
-          />
-        </div>
-
+      {/* Filter row — only region */}
+      <div className="flex items-center gap-2 mb-6">
         {regions.length > 0 && (
           <select
             value={regionFilter}
             onChange={e => setRegionFilter(e.target.value)}
-            className="h-9 px-3 rounded-lg border border-gray-200 text-[12px] text-gray-700 bg-white focus:outline-none focus:border-[#005667]"
+            className="h-9 px-3 rounded-lg border border-gray-200 text-[13px] text-gray-700 bg-white focus:outline-none focus:border-[#005667]"
           >
             <option value="">Tutte le regioni</option>
             {regions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         )}
-
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value as SortBy)}
@@ -105,8 +88,7 @@ export default function CantineClient() {
           <option value="count">Più vini</option>
           <option value="name">A-Z</option>
         </select>
-
-        <span className="text-[11px] text-gray-400">{displayed.length} cantine</span>
+        <span className="text-[11px] text-gray-400 ml-auto">{displayed.length} cantine</span>
       </div>
 
       {/* Loading */}
@@ -127,32 +109,30 @@ export default function CantineClient() {
                 href={`/cantine/${cantina.slug}`}
                 className="group rounded-xl border border-[#e8e4dc] bg-white overflow-hidden hover:border-[#d9c39a] hover:shadow-md transition-all"
               >
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden flex items-center justify-center">
+                {/* Logo centered */}
+                <div className="aspect-square bg-white flex items-center justify-center p-6 border-b border-[#f0ece4]">
                   {cantina.image ? (
                     <Image
                       src={cantina.image}
                       alt={cantina.name}
-                      fill
-                      className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      width={120}
+                      height={120}
+                      className="object-contain max-h-[80px] group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <span className="text-3xl font-bold text-[#005667]/15">{cantina.name.charAt(0)}</span>
+                    <span className="text-4xl font-bold text-[#005667]/10">{cantina.name.charAt(0)}</span>
                   )}
-                  <div className="absolute top-2 right-2 bg-[#005667] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}
-                  </div>
                 </div>
                 <div className="p-3">
                   <h3 className="text-[13px] font-semibold text-[#1a1a1a] group-hover:text-[#005667] transition-colors line-clamp-1">
                     {cantina.name}
                   </h3>
-                  {cantina.region && (
-                    <p className="text-[11px] text-[#005667] font-medium mt-0.5">{cantina.region}</p>
-                  )}
-                  {cantina.description && (
-                    <p className="text-[10px] text-[#888] mt-0.5 line-clamp-2">{cantina.description}</p>
-                  )}
+                  <div className="flex items-center justify-between mt-1">
+                    {cantina.region && (
+                      <span className="text-[10px] text-[#005667] font-medium">{cantina.region}</span>
+                    )}
+                    <span className="text-[10px] text-[#888]">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
+                  </div>
                 </div>
               </Link>
             ))}
