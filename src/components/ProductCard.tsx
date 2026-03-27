@@ -85,9 +85,9 @@ export default function ProductCard({ product }: Props) {
       <div className={`p-4 flex flex-col flex-1 ${circuito ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
         {/* Vendor/Cantina — crema always */}
         {produttore && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.05em] mb-1.5 line-clamp-1 text-[#d9c39a]">
+          <Link href={`/cantine/${produttore.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} className="text-[11px] font-bold uppercase tracking-[0.05em] mb-1.5 line-clamp-1 text-[#d9c39a] hover:text-[#005667] transition-colors block">
             {produttore}
-          </p>
+          </Link>
         )}
 
         {/* Product name */}
