@@ -349,38 +349,41 @@ export default function Header() {
             <div className="flex-1" />
 
             {/* RIGHT — Actions */}
-            <div className="flex items-center">
-              {/* Search pill — desktop: prominent wide bar */}
+            <div className="flex items-center gap-1">
+              {/* Search pill — desktop: full width between nav and account */}
               <button
                 onClick={() => {
                   const mobile = window.innerWidth < 640;
                   if (mobile) setMobileSearchOpen(true);
                   else setSearchOpen(!searchOpen);
                 }}
-                className={`hidden sm:flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl transition-all mr-2 min-w-[220px] lg:min-w-[260px] ${
-                  searchOpen
-                    ? 'bg-[#005667] text-white shadow-lg'
-                    : 'bg-[#f8f6f1] text-[#666] hover:bg-[#005667] hover:text-white hover:shadow-lg'
-                }`}
+                className="hidden lg:flex items-center flex-1 min-w-[280px] xl:min-w-[360px] gap-3 pl-4 pr-1.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-all mr-2"
               >
-                <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[13px] font-medium flex-1 text-left">Cosa vuoi cercare?</span>
-                <kbd className="hidden lg:inline text-[10px] opacity-50 border border-current/20 rounded px-1.5 py-0.5 font-mono">/</kbd>
+                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[13px] text-[#888] flex-1 text-left">Cosa vuoi cercare?</span>
+                <span className="bg-[#005667] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full">Cerca</span>
               </button>
-              {/* Mobile search bar */}
+              {/* Tablet search */}
+              <button
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-all mr-1"
+              >
+                <svg className="w-4 h-4 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[12px] text-[#888]">Cerca</span>
+              </button>
+              {/* Mobile search */}
               <button
                 onClick={() => setMobileSearchOpen(true)}
-                className="sm:hidden flex items-center gap-2 flex-1 mx-1 px-3 py-2 rounded-lg bg-[#f8f6f1] text-[#888] active:bg-[#005667] active:text-white transition-colors"
+                className="sm:hidden flex items-center gap-2 flex-1 mx-0.5 px-3 py-2 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[12px]">Cerca vino...</span>
+                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[12px] text-[#888] flex-1 text-left">Cerca vino...</span>
+                <span className="bg-[#005667] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">Cerca</span>
               </button>
 
-              {/* Account — desktop only */}
-              <div className="hidden sm:block">
-                <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
-              </div>
+              {/* Account — always visible (was desktop only) */}
+              <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
 
               {/* Cart — always visible */}
               <CartIcon />
