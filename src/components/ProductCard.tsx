@@ -127,7 +127,7 @@ export default function ProductCard({ product }: Props) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c0392b] opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#c0392b]" />
             </span>
-            <span className="text-[10px] font-semibold text-[#c0392b]">Ultime {stockQty} bottigli{stockQty === 1 ? 'a' : 'e'}</span>
+            <span className="text-[10px] font-semibold text-[#c0392b]">{stockQty === 1 ? 'Ultima disponibile' : `Ultime ${stockQty} disponibili`}</span>
           </div>
         )}
 
