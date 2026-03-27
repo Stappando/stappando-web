@@ -52,7 +52,7 @@ export default function VendorProfiloPage() {
   const [profile, setProfile] = useState<VendorProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saveAlert, setSaveAlert] = useState<{ type: 'success' | 'progress'; message: string } | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => { setHydrated(true); }, []);
@@ -71,17 +71,25 @@ export default function VendorProfiloPage() {
   const handleSave = async () => {
     if (!user?.id) return;
     setSaving(true);
-    setSaved(false);
+    setSaveAlert(null);
     try {
       const res = await fetch('/api/vendor/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendorId: user.id, ...profile }),
       });
-      if (res.ok) setSaved(true);
+      if (res.ok) {
+        if (missingFields.length === 0) {
+          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE! 🎉' });
+        } else if (missingFields.length <= 3) {
+          setSaveAlert({ type: 'progress', message: `Salvato! Ancora ${missingFields.length} camp${missingFields.length === 1 ? 'o' : 'i'} e sei live: ${missingFields.map(f => f.label).join(', ')}` });
+        } else {
+          setSaveAlert({ type: 'progress', message: `Salvato! Mancano ancora ${missingFields.length} campi obbligatori` });
+        }
+      }
     } catch { /* ignore */ }
     setSaving(false);
-    setTimeout(() => setSaved(false), 3000);
+    setTimeout(() => setSaveAlert(null), 6000);
   };
 
   if (!hydrated) return null;
@@ -93,9 +101,26 @@ export default function VendorProfiloPage() {
   const labelClass = "block text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-1.5";
   const requiredStar = <span className="text-red-400 ml-0.5">*</span>;
 
-  const isValid = profile.nome.trim() && profile.cognome.trim() && profile.telefono.trim() && profile.email.trim() &&
-    profile.ragioneSociale.trim() && profile.piva.trim().length >= 11 && profile.codiceFiscale.trim() &&
-    profile.pec.trim() && profile.sdi.trim() && profile.iban.trim() && profile.intestazioneIban.trim();
+  const REQUIRED_FIELDS: { key: keyof VendorProfile; label: string; minLen?: number }[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'cognome', label: 'Cognome' },
+    { key: 'telefono', label: 'Telefono' },
+    { key: 'email', label: 'Email' },
+    { key: 'ragioneSociale', label: 'Ragione sociale' },
+    { key: 'piva', label: 'P.IVA', minLen: 11 },
+    { key: 'codiceFiscale', label: 'Codice fiscale' },
+    { key: 'pec', label: 'PEC' },
+    { key: 'sdi', label: 'Codice SDI' },
+    { key: 'iban', label: 'IBAN' },
+    { key: 'intestazioneIban', label: 'Intestazione IBAN' },
+  ];
+
+  const missingFields = REQUIRED_FIELDS.filter(f => {
+    const val = String(profile[f.key] || '').trim();
+    return f.minLen ? val.length < f.minLen : !val;
+  });
+  const isValid = missingFields.length === 0;
+  const completionPercent = Math.round(((REQUIRED_FIELDS.length - missingFields.length) / REQUIRED_FIELDS.length) * 100);
 
   return (
     <div>
@@ -261,24 +286,51 @@ export default function VendorProfiloPage() {
             </div>
           </div>
 
+          {/* ── Progress bar ── */}
+          <div className="bg-white border border-[#e8e4dc] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[12px] font-semibold text-[#444]">Completamento profilo</span>
+              <span className={`text-[13px] font-bold ${completionPercent === 100 ? 'text-[#065f46]' : 'text-[#005667]'}`}>{completionPercent}%</span>
+            </div>
+            <div className="h-2 bg-[#e8e4dc] rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-500 ${completionPercent === 100 ? 'bg-[#065f46]' : 'bg-[#005667]'}`} style={{ width: `${completionPercent}%` }} />
+            </div>
+            {missingFields.length > 0 && missingFields.length <= 3 && (
+              <p className="text-[11px] text-[#888] mt-2">Mancano: {missingFields.map(f => f.label).join(', ')}</p>
+            )}
+          </div>
+
+          {/* ── Alert dopo salvataggio ── */}
+          {saveAlert && (
+            <div className={`rounded-xl p-5 border ${
+              saveAlert.type === 'success'
+                ? 'bg-[#065f46] border-[#065f46] text-white'
+                : 'bg-[#fef3c7] border-[#f59e0b]/30 text-[#92400e]'
+            }`}>
+              <div className="flex items-center gap-3">
+                {saveAlert.type === 'success' ? (
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#f59e0b]/20 flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                  </div>
+                )}
+                <p className={`text-[14px] font-semibold ${saveAlert.type === 'success' ? '' : ''}`}>{saveAlert.message}</p>
+              </div>
+            </div>
+          )}
+
           {/* ── Save button ── */}
           <div className="flex items-center gap-3 pb-8">
             <button
               onClick={handleSave}
-              disabled={saving || !isValid}
-              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={saving}
+              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
             >
               {saving ? 'Salvataggio...' : 'Salva profilo'}
             </button>
-            {saved && (
-              <span className="text-[13px] text-[#065f46] font-medium flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Profilo salvato
-              </span>
-            )}
-            {!isValid && !saving && (
-              <span className="text-[12px] text-[#aaa]">Compila tutti i campi obbligatori (*) per salvare</span>
-            )}
           </div>
 
         </div>
