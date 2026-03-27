@@ -205,9 +205,15 @@ export async function POST(req: NextRequest) {
     const isUpdate = body.draftId && body.draftId > 0;
 
     // Images: for update use {id} to keep existing, for create use {src}
-    const imagePayload = (body.images || []).map((img: { id?: number; src: string }) =>
-      isUpdate && img.id ? { id: img.id } : { src: img.src },
-    );
+    // Filter out invalid entries and handle both cases
+    const imagePayload = (body.images || [])
+      .filter((img: { id?: number; src?: string }) => img.id || img.src)
+      .map((img: { id?: number; src?: string }) => {
+        if (isUpdate && img.id && img.id > 0) return { id: img.id };
+        if (img.src) return { src: img.src };
+        return null;
+      })
+      .filter(Boolean);
 
     const productPayload = {
       name: sanitize(body.name, 500),
@@ -237,9 +243,10 @@ export async function POST(req: NextRequest) {
 
     if (!createRes.ok) {
       const errText = await createRes.text();
-      console.error('WC product save failed:', errText);
+      console.error('WC product save failed:', createRes.status, errText);
+      console.error('Payload sent:', JSON.stringify(productPayload).slice(0, 500));
       return NextResponse.json(
-        { error: 'Failed to save product' },
+        { error: `Errore WC (${createRes.status}): ${errText.slice(0, 200)}` },
         { status: 502 },
       );
     }
