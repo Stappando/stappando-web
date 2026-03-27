@@ -4,7 +4,13 @@ import { isPositiveInt, sanitize } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/vendor/shop?vendorId=123 — fetch vendor shop data (logo, banner, description) */
+/**
+ * Vendor shop storage: uses WC shipping fields (same workaround as profile).
+ * - shipping.company → JSON { logo, banner, descrizione }
+ * WC always saves shipping fields correctly.
+ */
+
+/** GET /api/vendor/shop?vendorId=123 */
 export async function GET(req: NextRequest) {
   const vendorId = req.nextUrl.searchParams.get('vendorId');
   if (!isPositiveInt(vendorId)) {
@@ -19,21 +25,24 @@ export async function GET(req: NextRequest) {
     if (!res.ok) return NextResponse.json({ error: 'Vendor non trovato' }, { status: 404 });
 
     const customer = await res.json();
-    const meta = (customer.meta_data || []) as { key: string; value: string }[];
-    const getMeta = (key: string) => meta.find(m => m.key === key)?.value || '';
+    const s = customer.shipping || {};
 
-    return NextResponse.json({
-      logo: getMeta('_vendor_shop_logo'),
-      banner: getMeta('_vendor_shop_banner'),
-      descrizione: getMeta('_vendor_shop_descrizione'),
-    });
+    // Parse shop data from shipping.company
+    let shop = { logo: '', banner: '', descrizione: '' };
+    try {
+      if (s.company && s.company.startsWith('{')) {
+        shop = { ...shop, ...JSON.parse(s.company) };
+      }
+    } catch { /* not JSON */ }
+
+    return NextResponse.json(shop);
   } catch (err) {
     console.error('Vendor shop fetch error:', err);
     return NextResponse.json({ error: 'Errore server' }, { status: 500 });
   }
 }
 
-/** PUT /api/vendor/shop — update vendor shop data */
+/** PUT /api/vendor/shop */
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -44,21 +53,26 @@ export async function PUT(req: NextRequest) {
     const wc = getWCSecrets();
     const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
+    const shopData = {
+      logo: sanitize(body.logo || '', 500),
+      banner: sanitize(body.banner || '', 500),
+      descrizione: sanitize(body.descrizione || '', 2000),
+    };
+
     const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.vendorId}?${auth}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        meta_data: [
-          { key: '_vendor_shop_logo', value: sanitize(body.logo || '', 500) },
-          { key: '_vendor_shop_banner', value: sanitize(body.banner || '', 500) },
-          { key: '_vendor_shop_descrizione', value: sanitize(body.descrizione || '', 2000) },
-        ],
+        shipping: {
+          company: JSON.stringify(shopData),
+        },
       }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: 'Errore aggiornamento', details: err }, { status: res.status });
+      console.error('WC shop update failed:', res.status, err);
+      return NextResponse.json({ error: `Errore WC (${res.status})`, details: err }, { status: res.status });
     }
 
     return NextResponse.json({ success: true });

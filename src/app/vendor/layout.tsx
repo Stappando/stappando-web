@@ -91,8 +91,8 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
                     <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                   </svg>
                   {item.label}
-                  {item.href === '/vendor/profilo' && profileComplete === true && (
-                    <span className="ml-auto text-[10px] text-[#065f46]/60 font-semibold">100%</span>
+                  {item.href === '/vendor/profilo' && profileComplete === true && !active && (
+                    <span className="ml-auto text-[10px] text-[#065f46] bg-[#d1fae5] px-1.5 py-0.5 rounded font-semibold">100%</span>
                   )}
                   {disabled && <svg className="w-3.5 h-3.5 ml-auto text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>}
                 </Link>

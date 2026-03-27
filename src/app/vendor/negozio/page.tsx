@@ -14,7 +14,6 @@ export default function VendorNegozioPage() {
   const [shop, setShop] = useState<ShopData>({ logo: '', banner: '', descrizione: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -44,30 +43,66 @@ export default function VendorNegozioPage() {
     setUploading(null);
   };
 
+  const [saveAlert, setSaveAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const handleSave = async () => {
     if (!user?.id) return;
     setSaving(true);
-    setSaved(false);
+    setSaveAlert(null);
     try {
       const res = await fetch('/api/vendor/shop', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendorId: user.id, ...shop }),
       });
-      if (res.ok) setSaved(true);
-    } catch { /* ignore */ }
+      if (res.ok) {
+        setSaveAlert({ type: 'success', message: 'Negozio salvato!' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error('Shop save error:', res.status, err);
+        setSaveAlert({ type: 'error', message: `Errore nel salvataggio (${res.status})` });
+      }
+    } catch {
+      setSaveAlert({ type: 'error', message: 'Errore di rete. Riprova.' });
+    }
     setSaving(false);
-    setTimeout(() => setSaved(false), 3000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setSaveAlert(null), 6000);
   };
 
   if (!hydrated) return null;
 
+  const filledCount = [shop.logo, shop.banner, shop.descrizione].filter(Boolean).length;
+  const completionPercent = Math.round((filledCount / 3) * 100);
+
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-[#1a1a1a]">Il tuo negozio</h1>
-        <p className="text-[13px] text-[#888] mt-0.5">Personalizza come appare la tua cantina su Stappando</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[22px] font-bold text-[#1a1a1a]">Il tuo negozio</h1>
+            <p className="text-[13px] text-[#888] mt-0.5">Personalizza come appare la tua cantina su Stappando</p>
+          </div>
+          <div className="text-right hidden sm:block">
+            <span className={`text-[22px] font-bold ${completionPercent === 100 ? 'text-[#065f46]' : 'text-[#005667]'}`}>{completionPercent}%</span>
+            <p className="text-[11px] text-[#888]">{filledCount}/3 completati</p>
+          </div>
+        </div>
+        <div className="h-2 bg-[#e8e4dc] rounded-full overflow-hidden mt-3">
+          <div className={`h-full rounded-full transition-all duration-500 ${completionPercent === 100 ? 'bg-[#065f46]' : 'bg-[#005667]'}`} style={{ width: `${completionPercent}%` }} />
+        </div>
       </div>
+
+      {/* Alert */}
+      {saveAlert && (
+        <div className={`rounded-xl p-4 mb-6 border ${
+          saveAlert.type === 'success'
+            ? 'bg-[#065f46] border-[#065f46] text-white'
+            : 'bg-red-50 border-red-200 text-red-700'
+        }`}>
+          <p className="text-[14px] font-semibold">{saveAlert.message}</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -190,21 +225,20 @@ export default function VendorNegozioPage() {
             </div>
           )}
 
-          {/* Save */}
-          <div className="flex items-center gap-3 pb-8">
+          {/* Save sticky */}
+          <div className="sticky bottom-0 z-10 bg-[#f8f6f1]/95 backdrop-blur-sm pt-4 pb-6 border-t border-[#e8e4dc] mt-4">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#005667] text-white rounded-lg px-8 py-3 text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto bg-[#005667] text-white rounded-lg px-8 py-3.5 text-[14px] font-semibold hover:bg-[#004555] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {saving ? 'Salvataggio...' : 'Salva negozio'}
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Salvataggio in corso...
+                </>
+              ) : 'Salva negozio'}
             </button>
-            {saved && (
-              <span className="text-[13px] text-[#065f46] font-medium flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Salvato
-              </span>
-            )}
           </div>
         </div>
       )}
