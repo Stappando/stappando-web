@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuthStore } from '@/store/auth';
 
 const NAV_ITEMS = [
@@ -40,22 +39,6 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
-      {/* Top bar */}
-      <div className="bg-white border-b border-[#e8e4dc]">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
-          <div className="flex items-center gap-3">
-            <Link href="/">
-              <Image src="/logo.png" alt="Stappando" width={120} height={30} className="h-6 w-auto" />
-            </Link>
-            <span className="text-[11px] text-[#888] font-medium uppercase tracking-wider bg-[#f8f6f1] px-2 py-0.5 rounded">Vendor</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[13px] text-[#444]">{vendorName}</span>
-            <Link href="/" className="text-[12px] text-[#888] hover:text-[#005667]">← Torna al sito</Link>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
         {/* Sidebar */}
         <aside className="w-56 shrink-0 hidden md:block">

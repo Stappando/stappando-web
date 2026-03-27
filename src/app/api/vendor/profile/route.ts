@@ -4,7 +4,15 @@ import { isPositiveInt, sanitize } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/vendor/profile?vendorId=123 — fetch vendor profile from WC customer meta */
+const META_KEYS = [
+  'cantina', 'nome', 'cognome', 'telefono', 'sito',
+  'ragioneSociale', 'piva', 'codiceFiscale', 'pec', 'sdi',
+  'indirizzo', 'citta', 'provincia', 'cap', 'regione',
+  'indirizzoEsperienze',
+  'iban', 'intestazioneIban',
+] as const;
+
+/** GET /api/vendor/profile?vendorId=123 */
 export async function GET(req: NextRequest) {
   const vendorId = req.nextUrl.searchParams.get('vendorId');
   if (!isPositiveInt(vendorId)) {
@@ -20,23 +28,23 @@ export async function GET(req: NextRequest) {
 
     const customer = await res.json();
     const meta = (customer.meta_data || []) as { key: string; value: string }[];
-    const getMeta = (key: string) => meta.find(m => m.key === key)?.value || '';
+    const getMeta = (key: string) => meta.find(m => m.key === `_vendor_${key}`)?.value || '';
 
-    return NextResponse.json({
-      cantina: getMeta('_vendor_cantina') || customer.first_name || '',
-      regione: getMeta('_vendor_regione'),
-      piva: getMeta('_vendor_piva'),
-      telefono: getMeta('_vendor_telefono'),
-      sito: getMeta('_vendor_sito'),
-      email: customer.email || '',
-    });
+    const profile: Record<string, string> = { email: customer.email || '' };
+    for (const key of META_KEYS) {
+      profile[key] = getMeta(key);
+    }
+    // Fallback: cantina from first_name if meta empty
+    if (!profile.cantina) profile.cantina = customer.first_name || '';
+
+    return NextResponse.json(profile);
   } catch (err) {
     console.error('Vendor profile fetch error:', err);
     return NextResponse.json({ error: 'Errore server' }, { status: 500 });
   }
 }
 
-/** PUT /api/vendor/profile — update vendor profile meta */
+/** PUT /api/vendor/profile */
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -47,18 +55,18 @@ export async function PUT(req: NextRequest) {
     const wc = getWCSecrets();
     const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
+    const metaData = META_KEYS.map(key => ({
+      key: `_vendor_${key}`,
+      value: sanitize(body[key] || '', key === 'iban' ? 27 : key === 'indirizzo' || key === 'indirizzoEsperienze' ? 300 : 200),
+    }));
+
     const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.vendorId}?${auth}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        first_name: sanitize(body.cantina || '', 200),
-        meta_data: [
-          { key: '_vendor_cantina', value: sanitize(body.cantina || '', 200) },
-          { key: '_vendor_regione', value: sanitize(body.regione || '', 100) },
-          { key: '_vendor_piva', value: sanitize(body.piva || '', 20) },
-          { key: '_vendor_telefono', value: sanitize(body.telefono || '', 30) },
-          { key: '_vendor_sito', value: sanitize(body.sito || '', 300) },
-        ],
+        first_name: sanitize(body.cantina || body.nome || '', 200),
+        last_name: sanitize(body.cognome || '', 200),
+        meta_data: metaData,
       }),
     });
 
