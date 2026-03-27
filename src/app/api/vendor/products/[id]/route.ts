@@ -67,7 +67,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       spumantizzazione: getAttr('pa_spumantizzazione'),
       raccolta: getAttr('pa_raccolta'),
       tipo_vigneto: getAttr('pa_tipo-di-vigneto'),
-      certificazioni: getAttrMulti('pa_certificazioni'),
+      certificazioni: getAttrMulti('pa_filosofia'),
       // ACF / meta
       alla_vista: getMeta('alla_vista'),
       al_naso: getMeta('al_naso'),
