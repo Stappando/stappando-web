@@ -124,10 +124,11 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     return '';
   }, [query, tag, vendor]);
 
-  // Fetch results from API
+  // Fetch results from API — no price/sort in deps to avoid loops
   const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
     if (!term && !onSale) {
       setResults([]);
+      setRawResults([]);
       setSearched(false);
       return;
     }
@@ -143,39 +144,36 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       const res = await fetch(`/api/search?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        // Support both old format (array) and new format ({products, hasMore})
         const raw: SearchResult[] = Array.isArray(data) ? data : (data.products || []);
         const more = Array.isArray(data) ? false : !!data.hasMore;
         setHasMore(more);
 
-        const allRaw = append ? [...rawResults, ...raw] : raw;
-        setRawResults(allRaw);
+        setRawResults(prev => {
+          const allRaw = append ? [...prev, ...raw] : raw;
 
-        // Set max price dynamically
-        const highestPrice = Math.max(...allRaw.map(r => parseFloat(r.price) || 0), 10);
-        const roundedMax = Math.ceil(highestPrice / 5) * 5;
-        if (!append && (maxPrice === 999 || maxPrice > roundedMax)) setMaxPrice(roundedMax);
+          // Set price range from results
+          const prices = allRaw.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+          if (prices.length > 0 && !append) {
+            const lo = Math.floor(Math.min(...prices) / 5) * 5;
+            const hi = Math.ceil(Math.max(...prices) / 5) * 5;
+            setMinPrice(lo);
+            setMaxPrice(hi);
+          }
 
-        // Client-side filters
-        let filtered = [...allRaw];
-        if (minPrice > 0) filtered = filtered.filter(r => parseFloat(r.price) >= minPrice);
-        if (maxPrice < roundedMax) filtered = filtered.filter(r => parseFloat(r.price) <= maxPrice);
+          return allRaw;
+        });
 
-        // Sort
-        if (orderBy === 'price-asc') filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        else if (orderBy === 'price-desc') filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-        else if (orderBy === 'date') filtered.sort((a, b) => b.id - a.id);
-
-        setResults(filtered);
+        // Set results without filtering (filtering happens in useMemo below)
+        setResults(append ? prev => [...prev, ...raw] : raw);
       }
     } catch {
-      if (!append) setResults([]);
+      if (!append) { setResults([]); setRawResults([]); }
     } finally {
       setLoading(false);
       setLoadingMore(false);
       setSearched(true);
     }
-  }, [onSale, minPrice, maxPrice, orderBy, rawResults]);
+  }, [onSale]);
 
   // Initial search on mount / param change
   useEffect(() => {
@@ -183,6 +181,24 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       doSearch(searchTerm);
     }
   }, [searchTerm, onSale, doSearch]);
+
+  // Filtered + sorted results (derived from raw, no re-fetch needed)
+  const filteredResults = useMemo(() => {
+    let data = [...rawResults];
+    const prices = rawResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+    const dataMin = prices.length > 0 ? Math.floor(Math.min(...prices) / 5) * 5 : 0;
+    const dataMax = prices.length > 0 ? Math.ceil(Math.max(...prices) / 5) * 5 : 999;
+
+    // Only filter if user moved the sliders from the auto-set range
+    if (minPrice > dataMin) data = data.filter(r => parseFloat(r.price) >= minPrice);
+    if (maxPrice < dataMax) data = data.filter(r => parseFloat(r.price) <= maxPrice);
+
+    if (orderBy === 'price-asc') data.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+    else if (orderBy === 'price-desc') data.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    else if (orderBy === 'date') data.sort((a, b) => b.id - a.id);
+
+    return data;
+  }, [rawResults, minPrice, maxPrice, orderBy]);
 
   // Category handler — reset price on category change
   const handleCategory = useCallback((cat: string) => {
@@ -224,7 +240,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
-        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">{results.length} prodotti</span>
+        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">{filteredResults.length} prodotti</span>
       </div>
 
       {/* Toolbar row 2: price range full width */}
@@ -276,10 +292,10 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       )}
 
       {/* Results grid */}
-      {!loading && results.length > 0 && (
+      {!loading && filteredResults.length > 0 && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {results.map(r => (
+            {filteredResults.map(r => (
               <ProductCard key={r.id} product={toWCProduct(r)} />
             ))}
           </div>
@@ -303,7 +319,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       )}
 
       {/* No results — show suggestions */}
-      {!loading && searched && results.length === 0 && (
+      {!loading && searched && filteredResults.length === 0 && rawResults.length === 0 && (
         <div className="py-12">
           <div className="text-center mb-8">
             <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
