@@ -48,6 +48,15 @@ interface ProductForm {
   allergeni_uova: boolean;
   allergeni_latte: boolean;
   allergeni_pesce: boolean;
+  allergeni_crostacei: boolean;
+  allergeni_frutta_guscio: boolean;
+  allergeni_cereali_glutine: boolean;
+  allergeni_sedano: boolean;
+  allergeni_senape: boolean;
+  allergeni_sesamo: boolean;
+  allergeni_lupini: boolean;
+  allergeni_molluschi: boolean;
+  allergeni_soia: boolean;
 }
 
 const EMPTY_FORM: ProductForm = {
@@ -59,6 +68,9 @@ const EMPTY_FORM: ProductForm = {
   raccolta: '', tipo_vigneto: '', certificazioni: [],
   alla_vista: '', al_naso: '', al_palato: '', vinificazione: '', affinamento: '', vendemmia: '',
   allergeni_solfiti: true, allergeni_uova: false, allergeni_latte: false, allergeni_pesce: false,
+  allergeni_crostacei: false, allergeni_frutta_guscio: false, allergeni_cereali_glutine: false,
+  allergeni_sedano: false, allergeni_senape: false, allergeni_sesamo: false,
+  allergeni_lupini: false, allergeni_molluschi: false, allergeni_soia: false,
 };
 
 const STEPS = ['Essenziali', 'Classificazione', 'Dettagli', 'Anteprima'];
@@ -70,7 +82,7 @@ const TAX_SLUGS = [
   'pa_uvaggio', 'pa_formato', 'pa_gradazione-alcolica', 'pa_momento-di-consumo',
   'pa_abbinamenti', 'pa_temperatura-di-servizio', 'pa_metodo-produttivo',
   'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto',
-  'pa_certificazioni',
+  'pa_certificazioni', 'pa_filosofia',
 ];
 
 /* ── Component ──────────────────────────────────────── */
@@ -243,12 +255,21 @@ export default function NuovoProdottoPage() {
     if (form.spumantizzazione) attributes.push({ slug: 'pa_spumantizzazione', terms: [form.spumantizzazione] });
     if (form.raccolta) attributes.push({ slug: 'pa_raccolta', terms: [form.raccolta] });
     if (form.tipo_vigneto) attributes.push({ slug: 'pa_tipo-di-vigneto', terms: [form.tipo_vigneto] });
-    if (form.certificazioni.length) attributes.push({ slug: 'pa_certificazioni', terms: form.certificazioni });
+    if (form.certificazioni.length) attributes.push({ slug: 'pa_filosofia', terms: form.certificazioni });
 
     const allergeni: string[] = ['Contiene solfiti'];
     if (form.allergeni_uova) allergeni.push('Uova');
     if (form.allergeni_latte) allergeni.push('Latte');
     if (form.allergeni_pesce) allergeni.push('Pesce');
+    if (form.allergeni_crostacei) allergeni.push('Crostacei');
+    if (form.allergeni_frutta_guscio) allergeni.push('Frutta a guscio');
+    if (form.allergeni_cereali_glutine) allergeni.push('Cereali contenenti glutine');
+    if (form.allergeni_sedano) allergeni.push('Sedano');
+    if (form.allergeni_senape) allergeni.push('Senape');
+    if (form.allergeni_sesamo) allergeni.push('Sesamo');
+    if (form.allergeni_lupini) allergeni.push('Lupini');
+    if (form.allergeni_molluschi) allergeni.push('Molluschi');
+    if (form.allergeni_soia) allergeni.push('Soia');
 
     return {
       vendorId: user!.id,
@@ -559,7 +580,7 @@ export default function NuovoProdottoPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {renderDropdown('Tipo di vigneto', 'pa_tipo-di-vigneto', 'tipo_vigneto', false)}
-              {renderMultiCheck('Certificazioni', 'pa_certificazioni', 'certificazioni', false)}
+              {renderMultiCheck('Certificazioni / Filosofia', 'pa_filosofia', 'certificazioni', false)}
             </div>
           </div>
 
@@ -606,24 +627,33 @@ export default function NuovoProdottoPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-3">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Allergeni {star}</p>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.allergeni_solfiti} onChange={set('allergeni_solfiti')} disabled className="w-4 h-4 text-[#005667] rounded" />
-              <span className="text-[13px] text-[#444]">Contiene solfiti <span className="text-[11px] text-[#888]">(obbligatorio per legge)</span></span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.allergeni_uova} onChange={set('allergeni_uova')} className="w-4 h-4 text-[#005667] rounded" />
-              <span className="text-[13px] text-[#444]">Uova</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.allergeni_latte} onChange={set('allergeni_latte')} className="w-4 h-4 text-[#005667] rounded" />
-              <span className="text-[13px] text-[#444]">Latte</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.allergeni_pesce} onChange={set('allergeni_pesce')} className="w-4 h-4 text-[#005667] rounded" />
-              <span className="text-[13px] text-[#444]">Pesce</span>
-            </label>
+          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
+            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-3">Allergeni {star}</p>
+            <p className="text-[11px] text-[#888] mb-4">Reg. UE 1169/2011 — seleziona tutti gli allergeni presenti nel prodotto</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2.5 py-1.5 cursor-not-allowed opacity-70">
+                <input type="checkbox" checked={form.allergeni_solfiti} disabled className="w-4 h-4 text-[#005667] rounded" />
+                <span className="text-[13px] text-[#444]">Solfiti <span className="text-[10px] text-[#888]">(obbligatorio)</span></span>
+              </label>
+              {[
+                { key: 'allergeni_uova' as const, label: 'Uova', hint: 'Albumina, lisozima' },
+                { key: 'allergeni_latte' as const, label: 'Latte', hint: 'Caseina, lattosio' },
+                { key: 'allergeni_pesce' as const, label: 'Pesce', hint: 'Colla di pesce, isinglass' },
+                { key: 'allergeni_crostacei' as const, label: 'Crostacei', hint: '' },
+                { key: 'allergeni_molluschi' as const, label: 'Molluschi', hint: '' },
+                { key: 'allergeni_cereali_glutine' as const, label: 'Cereali con glutine', hint: 'Birra, distillati cereali' },
+                { key: 'allergeni_frutta_guscio' as const, label: 'Frutta a guscio', hint: 'Nocciole, mandorle, noci' },
+                { key: 'allergeni_soia' as const, label: 'Soia', hint: 'Lecitina di soia' },
+                { key: 'allergeni_sedano' as const, label: 'Sedano', hint: '' },
+                { key: 'allergeni_senape' as const, label: 'Senape', hint: '' },
+                { key: 'allergeni_sesamo' as const, label: 'Sesamo', hint: '' },
+                { key: 'allergeni_lupini' as const, label: 'Lupini', hint: '' },
+              ].map(a => (
+                <label key={a.key} className="flex items-center gap-2.5 py-1.5 cursor-pointer">
+                  <input type="checkbox" checked={form[a.key]} onChange={set(a.key)} className="w-4 h-4 text-[#005667] rounded" />
+                  <span className="text-[13px] text-[#444]">{a.label}{a.hint && <span className="text-[10px] text-[#aaa] ml-1">{a.hint}</span>}</span>
+                </label>
+              ))}
           </div>
         </div>
       )}
