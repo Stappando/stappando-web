@@ -54,8 +54,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Product attributes: strip pa_ prefix to find attribute slug
-    const attrSlug = slug.startsWith('pa_') ? slug.slice(3) : slug;
+    // Product attributes: try matching slug with and without pa_ prefix
+    const attrSlugNoPa = slug.startsWith('pa_') ? slug.slice(3) : slug;
+    const attrSlugWithPa = slug.startsWith('pa_') ? slug : `pa_${slug}`;
 
     // Step 1: find the attribute ID
     const attrsRes = await fetch(
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
       );
     }
     const attributes: WCAttribute[] = await attrsRes.json();
-    const attribute = attributes.find((a) => a.slug === attrSlug);
+    const attribute = attributes.find((a) => a.slug === attrSlugNoPa || a.slug === attrSlugWithPa || a.slug === slug);
 
     if (!attribute) {
       return NextResponse.json(
