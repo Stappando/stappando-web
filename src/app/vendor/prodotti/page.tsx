@@ -86,40 +86,78 @@ export default function VendorProdottiPage() {
             const s = STATUS_MAP[p.status] || { label: p.status, color: '#6b7280', bg: '#f3f4f6' };
             const img = p.images?.[0]?.src;
             return (
-              <Link key={p.id} href={`/vendor/prodotti/nuovo?draft=${p.id}`} className="bg-white border border-[#e8e4dc] rounded-xl p-4 flex items-center gap-4 hover:border-[#005667]/30 transition-colors cursor-pointer block">
-                <div className="w-14 h-14 rounded-lg bg-[#f8f6f1] flex items-center justify-center shrink-0 overflow-hidden">
-                  {img ? (
-                    <img src={img} alt={p.name} className="w-full h-full object-cover rounded-lg" />
-                  ) : (
-                    <svg className="w-6 h-6 text-[#ccc]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{p.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {p.categories?.[0] && <span className="text-[11px] text-[#888]">{p.categories[0].name}</span>}
-                    <span className="text-[11px] text-[#888]">·</span>
-                    <span className="text-[11px] text-[#888]">Stock: {p.stock_quantity ?? '∞'}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[15px] font-bold text-[#005667]">
-                    {p.sale_price ? (
-                      <>
-                        <span className="text-[12px] text-[#aaa] line-through mr-1">{p.price}€</span>
-                        {p.sale_price}€
-                      </>
+              <div key={p.id} className="bg-white border border-[#e8e4dc] rounded-xl p-4 hover:border-[#005667]/30 transition-colors">
+                <Link href={`/vendor/prodotti/nuovo?draft=${p.id}`} className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-lg bg-[#f8f6f1] flex items-center justify-center shrink-0 overflow-hidden">
+                    {img ? (
+                      <img src={img} alt={p.name} className="w-full h-full object-cover rounded-lg" />
                     ) : (
-                      `${p.price}€`
+                      <svg className="w-6 h-6 text-[#ccc]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5" />
+                      </svg>
                     )}
-                  </p>
-                  <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold mt-1" style={{ color: s.color, backgroundColor: s.bg }}>
-                    {s.label}
-                  </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{p.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {p.categories?.[0] && <span className="text-[11px] text-[#888]">{p.categories[0].name}</span>}
+                      <span className="text-[11px] text-[#888]">·</span>
+                      <span className="text-[11px] text-[#888]">Stock: {p.stock_quantity ?? '∞'}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[15px] font-bold text-[#005667]">
+                      {p.sale_price ? (
+                        <>
+                          <span className="text-[12px] text-[#aaa] line-through mr-1">{p.price}€</span>
+                          {p.sale_price}€
+                        </>
+                      ) : p.price ? (
+                        `${p.price}€`
+                      ) : (
+                        <span className="text-[#aaa]">—</span>
+                      )}
+                    </p>
+                    <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold mt-1" style={{ color: s.color, backgroundColor: s.bg }}>
+                      {s.label}
+                    </span>
+                  </div>
+                </Link>
+                {/* Actions */}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#f0ece4]">
+                  <Link href={`/vendor/prodotti/nuovo?draft=${p.id}`} className="text-[12px] text-[#005667] font-medium hover:underline">
+                    Modifica
+                  </Link>
+                  <span className="text-[#e8e4dc]">·</span>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      const newStatus = p.status === 'publish' ? 'private' : 'publish';
+                      await fetch(`/api/vendor/products/${p.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus }),
+                      });
+                      setProducts(prev => prev.map(pr => pr.id === p.id ? { ...pr, status: newStatus } : pr));
+                    }}
+                    className="text-[12px] text-[#888] hover:text-[#005667]"
+                  >
+                    {p.status === 'publish' ? 'Oscura' : p.status === 'private' ? 'Rendi visibile' : null}
+                  </button>
+                  {(p.status === 'publish' || p.status === 'private') && <span className="text-[#e8e4dc]">·</span>}
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (!confirm('Eliminare questo prodotto? Verrà spostato nel cestino.')) return;
+                      const res = await fetch(`/api/vendor/products/${p.id}`, { method: 'DELETE' });
+                      if (res.ok) setProducts(prev => prev.filter(pr => pr.id !== p.id));
+                    }}
+                    className="text-[12px] text-red-400 hover:text-red-600"
+                  >
+                    Elimina
+                  </button>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>

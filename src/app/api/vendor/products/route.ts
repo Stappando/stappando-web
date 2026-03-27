@@ -170,8 +170,9 @@ export async function POST(req: NextRequest) {
     // Map attributes to WC format
     const wcAttributes = [];
     for (const attr of body.attributes || []) {
-      const attrSlug = attr.slug.startsWith('pa_') ? attr.slug.slice(3) : attr.slug;
-      const wcAttr = allAttributes.find((a) => a.slug === attrSlug);
+      const attrSlugNoPa = attr.slug.startsWith('pa_') ? attr.slug.slice(3) : attr.slug;
+      const attrSlugWithPa = attr.slug.startsWith('pa_') ? attr.slug : `pa_${attr.slug}`;
+      const wcAttr = allAttributes.find((a) => a.slug === attrSlugNoPa || a.slug === attrSlugWithPa || a.slug === attr.slug);
 
       // For produttore: ensure term exists
       if (attr.slug === 'pa_produttore' && wcAttr && attr.terms.length > 0) {
@@ -200,26 +201,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create product via WC REST API
+    // Create or update product
+    const isUpdate = body.draftId && body.draftId > 0;
+
+    // Images: for update use {id} to keep existing, for create use {src}
+    const imagePayload = (body.images || []).map((img: { id?: number; src: string }) =>
+      isUpdate && img.id ? { id: img.id } : { src: img.src },
+    );
+
     const productPayload = {
       name: sanitize(body.name, 500),
       status: 'draft',
       type: 'simple',
       regular_price: body.regular_price,
-      ...(body.sale_price ? { sale_price: body.sale_price } : {}),
+      sale_price: body.sale_price || '',
       ...(body.sku ? { sku: sanitize(body.sku, 100) } : {}),
-      short_description: sanitize(body.short_description, 2000),
-      description: sanitize(body.description, 10000),
+      short_description: sanitize(body.short_description || '', 2000),
+      description: sanitize(body.description || '', 10000),
       manage_stock: true,
       stock_quantity: body.stock_quantity ?? 0,
-      categories: (body.categories || []).map((id) => ({ id })),
-      images: (body.images || []).map((img) => ({ src: img.src })),
+      categories: (body.categories || []).map((id: number) => ({ id })),
+      images: imagePayload,
       attributes: wcAttributes,
       meta_data: metaData,
     };
-
-    // Create or update product
-    const isUpdate = body.draftId && body.draftId > 0;
     const url = isUpdate
       ? `${wc.baseUrl}/wp-json/wc/v3/products/${body.draftId}?${auth}`
       : `${wc.baseUrl}/wp-json/wc/v3/products?${auth}`;

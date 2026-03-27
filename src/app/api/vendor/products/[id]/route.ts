@@ -76,3 +76,64 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Errore server' }, { status: 500 });
   }
 }
+
+/** PATCH /api/vendor/products/[id] — toggle visibility (draft/private/publish) */
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!id || isNaN(Number(id))) {
+    return NextResponse.json({ error: 'ID non valido' }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json().catch(() => null);
+    if (!body?.status) {
+      return NextResponse.json({ error: 'status obbligatorio' }, { status: 400 });
+    }
+
+    const wc = getWCSecrets();
+    const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+
+    const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/${id}?${auth}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: body.status }),
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Errore aggiornamento' }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Product patch error:', err);
+    return NextResponse.json({ error: 'Errore server' }, { status: 500 });
+  }
+}
+
+/** DELETE /api/vendor/products/[id] — move to trash */
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!id || isNaN(Number(id))) {
+    return NextResponse.json({ error: 'ID non valido' }, { status: 400 });
+  }
+
+  try {
+    const wc = getWCSecrets();
+    const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+
+    const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/${id}?${auth}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: false }), // move to trash, not permanent delete
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Errore eliminazione' }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Product delete error:', err);
+    return NextResponse.json({ error: 'Errore server' }, { status: 500 });
+  }
+}
