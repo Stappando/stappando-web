@@ -48,7 +48,7 @@ function baseLayout(content: string, preheader?: string): string {
             </tr>
           </table>
           <p style="margin:0;font-size:11px;color:#888;line-height:1.5;">
-            &copy; 2026 Stappando Srl Semplificata &mdash; P.IVA 15855161003<br>
+            &copy; 2026 Stappando Srl &mdash; P.IVA 15855161003<br>
             <a href="${SITE}/privacy" style="color:#888;text-decoration:underline;">Privacy</a> &middot; <a href="${SITE}/termini" style="color:#888;text-decoration:underline;">Termini</a>
           </p>
         </td></tr>
