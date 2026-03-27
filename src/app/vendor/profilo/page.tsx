@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 
 const REGIONI = [
@@ -49,6 +50,7 @@ const EMPTY_PROFILE: VendorProfile = {
 
 export default function VendorProfiloPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [profile, setProfile] = useState<VendorProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,7 +82,8 @@ export default function VendorProfiloPage() {
       });
       if (res.ok) {
         if (missingFields.length === 0) {
-          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE!' });
+          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE! Redirect alla dashboard...' });
+          setTimeout(() => router.push('/vendor/dashboard'), 2000);
         } else if (missingFields.length <= 3) {
           setSaveAlert({ type: 'progress', message: `Salvato! Ancora ${missingFields.length} camp${missingFields.length === 1 ? 'o' : 'i'} e sei live: ${missingFields.map(f => f.label).join(', ')}` });
         } else {
