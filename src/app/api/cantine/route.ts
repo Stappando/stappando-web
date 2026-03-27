@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fetch from the custom WP endpoint with real swatch logos
-    const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { next: { revalidate: 600 } });
+    const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { cache: 'no-store' });
     if (!res.ok) {
       console.error('Producer logos fetch failed:', res.status);
       return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
