@@ -12,16 +12,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
   try {
-    // Find the produttore term by slug
+    // Find the produttore term by slug — try exact slug first, then search by name
+    let term = null;
     const termsRes = await fetch(
       `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?slug=${slug}&${auth}`,
     );
-    if (!termsRes.ok) return NextResponse.json({ error: 'Non trovato' }, { status: 404 });
-
-    const terms = await termsRes.json();
-    if (!terms[0]) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
-
-    const term = terms[0];
+    if (termsRes.ok) {
+      const terms = await termsRes.json();
+      term = terms[0] || null;
+    }
+    // Fallback: search all terms for partial slug match
+    if (!term) {
+      const allRes = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&search=${encodeURIComponent(slug.replace(/-/g, ' '))}&${auth}`,
+      );
+      if (allRes.ok) {
+        const all = await allRes.json();
+        term = all.find((t: { slug: string }) => t.slug.startsWith(slug) || t.slug.includes(slug)) || all[0] || null;
+      }
+    }
+    if (!term) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
 
     // Fetch products with this producer attribute
     const productsRes = await fetch(
