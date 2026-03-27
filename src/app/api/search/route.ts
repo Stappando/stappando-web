@@ -83,6 +83,22 @@ export async function GET(req: NextRequest) {
   const page = Math.max(parseInt(req.nextUrl.searchParams.get('page') || '1'), 1);
   const onSaleParam = req.nextUrl.searchParams.get('on_sale');
   const tagParam = req.nextUrl.searchParams.get('tag')?.trim();
+  const maxPriceParam = req.nextUrl.searchParams.get('max_price');
+
+  // If max_price search (e.g. quotidiani = under 8€)
+  if (maxPriceParam && (!q || q.length < 2)) {
+    const wc = getWCSecrets();
+    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?${wcAuth}&max_price=${maxPriceParam}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const products = await res.json();
+        return NextResponse.json({ products: mapProducts(products), hasMore: products.length === limit });
+      }
+    } catch { /* fall through */ }
+    return NextResponse.json({ products: [], hasMore: false });
+  }
 
   // If on_sale, fetch sale products directly
   if (onSaleParam === 'true') {

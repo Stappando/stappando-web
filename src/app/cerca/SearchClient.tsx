@@ -97,16 +97,18 @@ interface Props {
   initialOnSale: boolean;
   initialTag: string;
   initialVendor: string;
+  initialMaxPrice: string;
   categories: WCCategory[];
 }
 
-export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, categories }: Props) {
+export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, initialMaxPrice, categories }: Props) {
   // results derived from filteredResults useMemo below
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(initialTag);
   const [vendor, setVendor] = useState(initialVendor);
   const [onSale, setOnSale] = useState(initialOnSale);
+  const [urlMaxPrice] = useState(initialMaxPrice);
   const [orderBy, setOrderBy] = useState('popularity');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(999);
@@ -129,7 +131,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const searchRef = useRef({ rawResults: [] as SearchResult[], searching: false });
 
   const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
-    if (!term && !onSale) {
+    if (!term && !onSale && !urlMaxPrice) {
       setRawResults([]);
       setSearched(false);
       searchRef.current.rawResults = [];
@@ -143,6 +145,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       const params = new URLSearchParams();
       if (term) params.set('q', term);
       if (onSale) params.set('on_sale', 'true');
+      if (urlMaxPrice) params.set('max_price', urlMaxPrice);
       params.set('limit', '40');
       params.set('page', String(pageNum));
 
@@ -178,9 +181,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSale]);
 
-  // Initial search — runs once per searchTerm/onSale change
+  // Initial search — runs once per searchTerm/onSale/maxPrice change
   useEffect(() => {
-    if (searchTerm || onSale) {
+    if (searchTerm || onSale || urlMaxPrice) {
       doSearch(searchTerm);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

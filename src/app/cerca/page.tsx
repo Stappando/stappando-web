@@ -5,7 +5,7 @@ import SearchClient from './SearchClient';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: Promise<{ q?: string; on_sale?: string; tag?: string; vendor?: string }>;
+  searchParams: Promise<{ q?: string; on_sale?: string; tag?: string; vendor?: string; max_price?: string }>;
 }
 
 export async function generateMetadata({ searchParams }: Props) {
@@ -15,7 +15,7 @@ export async function generateMetadata({ searchParams }: Props) {
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const { q, on_sale, tag, vendor } = await searchParams;
+  const { q, on_sale, tag, vendor, max_price } = await searchParams;
 
   // Only fetch categories server-side (lightweight)
   const wc = getWCSecrets();
@@ -32,6 +32,7 @@ export default async function SearchPage({ searchParams }: Props) {
       initialOnSale={on_sale === 'true'}
       initialTag={tag || ''}
       initialVendor={vendor || ''}
+      initialMaxPrice={max_price || ''}
       categories={categories}
     />
   );

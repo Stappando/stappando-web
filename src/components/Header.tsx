@@ -16,7 +16,8 @@ const NAV = [
   { label: 'Best seller',   href: '/cerca?tag=best-seller' },
   { label: 'Regalo',        href: '/cerca?tag=regali' },
   { label: 'Promo',         href: '/cerca?on_sale=true' },
-  { label: 'Quotidiani',    href: '/cerca?tag=quotidiani' },
+  { label: 'Quotidiani',    href: '/cerca?max_price=8' },
+  { label: 'Scorte',        href: '/cerca?q=Confezione+da+6' },
   { label: 'Cantine',       href: '/cantine' },
   { label: 'Degustazioni',  href: 'https://app.vineis.eu', external: true },
 ] as const;
