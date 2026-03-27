@@ -54,6 +54,44 @@ function toWCProduct(r: SearchResult): WCProduct {
   } as unknown as WCProduct;
 }
 
+/* ── Suggestions when no results ──────────────────────── */
+
+function NoResultsSuggestions() {
+  const [suggestions, setSuggestions] = useState<WCProduct[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // Fetch circuito/featured products as suggestions
+    fetch('/api/search?per_page=8&tag=circuito')
+      .then(r => r.ok ? r.json() : { products: [] })
+      .then(data => {
+        const products = (data.products || []).map(toWCProduct);
+        if (products.length > 0) {
+          setSuggestions(products);
+        } else {
+          // Fallback: fetch bestsellers
+          fetch('/api/search?per_page=8&orderby=popularity')
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(d2 => setSuggestions((d2.products || []).map(toWCProduct)))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  if (!loaded || suggestions.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-[#005667] uppercase tracking-wider mb-4">Selezione del sommelier</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {suggestions.map(p => <ProductCard key={p.id} product={p} />)}
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   initialQuery: string;
   initialOnSale: boolean;
@@ -203,12 +241,15 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         </div>
       )}
 
-      {/* No results */}
+      {/* No results — show suggestions */}
       {!loading && searched && results.length === 0 && (
-        <div className="text-center py-16">
-          <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <p className="text-sm font-semibold text-gray-700">Nessun prodotto trovato</p>
-          <p className="text-xs text-gray-500 mt-1">Prova con altri filtri</p>
+        <div className="py-12">
+          <div className="text-center mb-8">
+            <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <p className="text-[15px] font-semibold text-gray-700">La ricerca non ha portato risultati</p>
+            <p className="text-[13px] text-gray-500 mt-1">Ma ti consigliamo questi vini selezionati per te</p>
+          </div>
+          <NoResultsSuggestions />
         </div>
       )}
 

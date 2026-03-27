@@ -37,7 +37,7 @@ function TopBar({ visible }: { visible: boolean }) {
       <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-center h-[32px] sm:h-[36px]">
         {/* Desktop */}
         <p className="hidden sm:flex items-center text-[12px] text-white">
-          Selezionati da sommelier
+          Selezione del sommelier
           <span className="opacity-[0.35] mx-2">•</span>
           Consegna 24–48h
           <span className="opacity-[0.35] mx-2">•</span>
