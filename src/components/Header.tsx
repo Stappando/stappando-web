@@ -13,7 +13,7 @@ import SearchOverlay from '@/components/SearchOverlay';
    NAV — 5 voci esatte, nessun link esterno
    ══════════════════════════════════════════════════════════ */
 const NAV = [
-  { label: 'Best seller',   href: '/cerca?sort=bestseller' },
+  { label: 'Best seller',   href: '/cerca?tag=best-seller' },
   { label: 'Regalo',        href: '/cerca?tag=regali' },
   { label: 'Promo',         href: '/cerca?on_sale=true' },
   { label: 'Quotidiani',    href: '/cerca?max=8' },

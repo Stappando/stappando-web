@@ -203,39 +203,33 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
+        {/* Price range inline */}
+        {(() => {
+          const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
+          const sliderMax = Math.ceil(dynMax / 5) * 5;
+          return (
+            <>
+              <div className="w-px h-5 bg-gray-200 shrink-0" />
+              <span className="text-[10px] font-semibold text-[#055667] shrink-0">{minPrice}€</span>
+              <div className="relative h-5 w-20 sm:w-28 flex items-center shrink-0">
+                <input type="range" min={0} max={sliderMax} step={5} value={minPrice}
+                  onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
+                  className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
+                <input type="range" min={0} max={sliderMax} step={5} value={maxPrice}
+                  onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) setMaxPrice(v); }}
+                  className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
+                <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
+                <div className="absolute h-1 bg-[#005667] rounded-full" style={{ left: `${(minPrice / sliderMax) * 100}%`, right: `${100 - (maxPrice / sliderMax) * 100}%` }} />
+              </div>
+              <span className="text-[10px] font-semibold text-[#055667] shrink-0">{maxPrice}€</span>
+            </>
+          );
+        })()}
+
         <span className="text-[10px] text-gray-400 shrink-0">{results.length} prodotti</span>
       </div>
 
-      {/* Price range — dual slider */}
-      {(() => {
-        const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
-        const sliderMax = Math.ceil(dynMax / 5) * 5;
-        return (
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-[10px] font-semibold text-[#055667] w-8 text-right">{minPrice}€</span>
-            <div className="flex-1 relative h-6 flex items-center">
-              {/* Min range */}
-              <input
-                type="range" min={0} max={sliderMax} step={5} value={minPrice}
-                onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
-                className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
-              />
-              {/* Max range */}
-              <input
-                type="range" min={0} max={sliderMax} step={5} value={maxPrice}
-                onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) setMaxPrice(v); }}
-                className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
-              />
-              {/* Track background */}
-              <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
-              {/* Active track */}
-              <div
-                className="absolute h-1 bg-[#005667] rounded-full"
-                style={{ left: `${(minPrice / sliderMax) * 100}%`, right: `${100 - (maxPrice / sliderMax) * 100}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-semibold text-[#055667] w-8">{maxPrice}€</span>
-          </div>
+      {(() => { return null; /* price range removed from separate row */ })()}
         );
       })()}
 
