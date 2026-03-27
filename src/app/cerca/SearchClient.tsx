@@ -212,13 +212,24 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     setMinPrice(0);
     setMaxPrice(999);
     setPage(1);
-    setQuery(cat === 'offerte' ? '' : cat);
-    setTag('');
-    setVendor('');
-    setOnSale(cat === 'offerte');
+    if (cat === 'offerte') {
+      // Toggle offerte — keep current category
+      setOnSale(prev => !prev);
+    } else {
+      setQuery(cat);
+      setTag('');
+      setVendor('');
+      // Don't touch onSale — keep it if active
+    }
   }, []);
 
-  const activeCategory = onSale ? 'offerte' : query || tag || vendor || '';
+  // Toggle offerte independently
+  const handleOfferte = useCallback(() => {
+    setOnSale(prev => !prev);
+    setPage(1);
+  }, []);
+
+  const activeCategory = query || tag || vendor || '';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -238,7 +249,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           ))}
         </select>
 
-        <button onClick={() => handleCategory('offerte')} className={`h-8 px-3 rounded-lg text-[12px] font-semibold shrink-0 transition-all ${onSale ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>Offerte</button>
+        <button onClick={handleOfferte} className={`h-8 px-3 rounded-lg text-[12px] font-semibold shrink-0 transition-all ${onSale ? 'bg-red-500 text-white' : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-500 hover:text-white'}`}>
+          {onSale ? '✕ Offerte' : 'Offerte'}
+        </button>
 
         <div className="w-px h-5 bg-gray-200 shrink-0" />
 
@@ -273,6 +286,18 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           );
         })()}
       </div>
+
+      {/* Active filter status */}
+      {(activeCategory || onSale) && (
+        <p className="text-[11px] text-[#888] mb-2">
+          {activeCategory && onSale
+            ? `Offerte in ${activeCategory}`
+            : onSale
+              ? 'Tutte le offerte'
+              : activeCategory}
+          {activeCategory && !onSale && <span className="text-[#aaa]"> · attiva &quot;Offerte&quot; per vedere solo le promo di questa categoria</span>}
+        </p>
+      )}
 
       {/* Active filter label */}
       {(tag || vendor) && (

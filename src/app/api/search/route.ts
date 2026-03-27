@@ -100,10 +100,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ products: [], hasMore: false });
   }
 
-  // If on_sale, fetch sale products directly
+  // If on_sale (optionally combined with category)
   if (onSaleParam === 'true') {
     const wc = getWCSecrets();
-    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&on_sale=true&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+    // Resolve category if q is provided
+    let catParam = '';
+    if (q && q.length >= 2) {
+      try {
+        const catRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/categories?search=${encodeURIComponent(q)}&per_page=5&${wcAuth}`);
+        if (catRes.ok) {
+          const cats = await catRes.json();
+          const match = cats.find((c: { name: string }) => c.name.toLowerCase() === q.toLowerCase());
+          if (match) catParam = `&category=${match.id}`;
+        }
+      } catch { /* */ }
+    }
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?${wcAuth}&on_sale=true${catParam}&per_page=${limit}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
     try {
       const res = await fetch(url);
       if (res.ok) {
