@@ -51,12 +51,20 @@ export async function POST(req: NextRequest) {
             zip: meta.shipping_zip || '',
             notes: meta.order_notes || '',
           },
-          items: items.map((i: { id: number; qty: number; price: number }) => ({
-            id: i.id, name: '', price: i.price, quantity: i.qty,
+          items: items.map((i: { id: number; qty: number; price: number; name?: string }) => ({
+            id: i.id, name: i.name || '', price: i.price, quantity: i.qty,
           })),
           shippingCost: parseFloat(meta.shipping_cost || '0'),
           preferences: meta.preferred_carrier ? { carrier: meta.preferred_carrier } : undefined,
           couponCode: meta.coupon_code || undefined,
+          couponDiscount: parseFloat(meta.coupon_discount || '0'),
+          needsInvoice: meta.needs_invoice === 'true',
+          invoiceData: meta.needs_invoice === 'true' ? {
+            piva: meta.invoice_piva || '',
+            ragioneSociale: meta.invoice_ragione || '',
+            codFiscale: meta.invoice_cf || '',
+            sdi: meta.invoice_sdi || '',
+          } : undefined,
         });
       }
     } catch (err) {

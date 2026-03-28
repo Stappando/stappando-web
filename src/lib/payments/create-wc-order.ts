@@ -7,7 +7,6 @@ import type { OrderCustomer, OrderLineItem, PaymentProvider } from './types';
 const PROVIDER_TITLES: Record<PaymentProvider, string> = {
   stripe: 'Carta di credito (Stripe)',
   paypal: 'PayPal',
-  cod: 'Contrassegno (Test)',
 };
 
 const CARRIER_NAMES: Record<string, string> = {
@@ -27,6 +26,13 @@ interface CustomerPreferences {
   newsletter?: boolean;
 }
 
+interface InvoiceData {
+  piva?: string;
+  ragioneSociale?: string;
+  codFiscale?: string;
+  sdi?: string;
+}
+
 interface CreateWCOrderParams {
   provider: PaymentProvider;
   transactionId: string;
@@ -36,6 +42,8 @@ interface CreateWCOrderParams {
   preferences?: CustomerPreferences;
   couponCode?: string;
   couponDiscount?: number;
+  needsInvoice?: boolean;
+  invoiceData?: InvoiceData;
 }
 
 export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: number }> {
@@ -90,12 +98,12 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       : [],
     coupon_lines: params.couponCode ? [{ code: params.couponCode }] : [],
     customer_note: noteParts.join(' — '),
-    meta_data: customer.needsInvoice ? [
+    meta_data: (params.needsInvoice || customer.needsInvoice) ? [
       { key: '_needs_invoice', value: 'true' },
-      { key: '_invoice_company', value: customer.ragioneSociale || '' },
-      { key: '_invoice_vat', value: customer.piva || '' },
-      { key: '_invoice_cf', value: customer.codFiscale || '' },
-      { key: '_invoice_sdi', value: customer.sdi || '' },
+      { key: '_invoice_company', value: params.invoiceData?.ragioneSociale || customer.ragioneSociale || '' },
+      { key: '_invoice_vat', value: params.invoiceData?.piva || customer.piva || '' },
+      { key: '_invoice_cf', value: params.invoiceData?.codFiscale || customer.codFiscale || '' },
+      { key: '_invoice_sdi', value: params.invoiceData?.sdi || customer.sdi || '' },
     ] : [],
   };
 
@@ -159,11 +167,11 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       deliveryEstimate: deliveryEst,
       discount: discount > 0 ? discount.toFixed(2) : undefined,
       pointsEarned: popPoints,
-      invoiceData: customer.needsInvoice ? {
-        companyName: customer.ragioneSociale,
-        vatNumber: customer.piva,
+      invoiceData: (params.needsInvoice || customer.needsInvoice) ? {
+        companyName: params.invoiceData?.ragioneSociale || customer.ragioneSociale,
+        vatNumber: params.invoiceData?.piva || customer.piva,
         pec: undefined,
-        sdi: customer.sdi,
+        sdi: params.invoiceData?.sdi || customer.sdi,
       } : undefined,
     },
   }).catch(err => console.error('Failed to send order confirmation email:', err));
@@ -190,10 +198,10 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       total: total.toFixed(2),
       customerNotes: customer.notes || undefined,
       carrierPreference: carrierName,
-      invoiceData: customer.needsInvoice ? {
-        companyName: customer.ragioneSociale,
-        vatNumber: customer.piva,
-        sdi: customer.sdi,
+      invoiceData: (params.needsInvoice || customer.needsInvoice) ? {
+        companyName: params.invoiceData?.ragioneSociale || customer.ragioneSociale,
+        vatNumber: params.invoiceData?.piva || customer.piva,
+        sdi: params.invoiceData?.sdi || customer.sdi,
       } : undefined,
     },
   }).catch(err => console.error('Failed to send admin order email:', err));

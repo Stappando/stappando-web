@@ -970,7 +970,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
-        setCheckoutStep(4);
+        setCheckoutStep(5);
       }
     } else {
       // PaymentElement
@@ -983,7 +983,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
-        setCheckoutStep(4);
+        setCheckoutStep(5);
       }
     }
   };

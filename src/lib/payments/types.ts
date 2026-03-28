@@ -32,4 +32,4 @@ export interface OrderPayload {
   couponDiscount?: number;
 }
 
-export type PaymentProvider = 'stripe' | 'paypal' | 'cod';
+export type PaymentProvider = 'stripe' | 'paypal';

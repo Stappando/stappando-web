@@ -25,6 +25,11 @@ interface CreateIntentBody {
     province: string;
     zip: string;
     notes?: string;
+    needsInvoice?: boolean;
+    ragioneSociale?: string;
+    piva?: string;
+    codFiscale?: string;
+    sdi?: string;
   };
 }
 
@@ -84,11 +89,17 @@ export async function POST(req: NextRequest) {
         shipping_zip: sanitize(c.zip, 10),
         order_notes: sanitize(c.notes || '', 500),
         items_json: JSON.stringify(
-          body.items.map((i) => ({ id: i.id, qty: i.quantity, price: i.price })),
+          body.items.map((i) => ({ id: i.id, qty: i.quantity, price: i.price, name: i.name?.slice(0, 60) || '' })),
         ).slice(0, 500),
         shipping_cost: String(shipping),
         preferred_carrier: sanitize(body.carrier || '', 20),
         coupon_code: sanitize(body.couponCode || '', 50),
+        coupon_discount: String(couponDiscount),
+        needs_invoice: c.needsInvoice ? 'true' : '',
+        invoice_piva: sanitize(c.piva || '', 20),
+        invoice_ragione: sanitize(c.ragioneSociale || '', 100),
+        invoice_cf: sanitize(c.codFiscale || '', 20),
+        invoice_sdi: sanitize(c.sdi || '', 10),
       },
       receipt_email: sanitize(c.email, 254),
     });
