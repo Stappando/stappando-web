@@ -16,16 +16,41 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Stappando — Vini Italiani d\'Eccellenza',
+  title: {
+    template: '%s | Stappando — Vini Italiani',
+    default: 'Stappando — Vini Italiani d\'Eccellenza',
+  },
   description:
     'Scopri la selezione di vini italiani d\'eccellenza su Stappando. Spedizione rapida, pagamento sicuro e assistenza dedicata. Marketplace con i migliori produttori italiani.',
   keywords: 'vino italiano, ecommerce vino, vini online, vini italiani, wine marketplace',
+  metadataBase: new URL('https://stappando.it'),
   openGraph: {
     title: 'Stappando — Vini Italiani d\'Eccellenza',
     description: 'Scopri la selezione di vini italiani d\'eccellenza su Stappando.',
     siteName: 'Stappando',
     locale: 'it_IT',
     type: 'website',
+    images: [
+      {
+        url: '/logo-og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Stappando — Vini Italiani d\'Eccellenza',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Stappando — Vini Italiani d\'Eccellenza',
+    description: 'Scopri la selezione di vini italiani d\'eccellenza su Stappando.',
+    images: ['/logo-og.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: 'https://stappando.it',
   },
 };
 
