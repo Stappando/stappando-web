@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
+import { useAnalyticsStore } from '@/store/analytics';
 
 interface GalleryImage { id: number; src: string; alt: string; }
 interface Spec { key: string; value: string; }
@@ -43,7 +44,10 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
   const trackView = useCartStore((s) => s.trackView);
 
   // Track product view
-  useEffect(() => { trackView(p.id, p.slug); }, [p.id, p.slug, trackView]);
+  useEffect(() => {
+    trackView(p.id, p.slug);
+    useAnalyticsStore.getState().trackProductView(p.id, p.name, 'direct');
+  }, [p.id, p.slug, p.name, trackView]);
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) {

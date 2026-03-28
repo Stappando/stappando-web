@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
+import { useAnalyticsStore } from '@/store/analytics';
 
 const MACRO_CATEGORIES: { label: string; subs?: string[] }[] = [
   { label: 'Vini', subs: ['Vini Rossi', 'Vini Bianchi', 'Vini Rosati', 'Vini Liquorosi'] },
@@ -177,6 +178,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       setLoadingMore(false);
       setSearched(true);
       searchRef.current.searching = false;
+      if (!append && term) {
+        useAnalyticsStore.getState().trackSearch(term, searchRef.current.rawResults.length);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlMaxPrice]);

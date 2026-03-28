@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
+import { useAnalyticsStore } from '@/store/analytics';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
 const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
@@ -46,8 +47,12 @@ export default function CheckoutModal() {
   const { checkoutOpen, checkoutStep, closeCheckout, setCheckoutStep } = useCartStore();
 
   useEffect(() => {
-    if (checkoutOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
+    if (checkoutOpen) {
+      document.body.style.overflow = 'hidden';
+      useAnalyticsStore.getState().trackCheckoutStart();
+    } else {
+      document.body.style.overflow = '';
+    }
     return () => { document.body.style.overflow = ''; };
   }, [checkoutOpen]);
 
@@ -801,6 +806,7 @@ function Step3Payment() {
           }
 
           completeOrder();
+          useAnalyticsStore.getState().trackPurchase(total, items.length);
           setCheckoutStep(5);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Errore pagamento');
@@ -970,6 +976,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
+        useAnalyticsStore.getState().trackPurchase(total, useCartStore.getState().items.length);
         setCheckoutStep(5);
       }
     } else {
@@ -983,6 +990,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
+        useAnalyticsStore.getState().trackPurchase(total, useCartStore.getState().items.length);
         setCheckoutStep(5);
       }
     }

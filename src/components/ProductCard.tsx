@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
 import { type WCProduct, getProduttore, formatPrice, getDiscount, decodeHtml } from '@/lib/api';
 import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
+import { useAnalyticsStore } from '@/store/analytics';
 
 interface Props {
   product: WCProduct;
@@ -43,6 +44,7 @@ export default function ProductCard({ product }: Props) {
       vendorId: product._vendorId || String(product.store?.id || 'default'),
       vendorName,
     });
+    useAnalyticsStore.getState().trackAddToCart(product.id, product.name, parseFloat(product.price));
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

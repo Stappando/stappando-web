@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 const CartDrawer = dynamic(() => import('@/components/CartDrawer'));
 const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'));
 const CookieBanner = dynamic(() => import('@/components/CookieBanner'));
+const PageViewTracker = dynamic(() => import('@/components/PageViewTracker'));
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CartDrawer />
         <CheckoutModal />
         <CookieBanner />
+        <PageViewTracker />
       </body>
     </html>
   );
