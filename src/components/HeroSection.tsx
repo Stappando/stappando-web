@@ -100,18 +100,18 @@ export default function HeroSection({ circuitoProducts }: Props) {
             </div>
 
             {/* Search bar */}
-            <Link
-              href="/cerca"
+            <form
+              onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('q') as HTMLInputElement)?.value?.trim(); window.location.href = v ? `/cerca?q=${encodeURIComponent(v)}` : '/cerca'; }}
               className="flex items-center gap-3 bg-white rounded-[10px] border-2 border-[#005667] shadow-[0_2px_12px_rgba(0,86,103,0.08)] px-4 py-3 mb-6 group"
             >
               <svg className="w-5 h-5 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="flex-1 text-[14px] text-[#999] truncate">Cerca vino, occasione o abbinamento…</span>
-              <span className="shrink-0 bg-[#005667] text-white text-[13px] font-bold px-[18px] py-[7px] rounded-[7px] group-hover:bg-[#004555] transition-colors">
+              <input name="q" type="text" placeholder="Cerca vino, occasione o abbinamento…" className="flex-1 text-[14px] text-[#333] outline-none bg-transparent placeholder:text-[#999]" />
+              <button type="submit" className="shrink-0 bg-[#005667] text-white text-[13px] font-bold px-[18px] py-[7px] rounded-[7px] hover:bg-[#004555] transition-colors">
                 Cerca
-              </span>
-            </Link>
+              </button>
+            </form>
 
             {/* Trust badges */}
             <div className="border-t border-[#e8e4dc] pt-[18px]">
