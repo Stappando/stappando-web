@@ -866,9 +866,13 @@ function Step3Payment() {
             )}
 
             {paying && (
-              <div className="flex items-center justify-center py-4 mb-3">
-                <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-                <span className="ml-3 text-[13px] text-[#888]">Pagamento in corso...</span>
+              <div className="fixed inset-0 z-[9999] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
+                <div className="w-10 h-10 border-3 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin mb-4" />
+                <p className="text-[16px] font-semibold text-[#005667] mb-2">Pagamento in corso...</p>
+                <p className="text-[13px] text-[#888]">Non chiudere questa pagina</p>
+                <div className="w-48 h-1.5 bg-[#e8e4dd] rounded-full mt-4 overflow-hidden">
+                  <div className="h-full bg-[#005667] rounded-full animate-pulse" style={{ width: '60%' }} />
+                </div>
               </div>
             )}
 
