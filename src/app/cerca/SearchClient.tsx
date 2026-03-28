@@ -186,10 +186,9 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   }, [urlMaxPrice]);
 
   // Initial search — runs once per searchTerm/maxPrice change
+  // If no search term, load popular products by default
   useEffect(() => {
-    if (searchTerm || urlMaxPrice) {
-      doSearch(searchTerm);
-    }
+    doSearch(searchTerm);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, onSale]);
 

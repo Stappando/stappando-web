@@ -31,7 +31,8 @@ const searchProducts = unstable_cache(
   async (query: string, limit: number, page: number = 1): Promise<SearchResult[]> => {
     const wc = getWCSecrets();
     const perPage = Math.min(limit, 50);
-    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
+    const searchParam = query ? `&search=${encodeURIComponent(query)}` : '';
+    const url = `${wc.baseUrl}/wp-json/wc/v3/products?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}${searchParam}&per_page=${perPage}&page=${page}&status=publish&orderby=popularity&order=desc&_fields=${WC_FIELDS}`;
 
     const res = await fetch(url);
     if (!res.ok) return [];
