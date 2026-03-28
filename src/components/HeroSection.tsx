@@ -136,12 +136,7 @@ export default function HeroSection({ circuitoProducts }: Props) {
               ))}
             </div>
 
-            <Link
-              href="/cerca"
-              className="block text-center text-[12px] font-medium text-[#005667] hover:underline mt-2.5"
-            >
-              Vedi tutti i vini →
-            </Link>
+            {/* Link removed */}
           </div>
         </div>
       </div>
