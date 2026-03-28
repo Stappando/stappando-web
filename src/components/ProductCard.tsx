@@ -24,7 +24,8 @@ export default function ProductCard({ product }: Props) {
   const [added, setAdded] = useState(false);
   const discount = getDiscount(product);
   const produttore = getProduttore(product);
-  const vendorName = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
+  const rawVendor = product._vendorName || product.store?.name || DEFAULT_VENDOR_NAME;
+  const vendorName = rawVendor === 'Stappando' ? 'Stappando Enoteca' : rawVendor;
   const circuito = getCircuitoMeta(product);
 
   const stockQty = product.stock_quantity;

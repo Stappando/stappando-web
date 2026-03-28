@@ -13,6 +13,7 @@ interface ProducerLogo {
   description: string;
   count: number;
   image: string;
+  region?: string;
 }
 
 /** GET /api/cantine — uses WP producer-logos endpoint (fast, has real logos) */
@@ -44,17 +45,24 @@ export async function GET(req: NextRequest) {
         description: stripHtml(t.description || '').slice(0, 160),
         count: t.count || 0,
         image: t.image || null,
-        region: '',
+        region: t.region || '',
       }))
       .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name));
+
+    // Filter by region if param provided
+    const regionFilter = req.nextUrl.searchParams.get('region');
+    if (regionFilter) {
+      allCantine = allCantine.filter(c => c.region.toLowerCase() === regionFilter.toLowerCase());
+    }
 
     const total = allCantine.length;
     const paginated = allCantine.slice((pageParam - 1) * perPage, pageParam * perPage);
 
-    // Region will be added later via PHP snippet — skip extra API calls for speed
+    // Collect unique regions for filter dropdown
+    const regions = [...new Set(entries.filter(t => t.region).map(t => t.region))].sort();
 
     return NextResponse.json(
-      { cantine: paginated, total, page: pageParam, hasMore: pageParam * perPage < total },
+      { cantine: paginated, total, page: pageParam, hasMore: pageParam * perPage < total, regions },
       { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200' } },
     );
   } catch (err) {

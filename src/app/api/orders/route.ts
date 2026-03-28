@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
             if (subOrders.length > 0) {
               // Add sub-orders with vendor info, don't show parent
               for (const sub of subOrders) {
-                const vendorName = sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando';
+                const vendorName = sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando Enoteca';
                 result.push({
                   ...sub,
                   _vendor_name: vendorName,
