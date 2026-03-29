@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 import { useAnalyticsStore } from '@/store/analytics';
@@ -63,7 +63,6 @@ function NoResultsSuggestions() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Fetch circuito/featured products as suggestions
     fetch('/api/search?per_page=8&tag=circuito')
       .then(r => r.ok ? r.json() : { products: [] })
       .then(data => {
@@ -71,8 +70,7 @@ function NoResultsSuggestions() {
         if (products.length > 0) {
           setSuggestions(products);
         } else {
-          // Fallback: fetch bestsellers
-          fetch('/api/search?per_page=8&orderby=popularity')
+          fetch('/api/search?per_page=8&sort=popularity')
             .then(r => r.ok ? r.json() : { products: [] })
             .then(d2 => setSuggestions((d2.products || []).map(toWCProduct)))
             .catch(() => {});
@@ -85,14 +83,33 @@ function NoResultsSuggestions() {
   if (!loaded || suggestions.length === 0) return null;
 
   return (
-    <div>
-      <p className="text-[11px] font-semibold text-[#005667] uppercase tracking-wider mb-4">Selezione del sommelier</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {suggestions.map(p => <ProductCard key={p.id} product={p} />)}
-      </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {suggestions.map(p => <ProductCard key={p.id} product={p} />)}
     </div>
   );
 }
+
+/* ── Skeleton Grid ──────────────────────────────────────── */
+
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="bg-white rounded-lg border border-gray-100 overflow-hidden animate-pulse">
+          <div className="aspect-square bg-gray-100" />
+          <div className="p-3 space-y-2">
+            <div className="h-2.5 bg-gray-100 rounded w-16" />
+            <div className="h-3 bg-gray-100 rounded w-full" />
+            <div className="h-3 bg-gray-100 rounded w-3/4" />
+            <div className="h-4 bg-gray-100 rounded w-14 mt-2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Main Component ─────────────────────────────────────── */
 
 interface Props {
   initialQuery: string;
@@ -104,136 +121,119 @@ interface Props {
 }
 
 export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, initialMaxPrice, categories }: Props) {
-  // results derived from filteredResults useMemo below
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(initialTag);
   const [vendor, setVendor] = useState(initialVendor);
   const [onSale, setOnSale] = useState(initialOnSale);
-  const [urlMaxPrice] = useState(initialMaxPrice);
   const [orderBy, setOrderBy] = useState('popularity');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(999);
-  const [rawResults, setRawResults] = useState<SearchResult[]>([]);
+  const [priceMax, setPriceMax] = useState(999); // dynamic max from results
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const searchingRef = useRef(false);
+  const priceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Build WC API search term from all active filters
-  const searchTerm = useMemo(() => {
-    if (query) return query;
-    if (tag) return tag;
-    if (vendor) return vendor;
-    return '';
-  }, [query, tag, vendor]);
+  // Build API URL from current filters
+  const buildApiUrl = useCallback((pageNum: number = 1) => {
+    const params = new URLSearchParams();
+    const searchTerm = query || tag || vendor || '';
+    if (searchTerm && !tag) params.set('q', searchTerm);
+    if (tag) params.set('tag', tag);
+    if (onSale) params.set('on_sale', 'true');
+    if (orderBy && orderBy !== 'popularity') params.set('sort', orderBy);
+    if (initialMaxPrice) params.set('max_price', initialMaxPrice);
+    else if (maxPrice < priceMax) params.set('max_price', String(maxPrice));
+    if (minPrice > 0) params.set('min_price', String(minPrice));
+    params.set('per_page', '24');
+    params.set('page', String(pageNum));
+    return `/api/search?${params.toString()}`;
+  }, [query, tag, vendor, onSale, orderBy, minPrice, maxPrice, priceMax, initialMaxPrice]);
 
-  // Fetch results from API — no price/sort in deps to avoid loops
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const searchRef = useRef({ rawResults: [] as SearchResult[], searching: false });
-
-  const doSearch = useCallback(async (term: string, pageNum: number = 1, append: boolean = false) => {
-    if (!term && !urlMaxPrice) {
-      setRawResults([]);
-      setSearched(false);
-      searchRef.current.rawResults = [];
-      return;
-    }
-    if (searchRef.current.searching) return;
-    searchRef.current.searching = true;
-
+  // Fetch results from API
+  const doSearch = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+    if (searchingRef.current) return;
+    searchingRef.current = true;
     if (append) setLoadingMore(true); else setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (term) params.set('q', term);
-      if (urlMaxPrice) params.set('max_price', urlMaxPrice);
-      params.set('limit', '40');
-      params.set('page', String(pageNum));
 
-      const res = await fetch(`/api/search?${params.toString()}`);
+    try {
+      const res = await fetch(buildApiUrl(pageNum));
       if (res.ok) {
         const data = await res.json();
-        const raw: SearchResult[] = Array.isArray(data) ? data : (data.products || []);
-        const more = Array.isArray(data) ? false : !!data.hasMore;
+        const raw: SearchResult[] = data.products || [];
 
-        const allRaw = append ? [...searchRef.current.rawResults, ...raw] : raw;
-        searchRef.current.rawResults = allRaw;
-
-        setRawResults(allRaw);
-        setHasMore(more);
-
-        // Set price range on new search only
-        if (!append) {
-          const prices = allRaw.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+        if (append) {
+          setResults(prev => [...prev, ...raw]);
+        } else {
+          setResults(raw);
+          // Set dynamic price range from first page
+          const prices = raw.map((r: SearchResult) => parseFloat(r.price) || 0).filter((p: number) => p > 0);
           if (prices.length > 0) {
-            setMinPrice(Math.floor(Math.min(...prices) / 2) * 2);
-            setMaxPrice(Math.ceil(Math.max(...prices) / 2) * 2);
+            const dynMax = Math.ceil(Math.max(...prices) / 2) * 2;
+            setPriceMax(dynMax);
+            if (maxPrice === 999) setMaxPrice(dynMax);
           }
         }
+        setHasMore(!!data.hasMore);
+        setTotal(data.total || raw.length);
+
+        // Track search
+        if (!append) {
+          const term = query || tag || vendor || '';
+          if (term) useAnalyticsStore.getState().trackSearch(term, raw.length);
+        }
       }
-    } catch {
-      if (!append) { setRawResults([]); searchRef.current.rawResults = []; }
-    } finally {
+    } catch { /* */ } finally {
       setLoading(false);
       setLoadingMore(false);
       setSearched(true);
-      searchRef.current.searching = false;
-      if (!append && term) {
-        useAnalyticsStore.getState().trackSearch(term, searchRef.current.rawResults.length);
-      }
+      searchingRef.current = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlMaxPrice]);
+  }, [buildApiUrl, query, tag, vendor, maxPrice]);
 
-  // Initial search — runs once per searchTerm/maxPrice change
-  // If no search term, load popular products by default
+  // Initial search + re-search on filter change (except price which is debounced)
   useEffect(() => {
-    doSearch(searchTerm);
+    setPage(1);
+    doSearch(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, onSale]);
+  }, [query, tag, vendor, onSale, orderBy, initialMaxPrice]);
 
-  // Filtered + sorted results (derived from raw, no re-fetch needed)
-  const filteredResults = useMemo(() => {
-    let data = [...rawResults];
-    const prices = rawResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
-    const dataMin = prices.length > 0 ? Math.floor(Math.min(...prices) / 2) * 2 : 0;
-    const dataMax = prices.length > 0 ? Math.ceil(Math.max(...prices) / 2) * 2 : 999;
+  // Debounced price filter
+  const handlePriceChange = useCallback((type: 'min' | 'max', value: number) => {
+    if (type === 'min') setMinPrice(value);
+    else setMaxPrice(value);
+    if (priceTimerRef.current) clearTimeout(priceTimerRef.current);
+    priceTimerRef.current = setTimeout(() => {
+      setPage(1);
+      doSearch(1);
+    }, 500);
+  }, [doSearch]);
 
-    // Client-side filters
-    if (onSale) data = data.filter(r => r.on_sale);
-    if (minPrice > dataMin) data = data.filter(r => parseFloat(r.price) >= minPrice);
-    if (maxPrice < dataMax) data = data.filter(r => parseFloat(r.price) <= maxPrice);
-
-    if (orderBy === 'price-asc') data.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-    else if (orderBy === 'price-desc') data.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-    else if (orderBy === 'date') data.sort((a, b) => b.id - a.id);
-
-    return data;
-  }, [rawResults, onSale, minPrice, maxPrice, orderBy]);
-
-  // Category handler — reset price on category change
+  // Category change
   const handleCategory = useCallback((cat: string) => {
     setMinPrice(0);
     setMaxPrice(999);
+    setPriceMax(999);
     setPage(1);
-    if (cat === 'offerte') {
-      // Toggle offerte — keep current category
-      setOnSale(prev => !prev);
-    } else {
-      setQuery(cat);
-      setTag('');
-      setVendor('');
-      // Don't touch onSale — keep it if active
-    }
+    setQuery(cat);
+    setTag('');
+    setVendor('');
   }, []);
 
-  // Toggle offerte independently
+  // Toggle offerte
   const handleOfferte = useCallback(() => {
     setOnSale(prev => !prev);
     setPage(1);
   }, []);
 
   const activeCategory = query || tag || vendor || '';
+  const sliderMax = initialMaxPrice ? parseInt(initialMaxPrice) : priceMax;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -264,72 +264,51 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
-        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">{filteredResults.length} prodotti</span>
+        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">{total > 0 ? `${total} prodotti` : ''}</span>
       </div>
 
       {/* Toolbar row 2: price range full width */}
       <div className="flex items-center gap-2 mb-3">
-        {(() => {
-          const dynMax = Math.max(...rawResults.map(r => parseFloat(r.price) || 0), 10);
-          const sliderMax = Math.ceil(dynMax / 2) * 2;
-          return (
-            <>
-              <span className="text-[10px] font-semibold text-[#005667] shrink-0 w-7 text-right">{minPrice}€</span>
-              <div className="relative h-5 flex-1 flex items-center">
-                <input type="range" min={0} max={sliderMax} step={2} value={minPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) setMinPrice(v); }}
-                  className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
-                <input type="range" min={0} max={sliderMax} step={2} value={maxPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) setMaxPrice(v); }}
-                  className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
-                <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
-                <div className="absolute h-1 bg-[#005667] rounded-full" style={{ left: `${(minPrice / sliderMax) * 100}%`, right: `${100 - (maxPrice / sliderMax) * 100}%` }} />
-              </div>
-              <span className="text-[10px] font-semibold text-[#005667] shrink-0">{maxPrice}€</span>
-            </>
-          );
-        })()}
+        <span className="text-[10px] font-semibold text-[#005667] shrink-0 w-7 text-right">{minPrice}€</span>
+        <div className="relative h-5 flex-1 flex items-center">
+          <input type="range" min={0} max={sliderMax} step={2} value={minPrice}
+            onChange={(e) => { const v = Number(e.target.value); if (v < maxPrice) handlePriceChange('min', v); }}
+            className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
+          <input type="range" min={0} max={sliderMax} step={2} value={maxPrice > sliderMax ? sliderMax : maxPrice}
+            onChange={(e) => { const v = Number(e.target.value); if (v > minPrice) handlePriceChange('max', v); }}
+            className="absolute w-full h-1 bg-transparent appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#005667] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm" />
+          <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
+          <div className="absolute h-1 bg-[#005667] rounded-full" style={{ left: `${(minPrice / sliderMax) * 100}%`, right: `${100 - ((maxPrice > sliderMax ? sliderMax : maxPrice) / sliderMax) * 100}%` }} />
+        </div>
+        <span className="text-[10px] font-semibold text-[#005667] shrink-0">{maxPrice > sliderMax ? sliderMax : maxPrice}€</span>
       </div>
 
-      {/* Active filter status */}
-      {onSale && (
-        <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[11px] font-medium">
-            Filtro: solo prodotti in offerta
-            <button onClick={handleOfferte} className="ml-1 hover:text-red-800">✕</button>
-          </span>
+      {/* Active filter chips */}
+      {(onSale || tag || vendor) && (
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {onSale && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[11px] font-medium">
+              Solo offerte
+              <button onClick={handleOfferte} className="ml-1 hover:text-red-800">✕</button>
+            </span>
+          )}
+          {(tag || vendor) && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#005667]/10 text-[#005667] text-[11px] font-semibold">
+              {tag || vendor}
+              <button onClick={() => { setTag(''); setVendor(''); setQuery(''); }} className="ml-1 hover:text-[#003d4d]">✕</button>
+            </span>
+          )}
         </div>
       )}
 
-      {/* Active filter label */}
-      {(tag || vendor) && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm text-gray-500">Filtro:</span>
-          <span className="px-3 py-1 rounded-full bg-[#005667]/10 text-[#005667] text-xs font-semibold">
-            {tag || vendor}
-          </span>
-          <button
-            onClick={() => { setTag(''); setVendor(''); setQuery(''); }}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            ✕ Rimuovi
-          </button>
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <div className="w-6 h-6 border-2 border-[#055667]/20 border-t-[#055667] rounded-full animate-spin" />
-          <p className="text-xs text-gray-400">Ricerca in corso...</p>
-        </div>
-      )}
+      {/* Loading skeleton */}
+      {loading && <SkeletonGrid />}
 
       {/* Results grid */}
-      {!loading && filteredResults.length > 0 && (
+      {!loading && results.length > 0 && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {filteredResults.map(r => (
+            {results.map(r => (
               <ProductCard key={r.id} product={toWCProduct(r)} />
             ))}
           </div>
@@ -340,7 +319,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
                 onClick={() => {
                   const nextPage = page + 1;
                   setPage(nextPage);
-                  doSearch(searchTerm, nextPage, true);
+                  doSearch(nextPage, true);
                 }}
                 disabled={loadingMore}
                 className="px-8 py-3 border border-[#005667] text-[#005667] rounded-lg text-[13px] font-semibold hover:bg-[#005667] hover:text-white transition-colors disabled:opacity-50"
@@ -353,7 +332,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       )}
 
       {/* No results — show suggestions */}
-      {!loading && searched && filteredResults.length === 0 && rawResults.length === 0 && (
+      {!loading && searched && results.length === 0 && (
         <div className="py-12">
           <div className="text-center mb-8">
             <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -361,46 +340,6 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
             <p className="text-[13px] text-gray-500 mt-1">Ma ti consigliamo questi vini selezionati per te</p>
           </div>
           <NoResultsSuggestions />
-        </div>
-      )}
-
-      {/* Empty state — no search active */}
-      {!loading && !searched && !searchTerm && !onSale && (
-        <div className="text-center py-16">
-          <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <p className="text-sm font-semibold text-gray-700">Cerca un vino o scegli una categoria</p>
-          <p className="text-xs text-gray-500 mt-1">Usa i filtri sopra per trovare il vino perfetto</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Macro dropdown ────────────────────────────────────── */
-
-function MacroDropdown({ mc, activeCategory, onSelect }: { mc: { label: string; subs?: string[] }; activeCategory: string; onSelect: (c: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const isActive = activeCategory.toLowerCase() === mc.label.toLowerCase() || mc.subs?.some(s => activeCategory.toLowerCase() === s.toLowerCase());
-
-  if (!mc.subs) {
-    return <button onClick={() => onSelect(mc.label)} className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>{mc.label}</button>;
-  }
-
-  return (
-    <div className="relative shrink-0" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'bg-[#055667] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#055667]'}`}>
-        {mc.label}
-        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 pt-1 z-30">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-xl py-1 min-w-[160px]">
-            <button onClick={() => { onSelect(mc.label); setOpen(false); }} className={`block w-full text-left px-4 py-2 text-xs font-semibold hover:bg-gray-50 ${activeCategory.toLowerCase() === mc.label.toLowerCase() ? 'text-[#055667]' : 'text-gray-700'}`}>Tutti {mc.label}</button>
-            <div className="h-px bg-gray-100 mx-3" />
-            {mc.subs.map(sub => (
-              <button key={sub} onClick={() => { onSelect(sub); setOpen(false); }} className={`block w-full text-left px-4 py-2 text-xs hover:bg-gray-50 ${activeCategory.toLowerCase() === sub.toLowerCase() ? 'font-bold text-[#055667]' : 'text-gray-600'}`}>{sub}</button>
-            ))}
-          </div>
         </div>
       )}
     </div>
