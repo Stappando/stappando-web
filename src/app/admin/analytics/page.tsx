@@ -85,12 +85,15 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState<RangeId>('7d');
   const [activeTab, setActiveTab] = useState<'ricerche' | 'conversioni' | 'flusso' | 'prodotti'>('ricerche');
 
-  const analyticsData = useAnalyticsStore((s) => s.getData());
   const clearData = useAnalyticsStore((s) => s.clearData);
 
   // Hydration guard
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const emptyData: { searches: Record<string, { term: string; count: number; zeroResults: number; lastSearched: number }>; products: Record<string, { id: number; name: string; views: number; cartAdds: number; sources: Record<string, number> }>; daily: Record<string, { date: string; pageViews: number; searches: number; productViews: number; cartAdds: number; checkoutStarts: number; purchases: number; revenue: number; itemsSold: number }>; paths: Record<string, { path: string; next: Record<string, number> }>; zeroResultSearches: { term: string; ts: number }[] } = { searches: {}, products: {}, daily: {}, paths: {}, zeroResultSearches: [] };
+  const rawData = useAnalyticsStore((s) => s.getData());
+  const analyticsData = mounted ? (rawData || emptyData) : emptyData;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
