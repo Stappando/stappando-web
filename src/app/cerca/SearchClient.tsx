@@ -140,30 +140,29 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const searchingRef = useRef(false);
   const priceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Build API URL from current filters
-  const buildApiUrl = useCallback((pageNum: number = 1) => {
-    const params = new URLSearchParams();
-    const searchTerm = query || tag || vendor || '';
-    if (searchTerm && !tag) params.set('q', searchTerm);
-    if (tag) params.set('tag', tag);
-    if (onSale) params.set('on_sale', 'true');
-    if (orderBy && orderBy !== 'popularity') params.set('sort', orderBy);
-    if (initialMaxPrice) params.set('max_price', initialMaxPrice);
-    else if (maxPrice < priceMax) params.set('max_price', String(maxPrice));
-    if (minPrice > 0) params.set('min_price', String(minPrice));
-    params.set('per_page', '24');
-    params.set('page', String(pageNum));
-    return `/api/search?${params.toString()}`;
-  }, [query, tag, vendor, onSale, orderBy, minPrice, maxPrice, priceMax, initialMaxPrice]);
+  // Fetch results from API — stable function, reads state via refs
+  const filtersRef = useRef({ query, tag, vendor, onSale, orderBy, minPrice, maxPrice, initialMaxPrice });
+  filtersRef.current = { query, tag, vendor, onSale, orderBy, minPrice, maxPrice, initialMaxPrice };
 
-  // Fetch results from API
   const doSearch = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     if (searchingRef.current) return;
     searchingRef.current = true;
     if (append) setLoadingMore(true); else setLoading(true);
 
+    const f = filtersRef.current;
+    const params = new URLSearchParams();
+    if (f.query && !f.tag) params.set('q', f.query);
+    if (f.tag) params.set('tag', f.tag);
+    if (f.vendor) params.set('q', f.vendor);
+    if (f.onSale) params.set('on_sale', 'true');
+    if (f.orderBy && f.orderBy !== 'popularity') params.set('sort', f.orderBy);
+    if (f.initialMaxPrice) params.set('max_price', f.initialMaxPrice);
+    if (f.minPrice > 0) params.set('min_price', String(f.minPrice));
+    params.set('per_page', '24');
+    params.set('page', String(pageNum));
+
     try {
-      const res = await fetch(buildApiUrl(pageNum));
+      const res = await fetch(`/api/search?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         const raw: SearchResult[] = data.products || [];
@@ -177,7 +176,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
           if (prices.length > 0) {
             const dynMax = Math.ceil(Math.max(...prices) / 2) * 2;
             setPriceMax(dynMax);
-            if (maxPrice === 999) setMaxPrice(dynMax);
+            setMaxPrice(dynMax);
           }
         }
         setHasMore(!!data.hasMore);
@@ -185,7 +184,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
         // Track search
         if (!append) {
-          const term = query || tag || vendor || '';
+          const term = f.query || f.tag || f.vendor || '';
           if (term) useAnalyticsStore.getState().trackSearch(term, raw.length);
         }
       }
@@ -195,11 +194,12 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
       setSearched(true);
       searchingRef.current = false;
     }
-  }, [buildApiUrl, query, tag, vendor, maxPrice]);
+  }, []);
 
-  // Initial search + re-search on filter change (except price which is debounced)
+  // Initial search + re-search on filter change
   useEffect(() => {
     setPage(1);
+    searchingRef.current = false; // Reset lock
     doSearch(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, tag, vendor, onSale, orderBy, initialMaxPrice]);
@@ -211,6 +211,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     if (priceTimerRef.current) clearTimeout(priceTimerRef.current);
     priceTimerRef.current = setTimeout(() => {
       setPage(1);
+      searchingRef.current = false;
       doSearch(1);
     }, 500);
   }, [doSearch]);
