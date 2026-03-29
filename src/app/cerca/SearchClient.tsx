@@ -137,41 +137,39 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(0);
-  const searchingRef = useRef(false);
   const priceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch results from API — stable function, reads state via refs
-  const filtersRef = useRef({ query, tag, vendor, onSale, orderBy, minPrice, maxPrice, initialMaxPrice });
-  filtersRef.current = { query, tag, vendor, onSale, orderBy, minPrice, maxPrice, initialMaxPrice };
-
-  const doSearch = useCallback(async (pageNum: number = 1, append: boolean = false) => {
-    if (searchingRef.current) return;
-    searchingRef.current = true;
-    if (append) setLoadingMore(true); else setLoading(true);
-
-    const f = filtersRef.current;
+  // Fetch results from API
+  const fetchResults = useCallback(async (opts: {
+    q: string; tagVal: string; vendorVal: string; onSaleVal: boolean;
+    sort: string; maxP: string; minP: number; pageNum: number; append: boolean;
+  }) => {
     const params = new URLSearchParams();
-    if (f.query && !f.tag) params.set('q', f.query);
-    if (f.tag) params.set('tag', f.tag);
-    if (f.vendor) params.set('q', f.vendor);
-    if (f.onSale) params.set('on_sale', 'true');
-    if (f.orderBy && f.orderBy !== 'popularity') params.set('sort', f.orderBy);
-    if (f.initialMaxPrice) params.set('max_price', f.initialMaxPrice);
-    if (f.minPrice > 0) params.set('min_price', String(f.minPrice));
+    if (opts.q && !opts.tagVal) params.set('q', opts.q);
+    if (opts.tagVal) params.set('tag', opts.tagVal);
+    if (opts.vendorVal && !opts.q && !opts.tagVal) params.set('q', opts.vendorVal);
+    if (opts.onSaleVal) params.set('on_sale', 'true');
+    if (opts.sort && opts.sort !== 'popularity') params.set('sort', opts.sort);
+    if (opts.maxP) params.set('max_price', opts.maxP);
+    if (opts.minP > 0) params.set('min_price', String(opts.minP));
     params.set('per_page', '24');
-    params.set('page', String(pageNum));
+    params.set('page', String(opts.pageNum));
+
+    if (opts.append) setLoadingMore(true); else setLoading(true);
 
     try {
-      const res = await fetch(`/api/search?${params.toString()}`);
+      const url = `/api/search?${params.toString()}`;
+      console.log('[Search] fetching:', url);
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         const raw: SearchResult[] = data.products || [];
+        console.log('[Search] got', raw.length, 'products');
 
-        if (append) {
+        if (opts.append) {
           setResults(prev => [...prev, ...raw]);
         } else {
           setResults(raw);
-          // Set dynamic price range from first page
           const prices = raw.map((r: SearchResult) => parseFloat(r.price) || 0).filter((p: number) => p > 0);
           if (prices.length > 0) {
             const dynMax = Math.ceil(Math.max(...prices) / 2) * 2;
@@ -182,25 +180,27 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
         setHasMore(!!data.hasMore);
         setTotal(data.total || raw.length);
 
-        // Track search
-        if (!append) {
-          const term = f.query || f.tag || f.vendor || '';
+        if (!opts.append) {
+          const term = opts.q || opts.tagVal || opts.vendorVal || '';
           if (term) useAnalyticsStore.getState().trackSearch(term, raw.length);
         }
       }
-    } catch { /* */ } finally {
+    } catch (e) {
+      console.error('[Search] error:', e);
+    } finally {
       setLoading(false);
       setLoadingMore(false);
       setSearched(true);
-      searchingRef.current = false;
     }
   }, []);
 
   // Initial search + re-search on filter change
   useEffect(() => {
     setPage(1);
-    searchingRef.current = false; // Reset lock
-    doSearch(1);
+    fetchResults({
+      q: query, tagVal: tag, vendorVal: vendor, onSaleVal: onSale,
+      sort: orderBy, maxP: initialMaxPrice, minP: minPrice, pageNum: 1, append: false,
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, tag, vendor, onSale, orderBy, initialMaxPrice]);
 
@@ -208,13 +208,23 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   const handlePriceChange = useCallback((type: 'min' | 'max', value: number) => {
     if (type === 'min') setMinPrice(value);
     else setMaxPrice(value);
+  }, []);
+
+  // Debounce price changes
+  useEffect(() => {
     if (priceTimerRef.current) clearTimeout(priceTimerRef.current);
     priceTimerRef.current = setTimeout(() => {
-      setPage(1);
-      searchingRef.current = false;
-      doSearch(1);
-    }, 500);
-  }, [doSearch]);
+      if (minPrice > 0 || maxPrice < priceMax) {
+        setPage(1);
+        fetchResults({
+          q: query, tagVal: tag, vendorVal: vendor, onSaleVal: onSale,
+          sort: orderBy, maxP: maxPrice < priceMax ? String(maxPrice) : initialMaxPrice, minP: minPrice, pageNum: 1, append: false,
+        });
+      }
+    }, 600);
+    return () => { if (priceTimerRef.current) clearTimeout(priceTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minPrice, maxPrice]);
 
   // Category change
   const handleCategory = useCallback((cat: string) => {
@@ -320,7 +330,10 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
                 onClick={() => {
                   const nextPage = page + 1;
                   setPage(nextPage);
-                  doSearch(nextPage, true);
+                  fetchResults({
+                    q: query, tagVal: tag, vendorVal: vendor, onSaleVal: onSale,
+                    sort: orderBy, maxP: initialMaxPrice, minP: minPrice, pageNum: nextPage, append: true,
+                  });
                 }}
                 disabled={loadingMore}
                 className="px-8 py-3 border border-[#005667] text-[#005667] rounded-lg text-[13px] font-semibold hover:bg-[#005667] hover:text-white transition-colors disabled:opacity-50"
