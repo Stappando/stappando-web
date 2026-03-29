@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
               <p style="font-size:12px;color:#888;margin:0;">Valido per un solo ordine · Cumulabile con altre promozioni</p>
             </div>
             <div style="text-align:center;padding:16px;">
-              <a href="https://stappando-web.vercel.app/cerca" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Scopri i vini →</a>
+              <a href="https://shop.stappando.it/cerca" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Scopri i vini →</a>
             </div>
           </div>`,
         from_email: 'noreply@stappando.it',

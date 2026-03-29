@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
               Il tuo account cantina su Stappando è stato creato.<br/>
               Per completare la registrazione, firma il contratto di adesione.
             </p>
-            <a href="https://stappando-web.vercel.app/vendor/contratto" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+            <a href="https://shop.stappando.it/vendor/contratto" style="display:inline-block;background:#005667;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
               Firma il contratto →
             </a>
           </div>

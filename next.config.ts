@@ -1,7 +1,19 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const WP_BACKEND = process.env.WP_BACKEND_URL || 'https://stappando.it';
+
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      // Proxy WordPress paths to SiteGround backend
+      { source: '/wp-json/:path*', destination: `${WP_BACKEND}/wp-json/:path*` },
+      { source: '/wp-admin/:path*', destination: `${WP_BACKEND}/wp-admin/:path*` },
+      { source: '/wp-content/:path*', destination: `${WP_BACKEND}/wp-content/:path*` },
+      { source: '/wp-login.php', destination: `${WP_BACKEND}/wp-login.php` },
+      { source: '/wp-includes/:path*', destination: `${WP_BACKEND}/wp-includes/:path*` },
+    ];
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000, // 1 year — wine product images are immutable
