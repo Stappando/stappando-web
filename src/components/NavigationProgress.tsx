@@ -42,8 +42,8 @@ export default function NavigationProgress() {
       <div className="fixed top-0 left-0 right-0 z-[9999] h-[3px] overflow-hidden">
         <div className="h-full bg-[#005667] animate-[loading_1.5s_ease-in-out_infinite]" />
       </div>
-      {/* Center spinner */}
-      <div className="fixed inset-0 z-[9998] flex items-center justify-center pointer-events-none">
+      {/* Backdrop blur + spinner */}
+      <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-opacity duration-200">
         <div className="w-8 h-8 border-3 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
       </div>
       <style jsx>{`
