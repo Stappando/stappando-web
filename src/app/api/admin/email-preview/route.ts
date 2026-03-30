@@ -274,6 +274,21 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       title: '18. Presentazione fiere — Stappando/Vineis/Anbrekabol',
       html: buildFiereEmail(),
     },
+    {
+      id: 'followup-1',
+      title: '19. Follow-up giorno 3 — Non dimenticarti di registrarti',
+      html: buildFollowUp1(),
+    },
+    {
+      id: 'followup-2',
+      title: '20. Follow-up giorno 7 — Sei ancora in tempo',
+      html: buildFollowUp2(),
+    },
+    {
+      id: 'followup-3',
+      title: '21. Follow-up giorno 14 — Ultima chiamata',
+      html: buildFollowUp3(),
+    },
   ];
 }
 
@@ -389,6 +404,167 @@ Un saluto,<br>
 </table>
 </body>
 </html>`;
+}
+
+function followUpLayout(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stappando</title></head>
+<body style="margin:0;padding:0;background:#f5f3ee;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
+<tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
+  <a href="https://shop.stappando.it" style="text-decoration:none;">
+    <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
+  </a>
+  <p style="margin:10px 0 0;font-size:11px;color:#999;">
+    <span style="color:#d9c39a;letter-spacing:1px;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+    <span style="color:#005667;font-weight:600;margin-left:4px;">4.6/5</span>
+    <span style="color:#bbb;margin-left:2px;">&middot; 1000+ recensioni</span>
+  </p>
+</td></tr>
+<tr><td style="padding:36px 36px 28px;">
+${content}
+</td></tr>
+<tr><td style="background:#1a1a1a;padding:24px 36px;text-align:center;">
+  <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px;">
+    <tr>
+      <td style="padding:0 6px;"><a href="https://www.instagram.com/stappando.it" style="text-decoration:none;color:#888;font-size:11px;">Instagram</a></td>
+      <td style="padding:0 6px;color:#555;">|</td>
+      <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:11px;">Facebook</a></td>
+      <td style="padding:0 6px;color:#555;">|</td>
+      <td style="padding:0 6px;"><a href="https://shop.stappando.it" style="text-decoration:none;color:#d9c39a;font-size:11px;font-weight:600;">stappando.it</a></td>
+    </tr>
+  </table>
+  <p style="margin:0;font-size:10px;color:#666;">&copy; 2026 Stappando Srl &mdash; P.IVA 15855161003</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+function buildFollowUp1(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ci siamo conosciuti qualche giorno fa e ti abbiamo presentato <strong>Stappando</strong>. Non dimenticarti di registrarti!
+</p>
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Perch&eacute; vendere su Stappando?</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
+  <p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+    <strong style="color:#005667;">\u2713 Zero costi di iscrizione</strong> &mdash; nessun canone mensile, paghi solo una commissione del 15% sulle vendite<br>
+    <strong style="color:#005667;">\u2713 Spedizioni gestite da noi</strong> &mdash; quando l&rsquo;ordine arriva, voi preparate il pacco. Il ritiro del corriere lo organizziamo noi<br>
+    <strong style="color:#005667;">\u2713 Visibilit&agrave; immediata</strong> &mdash; i vostri vini davanti a migliaia di appassionati che cercano qualit&agrave;<br>
+    <strong style="color:#005667;">\u2713 Pagamenti sicuri</strong> &mdash; incassate direttamente, noi gestiamo solo la piattaforma
+  </p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+La registrazione richiede <strong>meno di 5 minuti</strong>. Basta andare sul sito e cliccare &laquo;Vendi con noi&raquo;.
+</p>
+<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="background:#005667;border-radius:8px;">
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati ora &rarr;</a>
+</td></tr>
+</table>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Per qualsiasi domanda rispondi a questa mail o scrivici a <a href="mailto:info@stappando.it" style="color:#005667;font-weight:600;">info@stappando.it</a>
+</p>
+<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
+A presto,<br><strong>Il team Stappando</strong>
+</p>
+`);
+}
+
+function buildFollowUp2(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+&Egrave; passata una settimana dal nostro incontro. Volevo ricordarti che puoi ancora registrarti su Stappando e iniziare a vendere i tuoi vini online.
+</p>
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Chi vende gi&agrave; con noi dice:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:14px 16px;background:#f0f7f9;border-left:4px solid #005667;border-radius:0 8px 8px 0;">
+  <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#444;font-style:italic;">
+    &ldquo;Abbiamo iniziato a vendere su Stappando e in un mese abbiamo ricevuto ordini da tutta Italia. Il sistema &egrave; semplicissimo.&rdquo;
+  </p>
+  <p style="margin:0;font-size:12px;color:#888;">&mdash; Cantina partner</p>
+</td></tr>
+</table>
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Come funziona in 3 passi:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;">
+  <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
+    <strong style="color:#005667;">1.</strong> Ti registri su stappando.it &rarr; &laquo;Vendi con noi&raquo;<br>
+    <strong style="color:#005667;">2.</strong> Carichi i tuoi prodotti (ci pensiamo anche noi se vuoi)<br>
+    <strong style="color:#005667;">3.</strong> Quando arriva un ordine, prepari il pacco. Il corriere lo mandiamo noi
+  </p>
+</td></tr>
+</table>
+<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="background:#005667;border-radius:8px;">
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Inizia a vendere &rarr;</a>
+</td></tr>
+</table>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
+Non hai le foto dei prodotti? <strong>Possiamo farle noi per te.</strong> Spedisci i campioni a: Stappando Srl &ndash; Via Pomonte 67, Roma (Scarico 7&ndash;12)
+</p>
+<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
+A presto,<br><strong>Il team Stappando</strong>
+</p>
+`);
+}
+
+function buildFollowUp3(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Sono passate due settimane dal nostro incontro. Questa &egrave; l&rsquo;ultima mail che ti invio, ma volevo farti sapere che <strong>l&rsquo;offerta di lancio &egrave; ancora attiva</strong>.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:16px;background:linear-gradient(135deg,#005667,#007a8f);border-radius:12px;text-align:center;">
+  <p style="margin:0 0 4px;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Offerta esclusiva fiere</p>
+  <p style="margin:0 0 8px;font-size:22px;color:#ffffff;font-weight:800;">Commissione ridotta al 12%</p>
+  <p style="margin:0;font-size:13px;color:#ffffff;opacity:0.8;">Per i primi 3 mesi &mdash; invece del 15% standard</p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Registrati entro questa settimana e partirai con la commissione agevolata. Dopo si torna al 15%.
+</p>
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Cosa include Stappando:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;">
+  <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
+    \uD83C\uDF77 Vendita online a migliaia di clienti in tutta Italia<br>
+    \uD83D\uDE9A Gestione spedizioni e corriere inclusa<br>
+    \uD83D\uDCF8 Servizio fotografico prodotti gratuito<br>
+    \uD83C\uDF3F Accesso a Vineis.eu per esperienze in cantina<br>
+    \uD83D\uDCE6 Scatole Anbrekabol&reg; per spedizioni assicurate
+  </p>
+</td></tr>
+</table>
+<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="background:#005667;border-radius:8px;">
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Approfitta dell&rsquo;offerta &rarr;</a>
+</td></tr>
+</table>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
+Se hai bisogno di aiuto con la registrazione, rispondi a questa mail o chiamaci al <strong>06 92915330</strong>.
+</p>
+<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
+Un caro saluto,<br><strong>Il team Stappando</strong>
+</p>
+`);
 }
 
 export async function GET(req: NextRequest) {
