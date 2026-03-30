@@ -228,84 +228,72 @@ function searchWineInfo(name: string): { data: Partial<ProductData>; foundFields
   return { data, foundFields: [...new Set(found)] };
 }
 
-/* ── Parse technical text for extra info ───────────────── */
+/* ── Parse structured text — direct field matching ─────── */
 
 function parseText(text: string, data: Partial<ProductData>, found: string[]): void {
-  const lower = text.toLowerCase();
 
-  // Grapes / Uva
-  if (!data.uvaggio) {
-    const uvaMatch = text.match(/(?:uva|vitigno|uvaggio)[:\s]+([^\n.;]+)/i);
-    if (uvaMatch) { data.uvaggio = uvaMatch[1].trim().replace(/\s+/g, ' '); found.push('uvaggio'); }
-  }
+  // Direct field matchers: "Label: value" or "Label:\nvalue"
+  const fieldPatterns: { field: keyof ProductData; patterns: RegExp[] }[] = [
+    { field: 'produttore', patterns: [/(?:produttore|cantina|azienda)[:\s]+([^\n]+)/i] },
+    { field: 'categoria', patterns: [/(?:categoria|tipologia)[:\s]+([^\n]+)/i] },
+    { field: 'denominazione', patterns: [/(?:denominazione|doc|docg)[:\s]+([^\n]+)/i] },
+    { field: 'regione', patterns: [/(?:regione)[:\s]+([^\n]+)/i] },
+    { field: 'nazione', patterns: [/(?:nazione|paese)[:\s]+([^\n]+)/i] },
+    { field: 'uvaggio', patterns: [/(?:uvaggio|uva|vitigno|vitigni)[:\s]+([^\n]+)/i] },
+    { field: 'gradazione', patterns: [/(?:gradazione|alcol|gradazione alcolica)[:\s]+([^\n]+)/i] },
+    { field: 'annata', patterns: [/(?:annata)[:\s]+([^\n]+)/i] },
+    { field: 'formato', patterns: [/(?:formato|bottiglia)[:\s]+([^\n]+)/i] },
+    { field: 'descBreve', patterns: [/(?:descrizione breve)[:\s]*\n?([^\n]+)/i] },
+    { field: 'descLunga', patterns: [/(?:descrizione lunga)[:\s]*\n?([\s\S]+?)(?=\n(?:alla vista|al naso|al palato|abbinamenti|temperatura|momento|vinificazione|affinamento|terreno|esposizione|altitudine|zona|resa|vendemmia|bottiglie|certificazioni|allergeni|tag)[:\s]|\n\n|$)/i] },
+    { field: 'allaVista', patterns: [/(?:alla vista)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'alNaso', patterns: [/(?:al naso)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'alPalato', patterns: [/(?:al palato)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'abbinamenti', patterns: [/(?:abbinamenti|abbinamento)[:\s]*\n?([^\n]+)/i] },
+    { field: 'temperaturaServizio', patterns: [/(?:temperatura(?:\s+di)?\s*servizio|temperatura\s*servizio|temperatura)[:\s]+([^\n]+)/i] },
+    { field: 'momentoConsumo', patterns: [/(?:momento(?:\s+di)?\s*consumo|beva|quando bere)[:\s]+([^\n]+)/i] },
+    { field: 'vinificazione', patterns: [/(?:vinificazione|vinicazione)[:\s]*\n?([\s\S]+?)(?=\n(?:affinamento|terreno|esposizione|altitudine|zona|resa|vendemmia|bottiglie|certificazioni|allergeni|tag|alla vista|al naso|al palato|abbinamenti|temperatura|momento)[:\s]|\n\n|$)/i] },
+    { field: 'affinamento', patterns: [/(?:affinamento|invecchiamento|maturazione)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'terreno', patterns: [/(?:terreno|suolo|tipo di terreno)[:\s]+([^\n]+)/i] },
+    { field: 'esposizione', patterns: [/(?:esposizione)[:\s]+([^\n]+)/i] },
+    { field: 'altitudine', patterns: [/(?:altitudine|quota)[:\s]+([^\n]+)/i] },
+    { field: 'zonaProduzione', patterns: [/(?:zona di produzione|zona|localit[àa])[:\s]+([^\n]+)/i] },
+    { field: 'resa', patterns: [/(?:resa)[:\s]+([^\n]+)/i] },
+    { field: 'vendemmia', patterns: [/(?:vendemmia|raccolta)[:\s]+([^\n]+)/i] },
+    { field: 'bottiglieProdotte', patterns: [/(?:bottiglie(?:\s+prodotte)?|produzione)[:\s]+([^\n]+)/i] },
+    { field: 'certificazioni', patterns: [/(?:certificazioni|certificazione|bio|biodinamico)[:\s]+([^\n]+)/i] },
+    { field: 'allergeni', patterns: [/(?:allergeni)[:\s]+([^\n]+)/i] },
+    { field: 'tags', patterns: [/(?:tag|tags)[:\s]+([^\n]+)/i] },
+  ];
 
-  // Region / Zona
-  if (!data.regione) {
-    const zonaMatch = text.match(/(?:zona di produzione|zona|regione)[:\s]+([^\n.;]+)/i);
-    if (zonaMatch) {
-      const zona = zonaMatch[1].trim();
-      // Try to extract known region
-      const regions = ['Piemonte','Toscana','Veneto','Lombardia','Sicilia','Puglia','Campania','Abruzzo','Marche','Emilia-Romagna','Sardegna','Calabria','Umbria','Friuli Venezia Giulia','Trentino-Alto Adige','Liguria','Lazio','Basilicata','Molise'];
-      for (const r of regions) { if (zona.toLowerCase().includes(r.toLowerCase()) || lower.includes(r.toLowerCase())) { data.regione = r; found.push('regione'); break; } }
-      if (!data.regione && zona.includes('Macerata')) { data.regione = 'Marche'; found.push('regione'); }
+  for (const { field, patterns } of fieldPatterns) {
+    if (data[field]) continue; // Don't overwrite existing
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const value = match[1].trim().replace(/\s+/g, ' ');
+        if (value && value.toLowerCase() !== 'n/d' && value !== '-' && value !== '') {
+          (data as Record<string, string>)[field] = value;
+          if (!found.includes(field)) found.push(field);
+        }
+        break;
+      }
     }
   }
 
-  // If region still not found, search in full text
+  // Fallback: extract alcohol from anywhere in text
+  if (!data.gradazione) {
+    const alcMatch = text.match(/(\d{1,2}[.,]\d{1,2})\s*%\s*(?:vol)?/i);
+    if (alcMatch) { data.gradazione = alcMatch[1].replace(',', '.') + '% vol'; found.push('gradazione'); }
+  }
+
+  // Fallback: extract region from known names in text
   if (!data.regione) {
     const regions = ['Piemonte','Toscana','Veneto','Lombardia','Sicilia','Puglia','Campania','Abruzzo','Marche','Emilia-Romagna','Sardegna','Calabria','Umbria','Friuli Venezia Giulia','Trentino-Alto Adige','Liguria','Lazio','Basilicata','Molise'];
+    const lower = text.toLowerCase();
     for (const r of regions) { if (lower.includes(r.toLowerCase())) { data.regione = r; found.push('regione'); break; } }
   }
 
-  // Alcohol
-  if (!data.gradazione) {
-    const alcMatch = text.match(/(\d{1,2}[.,]\d{1,2})\s*%\s*(?:vol)?/i) || text.match(/gradazione[:\s]+(\d{1,2}[.,]?\d*)\s*%?/i);
-    if (alcMatch) { data.gradazione = alcMatch[1].replace(',', '.') + '%'; found.push('gradazione'); }
-  }
-
-  // Vinification
-  if (!data.vinificazione) {
-    const vinMatch = text.match(/(?:vinificazione|vinicazione)[:\s]+([^\n]+(?:\n[^\n]+){0,3})/i);
-    if (vinMatch) { data.vinificazione = vinMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('vinificazione'); }
-  }
-
-  // Aging / Affinamento
-  if (!data.affinamento) {
-    const affMatch = text.match(/(?:affinamento|invecchiamento|maturazione)[:\s]+([^\n]+(?:\n[^\n]+){0,2})/i);
-    if (affMatch) { data.affinamento = affMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('affinamento'); }
-  }
-
-  // Tasting: color/sight
-  if (!data.allaVista) {
-    const vistaMatch = text.match(/(?:colore|alla vista|aspetto)[:\s]+([^\n.]+)/i) || text.match(/il colore[:\s]+([^\n.]+)/i) || text.match(/colore\s+(?:è\s+)?([^\n.]+)/i);
-    if (vistaMatch) { data.allaVista = vistaMatch[1].trim(); found.push('allaVista'); }
-  }
-
-  // Tasting: nose
-  if (!data.alNaso) {
-    const nasoMatch = text.match(/(?:al naso|profumo|bouquet|aromi)[:\s]+([^\n.]+)/i) || text.match(/naso\s+(?:si\s+)?(?:caratterizza\s+)?(?:per\s+)?([^\n.]+)/i);
-    if (nasoMatch) { data.alNaso = nasoMatch[1].trim(); found.push('alNaso'); }
-  }
-
-  // Tasting: palate
-  if (!data.alPalato) {
-    const palatoMatch = text.match(/(?:al palato|in bocca|gusto)[:\s]+([^\n.]+)/i) || text.match(/bocca\s+(?:risulta\s+)?([^\n.]+)/i);
-    if (palatoMatch) { data.alPalato = palatoMatch[1].trim(); found.push('alPalato'); }
-  }
-
-  // Pairings
-  if (!data.abbinamenti) {
-    const abbMatch = text.match(/(?:abbina|abbinamento|abbinamenti|si abbina)[:\s]+([^\n.]+)/i);
-    if (abbMatch) { data.abbinamenti = abbMatch[1].trim(); found.push('abbinamenti'); }
-  }
-
-  // Serving temp
-  if (!data.temperaturaServizio) {
-    const tempMatch = text.match(/(?:temperatura|servire)[:\s]+(\d+[-–]\d+\s*°?\s*C)/i);
-    if (tempMatch) { data.temperaturaServizio = tempMatch[1]; found.push('temperaturaServizio'); }
-  }
-
-  // Description from Caratteristiche
+  // Fallback: description from Caratteristiche
   if (!data.descLunga) {
     const charMatch = text.match(/(?:caratteristiche|descrizione)[:\s]+([^\n]+(?:\n[^\n]+){0,5})/i);
     if (charMatch) { data.descLunga = charMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('descLunga'); }
