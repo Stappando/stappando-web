@@ -199,181 +199,95 @@ export default function FierePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Row 1: Nome + Cognome */}
+          {/* EMAIL — big, prominent, first field */}
+          <div>
+            <label className="block text-sm font-bold text-[#005667] mb-1">Email produttore</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={updateField('email')}
+              required
+              autoFocus
+              placeholder="email@cantina.it"
+              className="w-full h-[56px] px-4 rounded-xl border-2 border-[#005667] text-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#d9c39a] focus:border-[#005667]"
+            />
+          </div>
+
+          {/* Conosciuto a + Contattato da — pre-filled, sticky */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Nome *</label>
-              <input
-                type="text"
-                value={form.nome}
-                onChange={updateField('nome')}
-                required
-                className={inputClass}
-              />
+              <label className={labelClass}>Conosciuto a</label>
+              <input type="text" value={form.conosciutoA} onChange={updateField('conosciutoA')} placeholder="es. Vinitaly 2026" className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Cognome *</label>
-              <input
-                type="text"
-                value={form.cognome}
-                onChange={updateField('cognome')}
-                required
-                className={inputClass}
-              />
+              <label className={labelClass}>Contattato da</label>
+              <input type="text" value={form.contattatoDa} onChange={updateField('contattatoDa')} placeholder="es. Roberto" className={inputClass} />
             </div>
           </div>
 
-          {/* Row 2: Email + Telefono */}
+          {/* Azienda + Contatto */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Email *</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={updateField('email')}
-                required
-                className={inputClass}
-              />
+              <label className={labelClass}>Azienda / Cantina</label>
+              <input type="text" value={form.azienda} onChange={updateField('azienda')} className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Telefono</label>
-              <input
-                type="tel"
-                value={form.telefono}
-                onChange={updateField('telefono')}
-                className={inputClass}
-              />
+              <label className={labelClass}>Nome contatto</label>
+              <input type="text" value={form.nome} onChange={updateField('nome')} placeholder="Nome Cognome" className={inputClass} />
             </div>
           </div>
 
-          {/* Row 3: Azienda/Cantina */}
+          {/* Telefono */}
           <div>
-            <label className={labelClass}>Azienda / Cantina *</label>
-            <input
-              type="text"
-              value={form.azienda}
-              onChange={updateField('azienda')}
-              required
-              className={inputClass}
-            />
+            <label className={labelClass}>Telefono</label>
+            <input type="tel" value={form.telefono} onChange={updateField('telefono')} className={inputClass} />
           </div>
 
-          {/* Row 4: Indirizzo + CAP */}
-          <div className="grid grid-cols-[1fr_120px] gap-3">
-            <div>
-              <label className={labelClass}>Indirizzo</label>
-              <input
-                type="text"
-                value={form.indirizzo}
-                onChange={updateField('indirizzo')}
-                className={inputClass}
-              />
+          {/* Collapsible extra fields */}
+          <details className="group">
+            <summary className="cursor-pointer text-xs font-semibold text-[#005667] flex items-center gap-1">
+              <span className="group-open:rotate-90 transition-transform">▶</span>
+              Altri dati (opzionali)
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-[1fr_100px] gap-3">
+                <div>
+                  <label className={labelClass}>Indirizzo</label>
+                  <input type="text" value={form.indirizzo} onChange={updateField('indirizzo')} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>CAP</label>
+                  <input type="text" value={form.cap} onChange={updateField('cap')} maxLength={5} inputMode="numeric" className={inputClass} />
+                </div>
+              </div>
+              <div className="grid grid-cols-[1fr_80px] gap-3">
+                <div>
+                  <label className={labelClass}>Città</label>
+                  <input type="text" value={form.citta} onChange={updateField('citta')} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Prov.</label>
+                  <input type="text" value={form.provincia} onChange={updateField('provincia')} maxLength={2} placeholder="RM" className={inputClass + ' uppercase'} />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Regione</label>
+                <select value={form.regione} onChange={updateField('regione')} className={inputClass}>
+                  <option value="">-- Seleziona --</option>
+                  {REGIONI_ITALIANE.filter(Boolean).map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Partita IVA</label>
+                <input type="text" value={form.partitaIva} onChange={updateField('partitaIva')} maxLength={11} inputMode="numeric" className={inputClass} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>CAP *</label>
-              <input
-                type="text"
-                value={form.cap}
-                onChange={updateField('cap')}
-                required
-                maxLength={5}
-                inputMode="numeric"
-                className={inputClass}
-              />
-            </div>
-          </div>
+          </details>
 
-          {/* Row 5: Citta + Provincia */}
-          <div className="grid grid-cols-[1fr_100px] gap-3">
-            <div>
-              <label className={labelClass}>Città *</label>
-              <input
-                type="text"
-                value={form.citta}
-                onChange={updateField('citta')}
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Provincia *</label>
-              <input
-                type="text"
-                value={form.provincia}
-                onChange={updateField('provincia')}
-                required
-                maxLength={2}
-                placeholder="es. RM"
-                className={inputClass + ' uppercase'}
-              />
-            </div>
-          </div>
-
-          {/* Row 6: Regione */}
-          <div>
-            <label className={labelClass}>Regione</label>
-            <select
-              value={form.regione}
-              onChange={updateField('regione')}
-              className={inputClass}
-            >
-              <option value="">-- Seleziona regione --</option>
-              {REGIONI_ITALIANE.filter(Boolean).map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Row 7: Partita IVA */}
-          <div>
-            <label className={labelClass}>Partita IVA</label>
-            <input
-              type="text"
-              value={form.partitaIva}
-              onChange={updateField('partitaIva')}
-              maxLength={11}
-              inputMode="numeric"
-              className={inputClass}
-            />
-          </div>
-
-          {/* Row 8: Conosciuto a */}
-          <div>
-            <label className={labelClass}>Conosciuto a (evento) *</label>
-            <input
-              type="text"
-              value={form.conosciutoA}
-              onChange={updateField('conosciutoA')}
-              required
-              placeholder='es. Vinitaly 2026'
-              className={inputClass}
-            />
-          </div>
-
-          {/* Row 9: Contattato da */}
-          <div>
-            <label className={labelClass}>Contattato da *</label>
-            <input
-              type="text"
-              value={form.contattatoDa}
-              onChange={updateField('contattatoDa')}
-              required
-              placeholder='es. Roberto'
-              className={inputClass}
-            />
-          </div>
-
-          {/* Row 10: Note */}
+          {/* Note */}
           <div>
             <label className={labelClass}>Note</label>
-            <textarea
-              value={form.note}
-              onChange={updateField('note')}
-              rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent resize-none"
-            />
+            <textarea value={form.note} onChange={updateField('note')} rows={2} placeholder="Appunti veloci..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent resize-none" />
           </div>
 
           {/* Submit */}

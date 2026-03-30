@@ -247,14 +247,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'JSON non valido' }, { status: 400 });
   }
 
-  // Validate required fields
-  const required: (keyof FiereBody)[] = [
-    'nome', 'cognome', 'email', 'azienda', 'cap', 'citta', 'provincia', 'conosciutoA', 'contattatoDa',
-  ];
-  for (const field of required) {
-    if (!body[field]?.trim()) {
-      return NextResponse.json({ error: `Campo obbligatorio mancante: ${field}` }, { status: 400 });
-    }
+  // Only email is required
+  if (!body.email?.trim()) {
+    return NextResponse.json({ error: 'Email obbligatoria' }, { status: 400 });
   }
 
   // Basic email validation
@@ -281,8 +276,8 @@ export async function POST(req: NextRequest) {
     const serviceAccount = JSON.parse(saJson);
     const accessToken = await getAccessToken(serviceAccount);
 
-    // Check for duplicate email
-    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!D:D`);
+    // Check for duplicate email (column E)
+    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!E:E`);
     const emailLower = body.email.trim().toLowerCase();
     const isDuplicate = existingRows.some(
       (row) => row[0] && row[0].trim().toLowerCase() === emailLower,
@@ -293,26 +288,41 @@ export async function POST(req: NextRequest) {
     const pad = (n: number) => String(n).padStart(2, '0');
     const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
+    // Map to spreadsheet columns:
+    // A: FOLLOW | B: Azienda | C: Conosciuti a / Fonte | D: Contacting
+    // E: Email | F: Sitoweb | G: Indirizzo | H: cap | I: città | J: provincia
+    // K: regione | L: contatto | M: Telefono | N: P.Iva | O: CODICE FISCALE
+    // P: CODICE UNIVOCO | Q: Annotazioni | R: shop on line | S: Closing
+    // T: Ultimo contatto | U: Messaggio Direct | V: Iscrizione | W: Mail
+    // X: Contratti firmati | Y: Campioni ricevuti | Z: Scatole spedite
+    // AA: Schede pubblicate | AB: Altro
     const row = [
-      dateStr,
-      body.nome.trim(),
-      body.cognome.trim(),
-      body.email.trim(),
-      body.telefono.trim(),
-      body.azienda.trim(),
-      body.indirizzo.trim(),
-      body.cap.trim(),
-      body.citta.trim(),
-      body.provincia.trim().toUpperCase(),
-      body.regione,
-      body.partitaIva.trim(),
-      body.conosciutoA.trim(),
-      body.contattatoDa.trim(),
-      body.note.trim(),
-      isDuplicate ? 'DUPLICATO \u26A0\uFE0F' : '',
+      isDuplicate ? 'DUPLICATO ⚠️' : '',           // A: FOLLOW
+      body.azienda.trim(),                           // B: Azienda
+      body.conosciutoA.trim(),                       // C: Conosciuti a / Fonte
+      body.contattatoDa.trim(),                      // D: Contacting
+      body.email.trim(),                             // E: Email
+      '',                                            // F: Sitoweb
+      body.indirizzo.trim(),                         // G: Indirizzo
+      body.cap.trim(),                               // H: cap
+      body.citta.trim(),                             // I: città
+      body.provincia.trim().toUpperCase(),            // J: provincia
+      body.regione,                                  // K: regione
+      `${body.nome.trim()} ${body.cognome.trim()}`,  // L: contatto
+      body.telefono.trim(),                          // M: Telefono
+      body.partitaIva.trim(),                        // N: P.Iva
+      '',                                            // O: CODICE FISCALE
+      '',                                            // P: CODICE UNIVOCO
+      body.note.trim(),                              // Q: Annotazioni
+      '',                                            // R: shop on line
+      '',                                            // S: Closing
+      dateStr,                                       // T: Ultimo contatto
+      '',                                            // U: Messaggio Direct
+      '',                                            // V: Iscrizione
+      'Inviata da CRM Fiere',                        // W: Mail
     ];
 
-    await sheetsAppend(accessToken, `${SHEET_NAME}!A:P`, [row]);
+    await sheetsAppend(accessToken, `${SHEET_NAME}!A:W`, [row]);
 
     return NextResponse.json({ success: true, duplicate: isDuplicate });
   } catch (err) {
