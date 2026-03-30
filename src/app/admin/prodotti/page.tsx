@@ -120,11 +120,16 @@ export default function ProdottiPage() {
 
   // Fetch vendors + producers on mount
   useEffect(() => {
-    // Vendors are just the known ones for now
-    setVendors([
-      { id: 0, name: 'Stappando Enoteca (default)' },
-      { id: 6611, name: 'Cantina Merlotta (vendor7)' },
-    ]);
+    // Fetch all vendors from WCFM
+    setVendors([{ id: 0, name: 'Stappando Enoteca (default)' }]);
+    fetch('/api/admin/prodotti/vendors')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setVendors([{ id: 0, name: 'Stappando Enoteca (default)' }, ...data]);
+        }
+      })
+      .catch(() => {});
 
     // Fetch ALL producers (including empty ones) from WC API via our proxy
     fetch('/api/vendor/taxonomies?slug=pa_produttore&per_page=200')
