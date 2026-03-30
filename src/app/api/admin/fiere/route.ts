@@ -332,8 +332,8 @@ export async function POST(req: NextRequest) {
     const serviceAccount = JSON.parse(saJson);
     const accessToken = await getAccessToken(serviceAccount);
 
-    // Check for duplicate email (column E)
-    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!E:E`);
+    // Check for duplicate email (column D)
+    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!D:D`);
     const emailLower = body.email.trim().toLowerCase();
     const isDuplicate = existingRows.some(
       (row) => row[0] && row[0].trim().toLowerCase() === emailLower,
@@ -345,40 +345,36 @@ export async function POST(req: NextRequest) {
     const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
     // Map to spreadsheet columns:
-    // A: FOLLOW | B: Azienda | C: Conosciuti a / Fonte | D: Contacting
-    // E: Email | F: Sitoweb | G: Indirizzo | H: cap | I: città | J: provincia
-    // K: regione | L: contatto | M: Telefono | N: P.Iva | O: CODICE FISCALE
-    // P: CODICE UNIVOCO | Q: Annotazioni | R: shop on line | S: Closing
-    // T: Ultimo contatto | U: Messaggio Direct | V: Iscrizione | W: Mail
-    // X: Contratti firmati | Y: Campioni ricevuti | Z: Scatole spedite
-    // AA: Schede pubblicate | AB: Altro
+    // A: Azienda | B: Conosciuti a / Fonte | C: Contacting | D: Email
+    // E: Sitoweb | F: Indirizzo | G: cap | H: città | I: provincia
+    // J: regione | K: contatto | L: Telefono | M: P.Iva | N: CODICE FISCALE
+    // O: CODICE UNIVOCO | P: Annotazioni | Q: shop on line | R: Closing
+    // S: Presentazione | T: Ultimo contatto | U: Duplicato
     const row = [
-      isDuplicate ? 'DUPLICATO ⚠️' : '',           // A: FOLLOW
-      body.azienda.trim(),                           // B: Azienda
-      body.conosciutoA.trim(),                       // C: Conosciuti a / Fonte
-      body.contattatoDa.trim(),                      // D: Contacting
-      body.email.trim(),                             // E: Email
-      '',                                            // F: Sitoweb
-      body.indirizzo.trim(),                         // G: Indirizzo
-      body.cap.trim(),                               // H: cap
-      body.citta.trim(),                             // I: città
-      body.provincia.trim().toUpperCase(),            // J: provincia
-      body.regione,                                  // K: regione
-      `${body.nome.trim()} ${body.cognome.trim()}`,  // L: contatto
-      body.telefono.trim(),                          // M: Telefono
-      body.partitaIva.trim(),                        // N: P.Iva
-      '',                                            // O: CODICE FISCALE
-      '',                                            // P: CODICE UNIVOCO
-      body.note.trim(),                              // Q: Annotazioni
-      '',                                            // R: shop on line
-      '',                                            // S: Closing
+      body.azienda.trim(),                           // A: Azienda
+      body.conosciutoA.trim(),                       // B: Conosciuti a / Fonte
+      body.contattatoDa.trim(),                      // C: Contacting
+      body.email.trim(),                             // D: Email
+      '',                                            // E: Sitoweb
+      body.indirizzo.trim(),                         // F: Indirizzo
+      body.cap.trim(),                               // G: cap
+      body.citta.trim(),                             // H: città
+      body.provincia.trim().toUpperCase(),            // I: provincia
+      body.regione,                                  // J: regione
+      `${body.nome.trim()} ${body.cognome.trim()}`.trim(),  // K: contatto
+      body.telefono.trim(),                          // L: Telefono
+      body.partitaIva.trim(),                        // M: P.Iva
+      '',                                            // N: CODICE FISCALE
+      '',                                            // O: CODICE UNIVOCO
+      body.note.trim(),                              // P: Annotazioni
+      '',                                            // Q: shop on line
+      '',                                            // R: Closing
+      'Inviata',                                     // S: Presentazione
       dateStr,                                       // T: Ultimo contatto
-      '',                                            // U: Messaggio Direct
-      '',                                            // V: Iscrizione
-      'Inviata da CRM Fiere',                        // W: Mail
+      isDuplicate ? 'DUPLICATO ⚠️' : '',            // U: Duplicato
     ];
 
-    await sheetsAppend(accessToken, `${SHEET_NAME}!A:W`, [row]);
+    await sheetsAppend(accessToken, `${SHEET_NAME}!A:U`, [row]);
 
     return NextResponse.json({ success: true, duplicate: isDuplicate });
   } catch (err) {
