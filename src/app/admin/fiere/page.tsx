@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /* ── Constants ─────────────────────────────────────────── */
 
@@ -62,6 +62,12 @@ export default function FierePage() {
   const [loading, setLoading] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>(null);
   const [alertMsg, setAlertMsg] = useState('');
+
+  // Auto-login from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auto') === ADMIN_PASSWORD) setAuthed(true);
+  }, []);
 
   /* ── Auth ─────────────────────────────────────────────── */
 

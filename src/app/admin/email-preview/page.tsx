@@ -16,6 +16,14 @@ export default function EmailPreviewPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Auto-login from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const auto = params.get('auto');
+    if (auto) fetchPreviews(auto);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchPreviews = useCallback(async (pwd: string) => {
     setLoading(true);
     setError('');

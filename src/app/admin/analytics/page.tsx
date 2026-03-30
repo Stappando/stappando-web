@@ -87,9 +87,13 @@ export default function AnalyticsPage() {
 
   const clearData = useAnalyticsStore((s) => s.clearData);
 
-  // Hydration guard
+  // Hydration guard + auto-login from URL param
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auto') === ADMIN_PASSWORD) setAuthed(true);
+  }, []);
 
   const emptyData: { searches: Record<string, { term: string; count: number; zeroResults: number; lastSearched: number }>; products: Record<string, { id: number; name: string; views: number; cartAdds: number; sources: Record<string, number> }>; daily: Record<string, { date: string; pageViews: number; searches: number; productViews: number; cartAdds: number; checkoutStarts: number; purchases: number; revenue: number; itemsSold: number }>; paths: Record<string, { path: string; next: Record<string, number> }>; zeroResultSearches: { term: string; ts: number }[] } = { searches: {}, products: {}, daily: {}, paths: {}, zeroResultSearches: [] };
   const rawData = useAnalyticsStore((s) => s.getData());
