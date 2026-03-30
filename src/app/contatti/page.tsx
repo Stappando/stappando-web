@@ -68,7 +68,7 @@ export default function ContattiPage() {
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-border text-center">
             <span className="block mb-3"><svg className="w-7 h-7 text-[#055667] mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg></span>
-            <h3 className="font-semibold text-brand-primary mb-1">Ufficio</h3>
+            <h3 className="font-semibold text-brand-primary mb-1">Logistica</h3>
             <p className="text-brand-text text-sm">
               Piazza Nicola Maria Nicolai 11
             </p>

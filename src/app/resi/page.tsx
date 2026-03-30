@@ -75,8 +75,8 @@ export default function ResiPage() {
               },
               {
                 icon: 'warning',
-                title: 'Merce avariata o danneggiata',
-                desc: 'Il prodotto è arrivato danneggiato, avariato o presenta difetti evidenti.',
+                title: 'Merce danneggiata durante il trasporto',
+                desc: 'Il prodotto è arrivato con bottiglie rotte o danneggiate dal corriere. Scatta foto del pacco e dei prodotti e contattaci entro 48h.',
               },
               {
                 icon: 'box',
