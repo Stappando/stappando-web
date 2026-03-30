@@ -12,6 +12,7 @@ function getMandrillConfig() {
 interface MandrillRecipient {
   email: string;
   name?: string;
+  type?: 'to' | 'cc' | 'bcc';
 }
 
 interface MandrillAttachment {
