@@ -109,6 +109,7 @@ function Spinner() {
 export default function ProdottiPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [searchName, setSearchName] = useState('');
+  const [techText, setTechText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProductData>(emptyProduct);
@@ -182,7 +183,7 @@ export default function ProdottiPage() {
       const res = await fetch('/api/admin/prodotti/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: searchName.trim() }),
+        body: JSON.stringify({ name: searchName.trim(), text: techText.trim() }),
       });
 
       if (!res.ok) {
@@ -268,32 +269,45 @@ export default function ProdottiPage() {
         {/* ── STEP 1: Search ──────────────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
-            <div className="text-center py-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Cerca un vino</h2>
+            <div className="text-center py-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Crea scheda prodotto</h2>
               <p className="text-sm text-gray-500">
-                Inserisci il nome del vino e cercheremo automaticamente le informazioni
+                Inserisci il nome del vino e incolla la scheda tecnica
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Nome del vino *</label>
               <input
                 type="text"
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Nome del vino..."
+                placeholder="es. Le Grane Colli Maceratesi Ribona DOC 2022"
                 autoFocus
-                className="flex-1 h-[56px] px-4 rounded-xl border-2 border-[#005667] text-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#d9c39a] focus:border-[#005667]"
+                className="w-full h-[52px] px-4 rounded-xl border-2 border-[#005667] text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#d9c39a]"
               />
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchName.trim()}
-                className="h-[56px] px-6 text-white rounded-xl font-semibold text-sm disabled:opacity-60 whitespace-nowrap"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                {loading ? <Spinner /> : '\uD83D\uDD0D Cerca info'}
-              </button>
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Scheda tecnica / descrizione (opzionale)</label>
+              <textarea
+                value={techText}
+                onChange={(e) => setTechText(e.target.value)}
+                rows={6}
+                placeholder="Incolla qui la scheda tecnica, il testo dal sito del produttore, o qualsiasi info sul vino..."
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] resize-y"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Più info incolli, più campi verranno compilati automaticamente</p>
+            </div>
+
+            <button
+              onClick={handleSearch}
+              disabled={loading || !searchName.trim()}
+              className="w-full h-[52px] text-white rounded-xl font-semibold text-sm disabled:opacity-60"
+              style={{ backgroundColor: PRIMARY }}
+            >
+              {loading ? <Spinner /> : '🔍 Analizza e compila scheda'}
+            </button>
 
             {loading && (
               <div className="text-center py-4">

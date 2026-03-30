@@ -216,10 +216,100 @@ function searchWineInfo(name: string): { data: Partial<ProductData>; foundFields
   return { data, foundFields: [...new Set(found)] };
 }
 
+/* ── Parse technical text for extra info ───────────────── */
+
+function parseText(text: string, data: Partial<ProductData>, found: string[]): void {
+  const lower = text.toLowerCase();
+
+  // Grapes / Uva
+  if (!data.uvaggio) {
+    const uvaMatch = text.match(/(?:uva|vitigno|uvaggio)[:\s]+([^\n.;]+)/i);
+    if (uvaMatch) { data.uvaggio = uvaMatch[1].trim().replace(/\s+/g, ' '); found.push('uvaggio'); }
+  }
+
+  // Region / Zona
+  if (!data.regione) {
+    const zonaMatch = text.match(/(?:zona di produzione|zona|regione)[:\s]+([^\n.;]+)/i);
+    if (zonaMatch) {
+      const zona = zonaMatch[1].trim();
+      // Try to extract known region
+      const regions = ['Piemonte','Toscana','Veneto','Lombardia','Sicilia','Puglia','Campania','Abruzzo','Marche','Emilia-Romagna','Sardegna','Calabria','Umbria','Friuli Venezia Giulia','Trentino-Alto Adige','Liguria','Lazio','Basilicata','Molise'];
+      for (const r of regions) { if (zona.toLowerCase().includes(r.toLowerCase()) || lower.includes(r.toLowerCase())) { data.regione = r; found.push('regione'); break; } }
+      if (!data.regione && zona.includes('Macerata')) { data.regione = 'Marche'; found.push('regione'); }
+    }
+  }
+
+  // If region still not found, search in full text
+  if (!data.regione) {
+    const regions = ['Piemonte','Toscana','Veneto','Lombardia','Sicilia','Puglia','Campania','Abruzzo','Marche','Emilia-Romagna','Sardegna','Calabria','Umbria','Friuli Venezia Giulia','Trentino-Alto Adige','Liguria','Lazio','Basilicata','Molise'];
+    for (const r of regions) { if (lower.includes(r.toLowerCase())) { data.regione = r; found.push('regione'); break; } }
+  }
+
+  // Alcohol
+  if (!data.gradazione) {
+    const alcMatch = text.match(/(\d{1,2}[.,]\d{1,2})\s*%\s*(?:vol)?/i) || text.match(/gradazione[:\s]+(\d{1,2}[.,]?\d*)\s*%?/i);
+    if (alcMatch) { data.gradazione = alcMatch[1].replace(',', '.') + '%'; found.push('gradazione'); }
+  }
+
+  // Vinification
+  if (!data.vinificazione) {
+    const vinMatch = text.match(/(?:vinificazione|vinicazione)[:\s]+([^\n]+(?:\n[^\n]+){0,3})/i);
+    if (vinMatch) { data.vinificazione = vinMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('vinificazione'); }
+  }
+
+  // Aging / Affinamento
+  if (!data.affinamento) {
+    const affMatch = text.match(/(?:affinamento|invecchiamento|maturazione)[:\s]+([^\n]+(?:\n[^\n]+){0,2})/i);
+    if (affMatch) { data.affinamento = affMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('affinamento'); }
+  }
+
+  // Tasting: color/sight
+  if (!data.allaVista) {
+    const vistaMatch = text.match(/(?:colore|alla vista|aspetto)[:\s]+([^\n.]+)/i) || text.match(/il colore[:\s]+([^\n.]+)/i) || text.match(/colore\s+(?:è\s+)?([^\n.]+)/i);
+    if (vistaMatch) { data.allaVista = vistaMatch[1].trim(); found.push('allaVista'); }
+  }
+
+  // Tasting: nose
+  if (!data.alNaso) {
+    const nasoMatch = text.match(/(?:al naso|profumo|bouquet|aromi)[:\s]+([^\n.]+)/i) || text.match(/naso\s+(?:si\s+)?(?:caratterizza\s+)?(?:per\s+)?([^\n.]+)/i);
+    if (nasoMatch) { data.alNaso = nasoMatch[1].trim(); found.push('alNaso'); }
+  }
+
+  // Tasting: palate
+  if (!data.alPalato) {
+    const palatoMatch = text.match(/(?:al palato|in bocca|gusto)[:\s]+([^\n.]+)/i) || text.match(/bocca\s+(?:risulta\s+)?([^\n.]+)/i);
+    if (palatoMatch) { data.alPalato = palatoMatch[1].trim(); found.push('alPalato'); }
+  }
+
+  // Pairings
+  if (!data.abbinamenti) {
+    const abbMatch = text.match(/(?:abbina|abbinamento|abbinamenti|si abbina)[:\s]+([^\n.]+)/i);
+    if (abbMatch) { data.abbinamenti = abbMatch[1].trim(); found.push('abbinamenti'); }
+  }
+
+  // Serving temp
+  if (!data.temperaturaServizio) {
+    const tempMatch = text.match(/(?:temperatura|servire)[:\s]+(\d+[-–]\d+\s*°?\s*C)/i);
+    if (tempMatch) { data.temperaturaServizio = tempMatch[1]; found.push('temperaturaServizio'); }
+  }
+
+  // Description from Caratteristiche
+  if (!data.descLunga) {
+    const charMatch = text.match(/(?:caratteristiche|descrizione)[:\s]+([^\n]+(?:\n[^\n]+){0,5})/i);
+    if (charMatch) { data.descLunga = charMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('descLunga'); }
+  }
+
+  // Vendemmia
+  if (!data.momentoConsumo) {
+    const vendMatch = text.match(/(?:vendemmia)[:\s]+([^\n;]+)/i);
+    if (vendMatch) { data.momentoConsumo = vendMatch[1].trim(); }
+  }
+}
+
 /* ── POST handler ──────────────────────────────────────── */
 
 export async function POST(req: NextRequest) {
-  let body: { name: string };
+  let body: { name: string; text?: string };
   try {
     body = await req.json();
   } catch {
@@ -230,7 +320,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nome prodotto obbligatorio' }, { status: 400 });
   }
 
+  // First parse the name
   const result = searchWineInfo(body.name);
+
+  // Then enrich with technical text if provided
+  if (body.text?.trim()) {
+    parseText(body.text, result.data, result.foundFields);
+    // Also try parsing the name + text combined
+    const combined = `${body.name} ${body.text}`;
+    const combinedLower = combined.toLowerCase();
+    // Re-check denominations in combined text
+    if (!result.data.denominazione) {
+      const sortedDenoms = Object.keys(DENOMINATION_MAP).sort((a, b) => b.length - a.length);
+      for (const denom of sortedDenoms) {
+        if (combinedLower.includes(denom)) {
+          const info = DENOMINATION_MAP[denom];
+          result.data.denominazione = `${denom.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} ${info.type}`;
+          if (!result.foundFields.includes('denominazione')) result.foundFields.push('denominazione');
+          if (!result.data.regione && info.region) { result.data.regione = info.region; if (!result.foundFields.includes('regione')) result.foundFields.push('regione'); }
+          if (!result.data.uvaggio && info.grapes) { result.data.uvaggio = info.grapes; if (!result.foundFields.includes('uvaggio')) result.foundFields.push('uvaggio'); }
+          if (!result.data.categoria && info.color && COLOR_TO_CATEGORY[info.color]) { result.data.categoria = COLOR_TO_CATEGORY[info.color]; if (!result.foundFields.includes('categoria')) result.foundFields.push('categoria'); }
+          break;
+        }
+      }
+    }
+    // Generate short desc if missing
+    if (!result.data.descBreve) {
+      const parts = [result.data.uvaggio, result.data.denominazione, result.data.regione].filter(Boolean);
+      if (parts.length > 0) {
+        result.data.descBreve = `${body.name} — ${parts.join(', ')}. Vino italiano di qualità.`;
+        if (!result.foundFields.includes('descBreve')) result.foundFields.push('descBreve');
+      }
+    }
+    result.foundFields = [...new Set(result.foundFields)];
+  }
 
   return NextResponse.json(result);
 }
