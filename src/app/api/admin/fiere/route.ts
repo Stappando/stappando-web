@@ -302,7 +302,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Send email via Mandrill with attachments
     await sendEmail({
-      to: [{ email: body.email, name: `${body.nome} ${body.cognome}` }],
+      to: [{ email: body.email, name: `${body.nome} ${body.cognome}` }, { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' }],
       from_email: 'info@stappando.it',
       from_name: 'Stappando',
       subject: 'Presentazione Stappando, Vineis e Anbrekabol',
