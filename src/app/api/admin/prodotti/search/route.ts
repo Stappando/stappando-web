@@ -411,16 +411,18 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const ai: Record<string, string> = JSON.parse(jsonMatch[0]);
+          // Capitalize first letter of each value
+          const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
           // Only fill fields that are empty
           const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'vinificazione', 'affinamento'];
           for (const field of fieldMap) {
             if (ai[field] && !result.data[field]) {
-              result.data[field] = ai[field];
+              result.data[field] = capitalize(ai[field]);
               if (!result.foundFields.includes(field)) result.foundFields.push(field);
             }
             // Override generic descriptions with AI ones
             if (ai[field] && (field === 'descBreve' || field === 'descLunga' || field === 'allaVista' || field === 'alNaso' || field === 'alPalato')) {
-              result.data[field] = ai[field];
+              result.data[field] = capitalize(ai[field]);
               if (!result.foundFields.includes(field)) result.foundFields.push(field);
             }
           }
@@ -428,6 +430,14 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
       }
     } catch (aiErr) {
       console.error('Claude AI enrichment failed (non-blocking):', aiErr);
+    }
+  }
+
+  // Capitalize first letter of all text fields
+  const textFields: (keyof ProductData)[] = ['descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'vinificazione', 'affinamento', 'abbinamenti'];
+  for (const f of textFields) {
+    if (result.data[f]) {
+      result.data[f] = result.data[f]!.charAt(0).toUpperCase() + result.data[f]!.slice(1);
     }
   }
 
