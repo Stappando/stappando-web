@@ -233,6 +233,48 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sync state when URL props change (client-side navigation between search pages)
+  const prevPropsRef = useRef({ q: initialQuery, tag: initialTag, vendor: initialVendor, onSale: initialOnSale, maxPrice: initialMaxPrice });
+  useEffect(() => {
+    const prev = prevPropsRef.current;
+    const changed = prev.q !== initialQuery || prev.tag !== initialTag || prev.vendor !== initialVendor || prev.onSale !== initialOnSale || prev.maxPrice !== initialMaxPrice;
+    if (!changed) return;
+    prevPropsRef.current = { q: initialQuery, tag: initialTag, vendor: initialVendor, onSale: initialOnSale, maxPrice: initialMaxPrice };
+
+    // Reset all filters to new URL params
+    setQuery(initialQuery);
+    setTag(initialTag);
+    setVendor(initialVendor);
+    setOnSale(initialOnSale);
+    setMinPrice(0);
+    setMaxPrice(999);
+    setPriceMax(999);
+    setPage(1);
+    setOrderBy(initialSort || 'popularity');
+    setUserChangedFilters(false);
+
+    // Use SSR results if available
+    if (ssrResults.length > 0) {
+      setResults(ssrResults);
+      setTotal(initialTotal || ssrResults.length);
+      setHasMore(!!initialHasMore);
+      setSearched(true);
+      const prices = ssrResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+      if (prices.length > 0) {
+        const dynMax = Math.ceil(Math.max(...prices) / 2) * 2;
+        setPriceMax(dynMax);
+        setMaxPrice(dynMax);
+      }
+    } else {
+      // Client-side navigation without SSR results — fetch
+      fetchResults({
+        q: initialQuery, tagVal: initialTag, vendorVal: initialVendor, onSaleVal: initialOnSale,
+        sort: initialSort || 'popularity', maxP: initialMaxPrice, minP: 0, pageNum: 1, append: false,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery, initialTag, initialVendor, initialOnSale, initialMaxPrice]);
+
   // Debounced price filter
   const handlePriceChange = useCallback((type: 'min' | 'max', value: number) => {
     if (type === 'min') setMinPrice(value);
