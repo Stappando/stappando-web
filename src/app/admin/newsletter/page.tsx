@@ -289,62 +289,76 @@ export default function NewsletterPage() {
 
         {/* Preview */}
         {preview && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Header logo + stars */}
-            <div className="py-6 text-center border-b border-gray-100">
-              <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" className="inline-block h-8" />
-              <p className="text-[11px] text-gray-400 mt-2">
-                <span className="text-[#d9c39a] tracking-wider">★★★★★</span>
-                <span className="text-[#005667] font-semibold ml-1">4.6/5</span>
-                <span className="text-gray-400 ml-0.5">· 1000+ recensioni</span>
-              </p>
-            </div>
-            {/* Banner */}
-            {bannerUrl && (
-              <div><img src={bannerUrl} alt="Banner" className="w-full h-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
-            )}
-            <div className="px-6 py-5 text-sm text-gray-700 leading-relaxed">
-              {/* Title */}
-              {title && <h2 className="text-xl font-bold text-[#005667] mb-4">{title}</h2>}
-              <p className="mb-3">Gentile {'{'} nome {'}'},</p>
-              {template === 'libera' && <p className="whitespace-pre-wrap">{body || 'Il testo della tua mail apparirà qui...'}</p>}
-              {template === 'upsell-vineis' && (
-                <div>
-                  <p className="mb-3">Ti scrivo per presentarti <strong>Vineis.eu</strong>, il nostro portale dedicato alle esperienze in cantina.</p>
-                  <p className="mb-3">Puoi offrire visite, degustazioni e tour direttamente ai nostri clienti. <strong>Iscrizione gratuita</strong>, commissione del 15%.</p>
-                  <p className="mb-3">Gestiamo noi prenotazioni e parte tecnica. Tu accogli i clienti che hanno prenotato.</p>
-                  <p>Registrati su <strong>vineis.eu</strong> → &quot;Ospita con noi&quot;</p>
+          <div className="bg-[#f5f3ee] rounded-xl border border-gray-200 overflow-hidden p-4">
+            <div className="bg-white rounded-xl overflow-hidden border border-[#e8e4dc]" style={{ maxWidth: 600, margin: '0 auto' }}>
+              {/* Header logo + stars */}
+              <div className="py-7 text-center border-b border-[#f0ece4]">
+                <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" className="inline-block h-7" />
+                <p className="text-[11px] text-gray-400 mt-2">
+                  <span className="text-[#d9c39a] tracking-wider">★★★★★</span>
+                  <span className="text-[#005667] font-semibold ml-1">4.6/5</span>
+                  <span className="text-gray-400 ml-0.5">· 1000+ recensioni</span>
+                </p>
+              </div>
+              {/* Banner — contained */}
+              {bannerUrl && (
+                <div className="px-6 pt-5">
+                  <img src={bannerUrl} alt="Banner" className="w-full h-auto rounded-lg" style={{ maxHeight: 180, objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
-              {template === 'riordina' && (
-                <div>
-                  <p className="mb-3">Sono arrivati nuovi vini su Stappando! Oltre 1000 etichette selezionate dal nostro sommelier.</p>
-                  <p className="mb-3">Spedizione rapida 24-48h, pagamento sicuro e reso gratuito.</p>
-                  <p>Scopri le novità → <strong>shop.stappando.it</strong></p>
-                </div>
-              )}
-              {/* Products */}
-              {selectedProducts.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Prodotti in evidenza</p>
-                  <div className="space-y-2">
-                    {selectedProducts.map(p => (
-                      <div key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
-                        {p.image && <img src={p.image} alt="" className="w-12 h-12 rounded object-cover shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-800 font-medium truncate">{p.name}</p>
-                          <p className="text-sm text-[#005667] font-bold">{p.price} €</p>
-                        </div>
-                      </div>
-                    ))}
+              <div className="px-8 py-6 text-sm text-gray-700 leading-relaxed">
+                {/* Title — elegant, not huge */}
+                {title && <h2 className="text-[17px] font-bold text-[#005667] mb-1 tracking-tight">{title}</h2>}
+                {title && <div className="w-10 h-0.5 bg-[#d9c39a] mb-5" />}
+                <p className="mb-4 text-[14px]">Gentile {'{'} nome {'}'},</p>
+                {template === 'libera' && <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{body || 'Il testo della tua mail apparirà qui...'}</p>}
+                {template === 'upsell-vineis' && (
+                  <div className="text-[14px] leading-relaxed">
+                    <p className="mb-3">Ti scrivo per presentarti <strong>Vineis.eu</strong>, il nostro portale dedicato alle esperienze in cantina.</p>
+                    <p className="mb-3">Puoi offrire visite, degustazioni e tour direttamente ai nostri clienti. <strong>Iscrizione gratuita</strong>, commissione del 15%.</p>
+                    <p className="mb-3">Gestiamo noi prenotazioni e parte tecnica. Tu accogli i clienti che hanno prenotato.</p>
+                    <p>Registrati su <strong>vineis.eu</strong> → &quot;Ospita con noi&quot;</p>
                   </div>
-                </div>
-              )}
-            </div>
-            {/* Footer */}
-            <div className="bg-[#1a1a1a] px-6 py-4 text-center">
-              <p className="text-[10px] text-gray-500">Instagram | Facebook | <span className="text-[#d9c39a] font-semibold">stappando.it</span></p>
-              <p className="text-[9px] text-gray-600 mt-1">© 2026 Stappando Srl — P.IVA 15855161003</p>
+                )}
+                {template === 'riordina' && (
+                  <div className="text-[14px] leading-relaxed">
+                    <p className="mb-3">Sono arrivati nuovi vini su Stappando! Oltre 1000 etichette selezionate dal nostro sommelier.</p>
+                    <p className="mb-3">Spedizione rapida 24-48h, pagamento sicuro e reso gratuito.</p>
+                    <p>Scopri le novità → <strong>shop.stappando.it</strong></p>
+                  </div>
+                )}
+                {/* Products — premium card style */}
+                {selectedProducts.length > 0 && (
+                  <div className="mt-6 pt-5 border-t border-[#f0ece4]">
+                    <p className="text-[10px] font-bold text-[#d9c39a] uppercase tracking-widest mb-4">Selezionati per te</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {selectedProducts.map(p => (
+                        <div key={p.id} className="border border-[#e8e4dc] rounded-lg overflow-hidden bg-white">
+                          {p.image && <img src={p.image} alt="" className="w-full aspect-square object-cover" />}
+                          <div className="p-3">
+                            <p className="text-[11px] text-gray-700 font-medium leading-tight mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</p>
+                            <p className="text-[14px] text-[#005667] font-bold mb-2">{p.price} €</p>
+                            <a href={`https://shop.stappando.it/prodotto/${p.id}`} className="block text-center bg-[#005667] text-white text-[11px] font-semibold py-1.5 rounded-md hover:bg-[#003d4d] transition-colors">
+                              Scopri →
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Footer */}
+              <div className="bg-[#1a1a1a] px-6 py-5 text-center">
+                <p className="text-[10px] text-gray-500 mb-1">
+                  <a href="#" className="text-gray-500 hover:text-gray-300">Instagram</a>
+                  <span className="mx-1.5 text-gray-700">|</span>
+                  <a href="#" className="text-gray-500 hover:text-gray-300">Facebook</a>
+                  <span className="mx-1.5 text-gray-700">|</span>
+                  <a href="#" className="text-[#d9c39a] font-semibold">stappando.it</a>
+                </p>
+                <p className="text-[9px] text-gray-600">© 2026 Stappando Srl — P.IVA 15855161003</p>
+              </div>
             </div>
           </div>
         )}
