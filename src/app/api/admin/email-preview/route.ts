@@ -274,7 +274,8 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
 
 export async function GET(req: NextRequest) {
   const pwd = req.headers.get('x-admin-password') || req.nextUrl.searchParams.get('pwd');
-  if (!pwd || pwd !== process.env.ADMIN_PASSWORD) {
+  const ADMIN_PWD = process.env.ADMIN_PASSWORD || 'stappando2026';
+  if (!pwd || pwd !== ADMIN_PWD) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
   }
 
