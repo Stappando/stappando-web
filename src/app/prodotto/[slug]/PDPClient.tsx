@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
 import { useAnalyticsStore } from '@/store/analytics';
@@ -150,9 +151,11 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
 
         {/* ═══ RIGHT COLUMN ═══ */}
         <div>
-          {/* Produttore */}
+          {/* Produttore — cliccabile */}
           {p.produttore && (
-            <p className="text-[15px] text-[#d9c39a] font-bold uppercase tracking-wide mb-1.5">{p.produttore}</p>
+            <Link href={`/cantine/${encodeURIComponent(p.produttore.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}`} className="text-[15px] text-[#d9c39a] font-bold uppercase tracking-wide mb-1.5 block hover:text-[#005667] transition-colors">
+              {p.produttore}
+            </Link>
           )}
 
           {/* Title */}
