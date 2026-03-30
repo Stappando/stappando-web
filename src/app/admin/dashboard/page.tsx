@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 const ADMIN_PASSWORD = 'stappando2026';
 const AUTO = `?auto=${ADMIN_PASSWORD}`;
 
 const tools = [
-  { icon: '📊', title: 'Statistiche', desc: 'Ricerche, conversioni, flusso utente', href: `/admin/analytics${AUTO}` },
-  { icon: '✉️', title: 'Email Preview', desc: 'Anteprima template mail', href: `/admin/email-preview${AUTO}` },
-  { icon: '🤝', title: 'CRM Fiere', desc: 'Inserisci contatti e invia presentazione', href: `/admin/fiere${AUTO}` },
+  { icon: '📊', title: 'Statistiche', desc: 'Ricerche, conversioni, flusso utente', href: `/admin/analytics` },
+  { icon: '✉️', title: 'Email Preview', desc: 'Anteprima template mail', href: `/admin/email-preview` },
+  { icon: '🤝', title: 'CRM Fiere', desc: 'Inserisci contatti e invia presentazione', href: `/admin/fiere` },
   { icon: '🛒', title: 'WooCommerce', desc: 'Ordini, prodotti, clienti', href: 'https://stappando.it/wp-admin/edit.php?post_type=shop_order', external: true },
   { icon: '📦', title: 'Prodotti', desc: 'Gestisci catalogo vini', href: 'https://stappando.it/wp-admin/edit.php?post_type=product', external: true },
   { icon: '📝', title: 'Bozze Vendor', desc: 'Prodotti in attesa di approvazione', href: 'https://stappando.it/wp-admin/edit.php?post_type=product&post_status=draft', external: true },
@@ -29,28 +28,6 @@ const quickLinks = [
 ];
 
 export default function AdminDashboard() {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('auto') === ADMIN_PASSWORD) setAuthed(true);
-  }, []);
-
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-[#f8f7f5] flex items-center justify-center p-4">
-        <form onSubmit={(e) => { e.preventDefault(); if (password === ADMIN_PASSWORD) setAuthed(true); else setError('Password non valida'); }} className="bg-white rounded-xl shadow p-8 w-full max-w-sm">
-          <h1 className="text-lg font-bold text-[#005667] mb-4">Admin Dashboard</h1>
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full h-11 px-4 rounded-lg border border-gray-300 text-sm mb-3 focus:outline-none focus:border-[#005667]" />
-          <button type="submit" className="w-full h-11 bg-[#005667] text-white rounded-lg font-semibold text-sm">Accedi</button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#f8f7f5]">
       {/* Header */}

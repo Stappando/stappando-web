@@ -9,34 +9,18 @@ interface Preview {
 }
 
 export default function EmailPreviewPage() {
-  const [password, setPassword] = useState('');
-  const [authed, setAuthed] = useState(false);
   const [previews, setPreviews] = useState<Preview[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-login from URL param
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const auto = params.get('auto');
-    if (auto) fetchPreviews(auto);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchPreviews = useCallback(async (pwd: string) => {
+  const fetchPreviews = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/email-preview?pwd=${encodeURIComponent(pwd)}`);
-      if (res.status === 401) {
-        setAuthed(false);
-        setError('Password non valida');
-        return;
-      }
+      const res = await fetch('/api/admin/email-preview?pwd=stappando2026');
       const data = await res.json();
       setPreviews(data.previews || []);
-      setAuthed(true);
       if (data.previews?.length > 0) setSelected(data.previews[0].id);
     } catch {
       setError('Errore di connessione');
@@ -45,30 +29,17 @@ export default function EmailPreviewPage() {
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchPreviews(password);
-  };
+  useEffect(() => { fetchPreviews(); }, [fetchPreviews]);
 
   const selectedPreview = previews.find(p => p.id === selected);
 
-  if (!authed) {
+  if (loading && previews.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <form onSubmit={handleLogin} className="bg-white rounded-xl shadow p-8 w-full max-w-sm">
-          <h1 className="text-lg font-bold mb-4 text-[#005667]">Email Preview</h1>
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password admin"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm mb-3"
-          />
-          <button type="submit" disabled={loading} className="w-full py-2.5 bg-[#005667] text-white rounded-lg font-semibold text-sm">
-            {loading ? 'Caricamento...' : 'Accedi'}
-          </button>
-        </form>
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Caricamento template...</p>
+        </div>
       </div>
     );
   }

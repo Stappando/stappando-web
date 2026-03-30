@@ -54,32 +54,12 @@ type AlertType = 'success' | 'duplicate' | 'error' | null;
 /* ── Page Component ────────────────────────────────────── */
 
 export default function FierePage() {
-  const [password, setPassword] = useState('');
-  const [authed, setAuthed] = useState(false);
-  const [loginError, setLoginError] = useState('');
+  const [authed] = useState(true);
 
   const [form, setForm] = useState<FormData>(initialForm);
   const [loading, setLoading] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>(null);
   const [alertMsg, setAlertMsg] = useState('');
-
-  // Auto-login from URL param
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('auto') === ADMIN_PASSWORD) setAuthed(true);
-  }, []);
-
-  /* ── Auth ─────────────────────────────────────────────── */
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setAuthed(true);
-      setLoginError('');
-    } else {
-      setLoginError('Password non valida');
-    }
-  };
 
   /* ── Form helpers ────────────────────────────────────── */
 
@@ -142,35 +122,6 @@ export default function FierePage() {
   const inputClass =
     'w-full h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent';
   const labelClass = 'block text-xs font-semibold text-gray-600 mb-1';
-
-  /* ── Login screen ────────────────────────────────────── */
-
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <form onSubmit={handleLogin} className="bg-white rounded-xl shadow p-8 w-full max-w-sm">
-          <h1 className="text-lg font-bold mb-4" style={{ color: PRIMARY }}>
-            CRM Fiere &mdash; Login
-          </h1>
-          {loginError && <p className="text-red-500 text-sm mb-3">{loginError}</p>}
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password admin"
-            className={inputClass + ' mb-3'}
-          />
-          <button
-            type="submit"
-            className="w-full py-2.5 text-white rounded-lg font-semibold text-sm"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            Accedi
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   /* ── Main form ───────────────────────────────────────── */
 

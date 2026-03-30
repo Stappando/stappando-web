@@ -79,9 +79,7 @@ function downloadCSV(filename: string, headers: string[], rows: string[][]) {
 /* ── Page Component ────────────────────────────────────── */
 
 export default function AnalyticsPage() {
-  const [password, setPassword] = useState('');
-  const [authed, setAuthed] = useState(false);
-  const [error, setError] = useState('');
+  const [authed, setAuthed] = useState(true);
   const [range, setRange] = useState<RangeId>('7d');
   const [activeTab, setActiveTab] = useState<'ricerche' | 'conversioni' | 'flusso' | 'prodotti'>('ricerche');
 
@@ -99,15 +97,6 @@ export default function AnalyticsPage() {
   const rawData = useAnalyticsStore((s) => s.getData());
   const analyticsData = mounted ? (rawData || emptyData) : emptyData;
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setAuthed(true);
-      setError('');
-    } else {
-      setError('Password non valida');
-    }
-  };
 
   /* ── Filtered daily data ─────────────────────────────── */
 
@@ -203,31 +192,6 @@ export default function AnalyticsPage() {
   }, [activeTab, analyticsData, filteredDaily, flowData]);
 
   /* ── Login screen ────────────────────────────────────── */
-
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <form onSubmit={handleLogin} className="bg-white rounded-xl shadow p-8 w-full max-w-sm">
-          <h1 className="text-lg font-bold mb-4">Admin &mdash; Analytics</h1>
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password admin"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm mb-3"
-          />
-          <button
-            type="submit"
-            className="w-full py-2.5 text-white rounded-lg font-semibold text-sm"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            Accedi
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   if (!mounted) {
     return (
