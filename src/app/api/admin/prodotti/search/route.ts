@@ -355,5 +355,82 @@ export async function POST(req: NextRequest) {
     result.foundFields = [...new Set(result.foundFields)];
   }
 
+  // Enhance with Claude AI for premium descriptions
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey) {
+    try {
+      const existingInfo = Object.entries(result.data)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\n');
+
+      const prompt = `Sei un sommelier esperto e copywriter per un e-commerce di vini italiani premium.
+Ti do le informazioni su un vino. Genera testi accattivanti, SEO-oriented, in italiano elegante.
+
+VINO: ${body.name}
+${body.text ? `SCHEDA TECNICA:\n${body.text}` : ''}
+${existingInfo ? `INFO GIÀ ESTRATTE:\n${existingInfo}` : ''}
+
+Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info sufficienti):
+{
+  "produttore": "nome del produttore/cantina",
+  "categoria": "Vini Rossi|Vini Bianchi|Vini Rosati|Bollicine|Distillati",
+  "denominazione": "es. Colli Maceratesi DOC",
+  "regione": "regione italiana",
+  "uvaggio": "vitigni separati da virgola",
+  "gradazione": "es. 13.5%",
+  "descBreve": "max 155 caratteri, accattivante, SEO. Menziona vitigno e territorio.",
+  "descLunga": "2-3 frasi eleganti. Racconta il vino, il territorio, il carattere. Usa parole sensoriali.",
+  "allaVista": "1 frase poetica sul colore",
+  "alNaso": "1 frase evocativa sui profumi",
+  "alPalato": "1 frase sulla struttura e il gusto",
+  "abbinamenti": "3-4 abbinamenti separati da virgola",
+  "temperaturaServizio": "es. 8-10°C",
+  "vinificazione": "breve descrizione del processo",
+  "affinamento": "breve descrizione dell'affinamento"
+}`;
+
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-20250414',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (claudeRes.ok) {
+        const claudeData = await claudeRes.json();
+        const text = claudeData.content?.[0]?.text || '';
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const ai: Record<string, string> = JSON.parse(jsonMatch[0]);
+          // Only fill fields that are empty
+          const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'vinificazione', 'affinamento'];
+          for (const field of fieldMap) {
+            if (ai[field] && !result.data[field]) {
+              result.data[field] = ai[field];
+              if (!result.foundFields.includes(field)) result.foundFields.push(field);
+            }
+            // Override generic descriptions with AI ones
+            if (ai[field] && (field === 'descBreve' || field === 'descLunga' || field === 'allaVista' || field === 'alNaso' || field === 'alPalato')) {
+              result.data[field] = ai[field];
+              if (!result.foundFields.includes(field)) result.foundFields.push(field);
+            }
+          }
+        }
+      }
+    } catch (aiErr) {
+      console.error('Claude AI enrichment failed (non-blocking):', aiErr);
+    }
+  }
+
+  result.foundFields = [...new Set(result.foundFields)];
   return NextResponse.json(result);
 }
