@@ -18,6 +18,11 @@ interface ProducerForm {
   name: string;
   description: string;
   region: string;
+  indirizzo: string;
+  logoFile: File | null;
+  bannerFile: File | null;
+  logoPreview: string;
+  bannerPreview: string;
 }
 
 const REGIONI = [
@@ -35,7 +40,7 @@ export default function ProduttoriPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
-  const [form, setForm] = useState<ProducerForm>({ name: '', description: '', region: '' });
+  const [form, setForm] = useState<ProducerForm>({ name: '', description: '', region: '', indirizzo: '', logoFile: null, bannerFile: null, logoPreview: '', bannerPreview: '' });
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -60,20 +65,48 @@ export default function ProduttoriPage() {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
   }, []);
 
+  // Upload image to WP Media
+  const uploadImage = async (file: File): Promise<{ id: number; url: string } | null> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/vendor/media', { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        return { id: data.id, url: data.src };
+      }
+    } catch { /* */ }
+    return null;
+  };
+
   const handleCreate = async () => {
     if (!form.name.trim()) { setResult({ type: 'error', msg: 'Nome obbligatorio' }); return; }
     setSaving(true);
     setResult(null);
     try {
+      // Upload logo if provided
+      let logoUrl = '';
+      let logoId = 0;
+      if (form.logoFile) {
+        const uploaded = await uploadImage(form.logoFile);
+        if (uploaded) { logoUrl = uploaded.url; logoId = uploaded.id; }
+      }
+      let bannerUrl = '';
+      let bannerId = 0;
+      if (form.bannerFile) {
+        const uploaded = await uploadImage(form.bannerFile);
+        if (uploaded) { bannerUrl = uploaded.url; bannerId = uploaded.id; }
+      }
+
       const res = await fetch('/api/admin/produttori', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', ...form }),
+        body: JSON.stringify({ action: 'create', name: form.name, description: form.description, region: form.region, indirizzo: form.indirizzo, logoId, logoUrl, bannerId, bannerUrl }),
       });
       const data = await res.json();
       if (res.ok) {
         setResult({ type: 'success', msg: `✓ Produttore "${form.name}" creato!` });
-        setForm({ name: '', description: '', region: '' });
+        setForm({ name: '', description: '', region: '', indirizzo: '', logoFile: null, bannerFile: null, logoPreview: '', bannerPreview: '' });
         setMode('list');
         fetchProducers();
       } else {
@@ -88,10 +121,23 @@ export default function ProduttoriPage() {
     setSaving(true);
     setResult(null);
     try {
+      let logoUrl = '';
+      let logoId = 0;
+      if (form.logoFile) {
+        const uploaded = await uploadImage(form.logoFile);
+        if (uploaded) { logoUrl = uploaded.url; logoId = uploaded.id; }
+      }
+      let bannerUrl = '';
+      let bannerId = 0;
+      if (form.bannerFile) {
+        const uploaded = await uploadImage(form.bannerFile);
+        if (uploaded) { bannerUrl = uploaded.url; bannerId = uploaded.id; }
+      }
+
       const res = await fetch('/api/admin/produttori', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update', termId: editId, ...form }),
+        body: JSON.stringify({ action: 'update', termId: editId, description: form.description, region: form.region, indirizzo: form.indirizzo, logoId, logoUrl, bannerId, bannerUrl }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -106,7 +152,7 @@ export default function ProduttoriPage() {
   };
 
   const startEdit = (p: Producer) => {
-    setForm({ name: p.name, description: p.description || '', region: p.region || '' });
+    setForm({ name: p.name, description: p.description || '', region: p.region || '', indirizzo: '', logoFile: null, bannerFile: null, logoPreview: p.image || '', bannerPreview: '' });
     setEditId(p.id);
     setMode('edit');
     setResult(null);
@@ -143,7 +189,7 @@ export default function ProduttoriPage() {
                 className="flex-1 h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667]"
               />
               <button
-                onClick={() => { setForm({ name: '', description: '', region: '' }); setMode('create'); setResult(null); }}
+                onClick={() => { setForm({ name: '', description: '', region: '', indirizzo: '', logoFile: null, bannerFile: null, logoPreview: '', bannerPreview: '' }); setMode('create'); setResult(null); }}
                 className="h-[44px] px-5 rounded-lg text-white font-semibold text-sm shrink-0"
                 style={{ backgroundColor: PRIMARY }}
               >
@@ -209,6 +255,11 @@ export default function ProduttoriPage() {
             </div>
 
             <div>
+              <label className={labelClass}>Indirizzo cantina</label>
+              <input type="text" value={form.indirizzo} onChange={updateField('indirizzo')} placeholder="es. Loc. San Pietro, 12060 Barolo (CN)" className={inputClass} />
+            </div>
+
+            <div>
               <label className={labelClass}>Descrizione</label>
               <textarea
                 value={form.description}
@@ -219,9 +270,37 @@ export default function ProduttoriPage() {
               />
             </div>
 
-            <p className="text-[11px] text-gray-400">
-              Logo e banner: per ora vai su WP Admin → Prodotti → Attributi → Produttore → modifica il term e carica l&apos;immagine swatch.
-            </p>
+            {/* Logo upload */}
+            <div>
+              <label className={labelClass}>Logo cantina</label>
+              <div className="flex items-center gap-3">
+                {(form.logoPreview || form.logoFile) && (
+                  <img src={form.logoFile ? URL.createObjectURL(form.logoFile) : form.logoPreview} alt="Logo" className="w-16 h-16 rounded-lg object-contain bg-gray-50 border border-gray-200" />
+                )}
+                <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#005667] transition-colors">
+                  {form.logoFile ? '✓ Logo selezionato' : 'Carica logo'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setForm(prev => ({ ...prev, logoFile: file, logoPreview: URL.createObjectURL(file) }));
+                  }} />
+                </label>
+              </div>
+            </div>
+
+            {/* Banner upload */}
+            <div>
+              <label className={labelClass}>Banner cantina (opzionale)</label>
+              {(form.bannerPreview || form.bannerFile) && (
+                <img src={form.bannerFile ? URL.createObjectURL(form.bannerFile) : form.bannerPreview} alt="Banner" className="w-full h-24 rounded-lg object-cover mb-2 border border-gray-200" />
+              )}
+              <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-[#005667] transition-colors inline-block">
+                {form.bannerFile ? '✓ Banner selezionato' : 'Carica banner'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setForm(prev => ({ ...prev, bannerFile: file, bannerPreview: URL.createObjectURL(file) }));
+                }} />
+              </label>
+            </div>
 
             <button
               onClick={mode === 'create' ? handleCreate : handleEdit}
