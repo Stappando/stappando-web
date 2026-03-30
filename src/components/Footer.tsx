@@ -27,7 +27,7 @@ export default function Footer() {
   const linkClass = 'text-[13px] text-white/60 hover:text-white transition-colors';
 
   return (
-    <footer className="bg-[#1a1a1a] text-white">
+    <footer className="bg-[#055667] text-white">
       {/* Top: Newsletter + Wine Experience */}
       <div className="bg-[#055667]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -119,11 +119,21 @@ export default function Footer() {
           <div className="col-span-2 sm:col-span-1">
             <h4 className="text-[11px] font-bold uppercase tracking-wider mb-3 text-[#b8973f]">Pagamenti sicuri</h4>
             <div className="flex flex-wrap gap-1.5">
-              {['Visa', 'MC', 'PP', 'Apple', 'GPay', 'Klarna'].map(p => (
-                <div key={p} className="w-9 h-6 bg-white/10 rounded flex items-center justify-center">
-                  <span className="text-[7px] font-bold text-white/70">{p}</span>
-                </div>
-              ))}
+              <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
+                <svg viewBox="0 0 48 32" className="w-8 h-5"><path fill="#1A1F71" d="M19.5 10.2l-3.8 11.6h-3.1l-1.9-9.3c-.1-.5-.3-.8-.7-1-.7-.4-1.8-.7-2.8-.9l.1-.4h5c.6 0 1.2.4 1.3 1.2l1.2 6.6 3.1-7.8h3.1zm12.3 7.8c0-3-4.2-3.2-4.2-4.6 0-.4.4-.8 1.3-.9.4-.1 1.6-.1 2.9.5l.5-2.4c-.7-.3-1.6-.5-2.8-.5-2.9 0-5 1.6-5 3.8 0 1.7 1.5 2.6 2.6 3.1 1.1.6 1.5.9 1.5 1.4 0 .8-.9 1.1-1.7 1.1-1.4 0-2.2-.4-2.9-.7l-.5 2.5c.7.3 1.9.6 3.1.6 3.1 0 5.1-1.5 5.2-3.9zm7.7 3.8h2.7l-2.4-11.6h-2.5c-.6 0-1 .3-1.2.8l-4.3 10.8h3.1l.6-1.7h3.7l.3 1.7zm-3.2-4l1.5-4.3.9 4.3h-2.4zm-12.4-7.6l-2.4 11.6h-2.9l2.4-11.6h2.9z"/></svg>
+              </div>
+              <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
+                <svg viewBox="0 0 48 32" className="w-8 h-5"><circle cx="18" cy="16" r="10" fill="#EB001B"/><circle cx="30" cy="16" r="10" fill="#F79E1B"/><path d="M24 8.5a10 10 0 010 15 10 10 0 000-15z" fill="#FF5F00"/></svg>
+              </div>
+              <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
+                <svg viewBox="0 0 48 32" className="w-8 h-5"><path fill="#003087" d="M18.5 8h5.3c2.8 0 4.8 1.5 4.4 4.3-.5 3.5-3 5.2-6 5.2H20l-.8 5.5h-3.5l2.8-15zm3.2 7h1.8c1.5 0 2.7-.8 2.9-2.3.2-1.3-.6-2.2-2.1-2.2h-1.6l-1 4.5z"/><path fill="#0070E0" d="M30 8h5.3c2.8 0 4.8 1.5 4.4 4.3-.5 3.5-3 5.2-6 5.2h-2.2l-.8 5.5h-3.5L30 8zm3.2 7h1.8c1.5 0 2.7-.8 2.9-2.3.2-1.3-.6-2.2-2.1-2.2h-1.6l-1 4.5z"/></svg>
+              </div>
+              <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
+                <span className="text-[8px] font-bold text-gray-600">G Pay</span>
+              </div>
+              <div className="w-10 h-7 bg-[#FFB3C7] rounded flex items-center justify-center">
+                <span className="text-[8px] font-bold text-black">Klarna</span>
+              </div>
             </div>
           </div>
         </div>
@@ -135,24 +145,24 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-3">
             <span className="text-[10px] uppercase tracking-wider text-white/30">Partner</span>
             <a href="https://vineis.eu" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-80 transition-opacity">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vineis-2.png" alt="Vineis" className="h-4 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vineis-2.png" alt="Vineis" className="h-7 object-contain brightness-0 invert" />
             </a>
             <span className="opacity-50">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-ostia-film.png" alt="OFFI" className="h-4 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-ostia-film.png" alt="OFFI" className="h-7 object-contain brightness-0 invert" />
             </span>
             <a href="https://noidisala.it" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-80 transition-opacity">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-noidisala-2.png" alt="Noi di Sala" className="h-4 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-noidisala-2.png" alt="Noi di Sala" className="h-7 object-contain brightness-0 invert" />
             </a>
             <span className="text-white/10">|</span>
             <span className="text-[10px] uppercase tracking-wider text-white/30">Presente su</span>
             <a href="https://www.vivino.com" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-80 transition-opacity">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vivino-2.png" alt="Vivino" className="h-3.5 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vivino-2.png" alt="Vivino" className="h-6 object-contain brightness-0 invert" />
             </a>
             <a href="https://www.wine-searcher.com" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-80 transition-opacity">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-wine-search-2.png" alt="Wine-Searcher" className="h-3.5 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-wine-search-2.png" alt="Wine-Searcher" className="h-6 object-contain brightness-0 invert" />
             </a>
             <a href="https://www.trovino.it" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-80 transition-opacity">
-              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-Trovino-2.png" alt="Trovino" className="h-3.5 object-contain brightness-0 invert" />
+              <img src="https://stappando.it/wp-content/uploads/2025/11/logo-Trovino-2.png" alt="Trovino" className="h-6 object-contain brightness-0 invert" />
             </a>
             <span className="text-white/10">|</span>
             <span className="text-[10px] text-white/40">Spedizioni con <a href="https://anbrekabol.com" target="_blank" rel="noopener noreferrer" className="text-white/60 font-semibold hover:text-white transition-colors">Anbrekabol®</a></span>
