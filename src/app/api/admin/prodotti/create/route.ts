@@ -28,6 +28,15 @@ interface ProductBody {
   vinificazione: string;
   affinamento: string;
   allergeni: string;
+  terreno: string;
+  esposizione: string;
+  altitudine: string;
+  zonaProduzione: string;
+  resa: string;
+  vendemmia: string;
+  bottiglieProdotte: string;
+  certificazioni: string;
+  tags: string;
 }
 
 /* ── Category to WC category mapping ───────────────────── */
@@ -104,6 +113,16 @@ function buildWCProduct(body: ProductBody) {
   if (body.allergeni) {
     attributes.push({ name: 'Allergeni', slug: 'pa_allergeni', visible: true, options: [body.allergeni] });
   }
+  if (body.terreno) {
+    attributes.push({ name: 'Terreno', slug: 'pa_terreno', visible: true, options: [body.terreno] });
+  }
+  if (body.certificazioni) {
+    const certs = body.certificazioni.split(',').map((c) => c.trim()).filter(Boolean);
+    attributes.push({ name: 'Certificazioni', slug: 'pa_certificazioni', visible: true, options: certs });
+  }
+  if (body.resa) {
+    attributes.push({ name: 'Resa', slug: 'pa_resa', visible: true, options: [body.resa] });
+  }
 
   // Build meta_data for ACF fields (tasting notes, vinification, etc.)
   const metaData: { key: string; value: string }[] = [];
@@ -113,6 +132,12 @@ function buildWCProduct(body: ProductBody) {
   if (body.alPalato) metaData.push({ key: 'al_palato', value: body.alPalato });
   if (body.vinificazione) metaData.push({ key: 'vinificazione', value: body.vinificazione });
   if (body.affinamento) metaData.push({ key: 'affinamento', value: body.affinamento });
+  if (body.esposizione) metaData.push({ key: 'esposizione', value: body.esposizione });
+  if (body.altitudine) metaData.push({ key: 'altitudine', value: body.altitudine });
+  if (body.zonaProduzione) metaData.push({ key: 'zona_produzione', value: body.zonaProduzione });
+  if (body.vendemmia) metaData.push({ key: 'vendemmia', value: body.vendemmia });
+  if (body.bottiglieProdotte) metaData.push({ key: 'bottiglie_prodotte', value: body.bottiglieProdotte });
+  if (body.terreno) metaData.push({ key: 'terreno', value: body.terreno });
 
   // Build categories array
   const categories: { id: number }[] = [];
@@ -125,6 +150,12 @@ function buildWCProduct(body: ProductBody) {
     metaData.push({ key: '_vendor_id', value: body.vendorId });
   }
 
+  // Build tags
+  const tags: { name: string }[] = [];
+  if (body.tags) {
+    body.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => tags.push({ name: t }));
+  }
+
   return {
     name: body.nome,
     status: 'draft' as const,
@@ -135,6 +166,7 @@ function buildWCProduct(body: ProductBody) {
     categories,
     attributes,
     meta_data: metaData,
+    ...(tags.length > 0 ? { tags } : {}),
   };
 }
 
