@@ -226,7 +226,7 @@ Se interessati potete procedere in autonomia o rispondere a questa mail.
 </td></tr>
 <tr><td style="height:4px;"></td></tr>
 <tr><td style="padding:8px 12px;background:#f0f9f2;border-radius:6px;">
-  <a href="https://stappando.it/wp-content/uploads/2026/03/Presentazione-Ospita-con-Vineis.pdf" style="color:#4a8c3f;font-size:13px;font-weight:600;text-decoration:none;">
+  <a href="https://stappando.it/wp-content/uploads/2026/03/Presentazione-Prenota-su-vineis.eu-Partner.pdf" style="color:#4a8c3f;font-size:13px;font-weight:600;text-decoration:none;">
     📄 Presentazione Ospita con Vineis
   </a>
 </td></tr>
@@ -297,7 +297,7 @@ export async function POST(req: NextRequest) {
     // 1. Fetch PDF attachments in parallel
     const pdfUrls = [
       { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Vendi-su-stappando.it-Vendor.pdf', name: 'Presentazione Vendi su Stappando.pdf' },
-      { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Ospita-con-Vineis.pdf', name: 'Presentazione Ospita con Vineis.pdf' },
+      { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Prenota-su-vineis.eu-Partner.pdf', name: 'Presentazione Ospita con Vineis.pdf' },
       { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Spedisci-con-Anbrekabol-non-rompere-piu-le-scatole.pdf', name: 'Presentazione Spedisci con Anbrekabol.pdf' },
     ];
 
