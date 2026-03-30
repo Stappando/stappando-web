@@ -133,16 +133,22 @@ async function sheetsAppend(accessToken: string, range: string, values: string[]
 function buildEmailHtml(body: FiereBody): string {
   return `<!DOCTYPE html>
 <html lang="it">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:600px;width:100%;">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stappando</title></head>
+<body style="margin:0;padding:0;background:#f5f3ee;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
 
-<!-- Header -->
-<tr><td style="background:#005667;padding:24px 30px;">
-  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Stappando</h1>
-  <p style="margin:4px 0 0;color:#d9c39a;font-size:13px;">Presentazione del Gruppo</p>
+<!-- Header — logo + stelline -->
+<tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
+  <a href="https://shop.stappando.it" style="text-decoration:none;">
+    <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
+  </a>
+  <p style="margin:10px 0 0;font-size:11px;color:#999;">
+    <span style="color:#d9c39a;letter-spacing:1px;">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+    <span style="color:#005667;font-weight:600;margin-left:4px;">4.6/5</span>
+    <span style="color:#bbb;margin-left:2px;">&middot; 1000+ recensioni</span>
+  </p>
 </td></tr>
 
 <!-- Body -->
@@ -241,10 +247,17 @@ Un saluto,<br>
 </td></tr>
 
 <!-- Footer -->
-<tr><td style="background:#f8f9fa;padding:16px 30px;border-top:1px solid #e5e5e5;">
-<p style="margin:0;font-size:11px;color:#999;text-align:center;">
-Stappando Srl &mdash; info@stappando.it
-</p>
+<tr><td style="background:#1a1a1a;padding:24px 36px;text-align:center;">
+  <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px;">
+    <tr>
+      <td style="padding:0 6px;"><a href="https://www.instagram.com/stappando.it" style="text-decoration:none;color:#888;font-size:11px;">Instagram</a></td>
+      <td style="padding:0 6px;color:#555;">|</td>
+      <td style="padding:0 6px;"><a href="https://www.facebook.com/stappandoenoteca/" style="text-decoration:none;color:#888;font-size:11px;">Facebook</a></td>
+      <td style="padding:0 6px;color:#555;">|</td>
+      <td style="padding:0 6px;"><a href="https://shop.stappando.it" style="text-decoration:none;color:#d9c39a;font-size:11px;font-weight:600;">stappando.it</a></td>
+    </tr>
+  </table>
+  <p style="margin:0;font-size:10px;color:#666;">&copy; 2026 Stappando Srl &mdash; P.IVA 15855161003</p>
 </td></tr>
 
 </table>
