@@ -116,25 +116,38 @@ interface Props {
   initialTag: string;
   initialVendor: string;
   initialMaxPrice: string;
+  initialSort?: string;
+  initialResults?: unknown[];
+  initialTotal?: number;
+  initialHasMore?: boolean;
   categories: WCCategory[];
 }
 
-export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, initialMaxPrice, categories }: Props) {
+export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, initialMaxPrice, initialSort, initialResults, initialTotal, initialHasMore, categories }: Props) {
+  // Parse initial results from server
+  const ssrResults = (initialResults || []) as SearchResult[];
+
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(initialTag);
   const [vendor, setVendor] = useState(initialVendor);
   const [onSale, setOnSale] = useState(initialOnSale);
-  const [orderBy, setOrderBy] = useState('popularity');
+  const [orderBy, setOrderBy] = useState(initialSort || 'popularity');
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(999);
-  const [priceMax, setPriceMax] = useState(999); // dynamic max from results
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [searched, setSearched] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(() => {
+    const prices = ssrResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+    return prices.length > 0 ? Math.ceil(Math.max(...prices) / 2) * 2 : 999;
+  });
+  const [priceMax, setPriceMax] = useState(() => {
+    const prices = ssrResults.map(r => parseFloat(r.price) || 0).filter(p => p > 0);
+    return prices.length > 0 ? Math.ceil(Math.max(...prices) / 2) * 2 : 999;
+  });
+  const [results, setResults] = useState<SearchResult[]>(ssrResults);
+  const [searched, setSearched] = useState(ssrResults.length > 0);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(!!initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(initialTotal || ssrResults.length);
   const priceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch results from API
@@ -192,8 +205,14 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     }
   }, []);
 
-  // Initial search + re-search on filter change
+  // Skip first render if we have SSR results — only re-fetch on filter changes
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current && ssrResults.length > 0) {
+      isFirstRender.current = false;
+      return; // SSR results already loaded
+    }
+    isFirstRender.current = false;
     setPage(1);
     fetchResults({
       q: query, tagVal: tag, vendorVal: vendor, onSaleVal: onSale,
