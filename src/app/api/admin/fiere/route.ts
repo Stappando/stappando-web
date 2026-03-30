@@ -5,7 +5,7 @@ import { sendEmail } from '@/lib/mail/mandrill';
 
 const ADMIN_PASSWORD = 'stappando2026';
 const SPREADSHEET_ID = '1sjxo95pOQz76jizopNgjMiHc3A0u1mnhbROuTxAQ948';
-const SHEET_NAME = 'Foglio1';
+const SHEET_NAME = 'cantine';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 /* ── Types ─────────────────────────────────────────────── */
