@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { type WCProduct, type WCCategory, decodeHtml } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 import { useAnalyticsStore } from '@/store/analytics';
@@ -121,7 +120,6 @@ interface Props {
 }
 
 export default function SearchClient({ initialQuery, initialOnSale, initialTag, initialVendor, initialMaxPrice, categories }: Props) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(initialTag);
