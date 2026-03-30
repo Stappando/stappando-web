@@ -95,12 +95,15 @@ export default function FierePage() {
         return;
       }
 
-      if (data.duplicate) {
+      if (data.iscritto) {
         setAlertType('duplicate');
-        setAlertMsg('Email già presente. Riga aggiunta con segnalazione duplicato.');
+        setAlertMsg(`⛔ ${form.email} è già iscritto a Stappando. Mail NON inviata. Riga duplicato aggiunta.`);
+      } else if (data.duplicate) {
+        setAlertType('duplicate');
+        setAlertMsg(`⚠️ Email già presente. Mail inviata e riga duplicato aggiunta.`);
       } else {
         setAlertType('success');
-        setAlertMsg(`Mail inviata a ${form.email} e contatto salvato!`);
+        setAlertMsg(`✓ Mail inviata a ${form.email} e contatto salvato!`);
       }
 
       // Reset form but keep conosciutoA and contattatoDa

@@ -332,12 +332,30 @@ export async function POST(req: NextRequest) {
     const serviceAccount = JSON.parse(saJson);
     const accessToken = await getAccessToken(serviceAccount);
 
-    // Check for duplicate email (column D)
-    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!D:D`);
+    // Check for duplicate email (column D) and if already "Iscritto" (column S = index 18)
+    const existingRows = await sheetsGet(accessToken, `${SHEET_NAME}!A:U`);
     const emailLower = body.email.trim().toLowerCase();
-    const isDuplicate = existingRows.some(
-      (row) => row[0] && row[0].trim().toLowerCase() === emailLower,
+    const duplicateRow = existingRows.find(
+      (row) => row[3] && row[3].trim().toLowerCase() === emailLower,
     );
+    const isDuplicate = !!duplicateRow;
+    const isIscritto = isDuplicate && duplicateRow[18]?.trim().toLowerCase() === 'iscritto';
+
+    // If already "Iscritto" — don't send mail, just mark duplicate
+    if (isIscritto) {
+      // Add row with DUPLICATO and skip email
+      const now2 = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, '0');
+      const dateStr2 = `${pad2(now2.getDate())}/${pad2(now2.getMonth() + 1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
+      const dupRow = [
+        body.azienda.trim(), body.conosciutoA.trim(), body.contattatoDa.trim(), body.email.trim(),
+        '', body.indirizzo.trim(), body.cap.trim(), body.citta.trim(), body.provincia.trim().toUpperCase(),
+        body.regione, `${body.nome.trim()} ${body.cognome.trim()}`.trim(), body.telefono.trim(),
+        body.partitaIva.trim(), '', '', body.note.trim(), '', '', '', dateStr2, 'DUPLICATO ⚠️ (già iscritto)',
+      ];
+      await sheetsAppend(accessToken, `${SHEET_NAME}!A:U`, [dupRow]);
+      return NextResponse.json({ success: true, duplicate: true, iscritto: true });
+    }
 
     // Format date DD/MM/YYYY HH:MM
     const now = new Date();
