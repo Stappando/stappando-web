@@ -496,7 +496,7 @@ Ciao <strong>Mario</strong>,
   <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#444;font-style:italic;">
     &ldquo;Abbiamo iniziato a vendere su Stappando e in un mese abbiamo ricevuto ordini da tutta Italia. Il sistema &egrave; semplicissimo.&rdquo;
   </p>
-  <p style="margin:0;font-size:12px;color:#888;">&mdash; Cantina partner</p>
+  <p style="margin:0;font-size:12px;color:#888;">&mdash; Vendor partner</p>
 </td></tr>
 </table>
 <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Come funziona in 3 passi:</p>
