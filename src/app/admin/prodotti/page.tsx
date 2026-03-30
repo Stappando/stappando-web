@@ -49,6 +49,15 @@ interface ProductData {
   vinificazione: string;
   affinamento: string;
   allergeni: string;
+  terreno: string;
+  esposizione: string;
+  altitudine: string;
+  zonaProduzione: string;
+  resa: string;
+  vendemmia: string;
+  bottiglieProdotte: string;
+  certificazioni: string;
+  tags: string;
 }
 
 interface SearchResult {
@@ -86,6 +95,15 @@ const emptyProduct: ProductData = {
   vinificazione: '',
   affinamento: '',
   allergeni: 'Contiene solfiti',
+  terreno: '',
+  esposizione: '',
+  altitudine: '',
+  zonaProduzione: '',
+  resa: '',
+  vendemmia: '',
+  bottiglieProdotte: '',
+  certificazioni: '',
+  tags: '',
 };
 
 /* ── Spinner SVG ───────────────────────────────────────── */
@@ -511,6 +529,59 @@ export default function ProdottiPage() {
                 <label className={labelClass}>Allergeni</label>
                 <input type="text" value={form.allergeni} onChange={updateField('allergeni')} className={inputClass} />
               </div>
+            </div>
+
+            {/* SEZIONE VIGNETO */}
+            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Vigneto</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Terreno {dot('terreno')}</label>
+                  <input type="text" value={form.terreno} onChange={updateField('terreno')} placeholder="es. Argilloso-calcareo" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Esposizione {dot('esposizione')}</label>
+                  <input type="text" value={form.esposizione} onChange={updateField('esposizione')} placeholder="es. Sud-Est" className={inputClass} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Altitudine {dot('altitudine')}</label>
+                  <input type="text" value={form.altitudine} onChange={updateField('altitudine')} placeholder="es. 350 m s.l.m." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
+                  <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Resa {dot('resa')}</label>
+                  <input type="text" value={form.resa} onChange={updateField('resa')} placeholder="es. 60 ql/ha" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Vendemmia {dot('vendemmia')}</label>
+                  <input type="text" value={form.vendemmia} onChange={updateField('vendemmia')} placeholder="es. Settembre, raccolta manuale" className={inputClass} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
+                  <input type="text" value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} placeholder="es. 5.000" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
+                  <input type="text" value={form.certificazioni} onChange={updateField('certificazioni')} placeholder="es. Bio, Biodinamico" className={inputClass} />
+                </div>
+              </div>
+            </div>
+
+            {/* TAGS */}
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Tag</h3>
+              <label className={labelClass}>Tag {dot('tags')}</label>
+              <input type="text" value={form.tags} onChange={updateField('tags')} placeholder="es. best-seller, occasione" className={inputClass} />
+              <p className="text-[10px] text-gray-400 mt-1">Separati da virgola: best-seller, confezione-regalo, circuito, occasione, regali</p>
             </div>
 
             {/* Buttons */}

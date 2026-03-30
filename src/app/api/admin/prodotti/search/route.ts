@@ -24,6 +24,18 @@ interface ProductData {
   vinificazione?: string;
   affinamento?: string;
   allergeni?: string;
+  // Extra attributes
+  terreno?: string;
+  esposizione?: string;
+  altitudine?: string;
+  zonaProduzione?: string;
+  resa?: string;
+  vendemmia?: string;
+  bottiglieProdotte?: string;
+  certificazioni?: string;
+  metodoSpumantizzazione?: string;
+  dosaggio?: string;
+  tags?: string;
 }
 
 /* ── Wine knowledge database ──────────────────────────── */
@@ -371,23 +383,36 @@ VINO: ${body.name}
 ${body.text ? `SCHEDA TECNICA:\n${body.text}` : ''}
 ${existingInfo ? `INFO GIÀ ESTRATTE:\n${existingInfo}` : ''}
 
-Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info sufficienti):
+Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info sufficienti, compila il più possibile):
 {
   "produttore": "nome del produttore/cantina",
   "categoria": "Vini Rossi|Vini Bianchi|Vini Rosati|Bollicine|Distillati",
+  "annata": "anno es. 2022",
   "denominazione": "es. Colli Maceratesi DOC",
   "regione": "regione italiana",
   "uvaggio": "vitigni separati da virgola",
   "gradazione": "es. 13.5%",
-  "descBreve": "max 155 caratteri, accattivante, SEO. Menziona vitigno e territorio.",
-  "descLunga": "2-3 frasi eleganti. Racconta il vino, il territorio, il carattere. Usa parole sensoriali.",
-  "allaVista": "1 frase poetica sul colore",
-  "alNaso": "1 frase evocativa sui profumi",
-  "alPalato": "1 frase sulla struttura e il gusto",
-  "abbinamenti": "3-4 abbinamenti separati da virgola",
+  "formato": "es. 75 cl, 1.5 L",
+  "descBreve": "max 155 caratteri, accattivante, SEO. Menziona vitigno e territorio. Stile enoteca premium.",
+  "descLunga": "3-4 frasi eleganti. Racconta il vino, il territorio, il carattere. Usa parole sensoriali evocative. Stile da sommelier.",
+  "allaVista": "1 frase poetica e tecnica sul colore e la limpidezza",
+  "alNaso": "1 frase evocativa e dettagliata sui profumi primari, secondari e terziari",
+  "alPalato": "1 frase sulla struttura, tannini, acidità, persistenza",
+  "abbinamenti": "4-5 abbinamenti gastronomici specifici separati da virgola",
   "temperaturaServizio": "es. 8-10°C",
-  "vinificazione": "breve descrizione del processo",
-  "affinamento": "breve descrizione dell'affinamento"
+  "momentoConsumo": "es. Pronto, ottimo nei prossimi 3-5 anni",
+  "vinificazione": "descrizione del processo di vinificazione",
+  "affinamento": "descrizione dell'affinamento (botti, barrique, acciaio, mesi)",
+  "terreno": "tipo di terreno (argilloso, calcareo, sabbioso, vulcanico...)",
+  "esposizione": "esposizione del vigneto (sud, sud-est...)",
+  "altitudine": "altitudine del vigneto in metri s.l.m.",
+  "zonaProduzione": "zona specifica di produzione",
+  "resa": "resa per ettaro es. 60-70 ql/ha",
+  "vendemmia": "periodo e modalità di vendemmia",
+  "bottiglieProdotte": "numero bottiglie prodotte se noto",
+  "certificazioni": "Bio, Biodinamico, Vegan, SQNPI se applicabile",
+  "allergeni": "Contiene solfiti (obbligatorio) + eventuali altri",
+  "tags": "tag separati da virgola tra: best-seller, confezione-regalo, circuito, occasione, regali. Lascia vuoto se non applicabile"
 }`;
 
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -414,7 +439,7 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
           // Capitalize first letter of each value
           const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
           // Only fill fields that are empty
-          const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'vinificazione', 'affinamento'];
+          const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'annata', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'formato', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'momentoConsumo', 'vinificazione', 'affinamento', 'terreno', 'esposizione', 'altitudine', 'zonaProduzione', 'resa', 'vendemmia', 'bottiglieProdotte', 'certificazioni', 'allergeni', 'tags'];
           for (const field of fieldMap) {
             if (ai[field] && !result.data[field]) {
               result.data[field] = capitalize(ai[field]);
@@ -434,7 +459,7 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
   }
 
   // Capitalize first letter of all text fields
-  const textFields: (keyof ProductData)[] = ['descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'vinificazione', 'affinamento', 'abbinamenti'];
+  const textFields: (keyof ProductData)[] = ['descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'vinificazione', 'affinamento', 'abbinamenti', 'terreno', 'esposizione', 'zonaProduzione', 'vendemmia'];
   for (const f of textFields) {
     if (result.data[f]) {
       result.data[f] = result.data[f]!.charAt(0).toUpperCase() + result.data[f]!.slice(1);
