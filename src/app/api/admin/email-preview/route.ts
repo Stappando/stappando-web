@@ -504,7 +504,7 @@ Ciao <strong>Mario</strong>,
 <tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;">
   <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
     <strong style="color:#005667;">1.</strong> Ti registri su stappando.it &rarr; &laquo;Vendi con noi&raquo;<br>
-    <strong style="color:#005667;">2.</strong> Carichi i tuoi prodotti (ci pensiamo anche noi se vuoi)<br>
+    <strong style="color:#005667;">2.</strong> Carichi i tuoi prodotti (se servono foto le facciamo noi)<br>
     <strong style="color:#005667;">3.</strong> Quando arriva un ordine, prepari il pacco. Il corriere lo mandiamo noi
   </p>
 </td></tr>
