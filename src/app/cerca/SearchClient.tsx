@@ -205,21 +205,33 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
     }
   }, []);
 
-  // Skip first render if we have SSR results — only re-fetch on filter changes
-  const isFirstRender = useRef(true);
+  // Track if user changed filters (vs initial load)
+  const [userChangedFilters, setUserChangedFilters] = useState(false);
+
+  // Only fetch when user changes filters — SSR handles initial load
   useEffect(() => {
-    if (isFirstRender.current && ssrResults.length > 0) {
-      isFirstRender.current = false;
-      return; // SSR results already loaded
-    }
-    isFirstRender.current = false;
+    if (!userChangedFilters) return;
     setPage(1);
     fetchResults({
       q: query, tagVal: tag, vendorVal: vendor, onSaleVal: onSale,
       sort: orderBy, maxP: initialMaxPrice, minP: minPrice, pageNum: 1, append: false,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, tag, vendor, onSale, orderBy, initialMaxPrice]);
+  }, [query, tag, vendor, onSale, orderBy, initialMaxPrice, userChangedFilters]);
+
+  // If no SSR results (e.g. client navigation), fetch on mount
+  useEffect(() => {
+    if (ssrResults.length === 0) {
+      const term = initialQuery || initialTag || initialVendor || '';
+      if (term || initialMaxPrice) {
+        fetchResults({
+          q: initialQuery, tagVal: initialTag, vendorVal: initialVendor, onSaleVal: initialOnSale,
+          sort: initialSort || 'popularity', maxP: initialMaxPrice, minP: 0, pageNum: 1, append: false,
+        });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounced price filter
   const handlePriceChange = useCallback((type: 'min' | 'max', value: number) => {
@@ -245,6 +257,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
   // Category change
   const handleCategory = useCallback((cat: string) => {
+    setUserChangedFilters(true);
     setMinPrice(0);
     setMaxPrice(999);
     setPriceMax(999);
@@ -256,6 +269,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
   // Toggle offerte
   const handleOfferte = useCallback(() => {
+    setUserChangedFilters(true);
     setOnSale(prev => !prev);
     setPage(1);
   }, []);
@@ -287,7 +301,7 @@ export default function SearchClient({ initialQuery, initialOnSale, initialTag, 
 
         <div className="w-px h-5 bg-gray-200 shrink-0" />
 
-        <select value={orderBy} onChange={(e) => setOrderBy(e.target.value)} className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#005667] shrink-0">
+        <select value={orderBy} onChange={(e) => { setUserChangedFilters(true); setOrderBy(e.target.value); }} className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] text-gray-600 bg-white focus:outline-none focus:border-[#005667] shrink-0">
           <option value="" disabled>ORDINA PER</option>
           {ORDINA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
