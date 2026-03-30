@@ -88,30 +88,33 @@ export default function CantineClient() {
                 href={`/cantine/${cantina.slug}`}
                 className="group rounded-xl border border-[#e8e4dc] bg-white overflow-hidden hover:border-[#d9c39a] hover:shadow-md transition-all"
               >
-                <div className="aspect-square bg-white flex items-center justify-center p-6 border-b border-[#f0ece4]">
+                <div className="aspect-[4/3] bg-[#faf9f6] flex items-center justify-center p-8 border-b border-[#f0ece4]">
                   {cantina.image ? (
                     <img
                       src={cantina.image}
                       alt={cantina.name}
-                      className="max-h-[80px] max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      className="max-h-[120px] max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   ) : (
-                    <span className="text-4xl font-bold text-[#005667]/10">{cantina.name.charAt(0)}</span>
+                    <span className="text-5xl font-bold text-[#005667]/10">{cantina.name.charAt(0)}</span>
                   )}
                 </div>
-                <div className="p-3">
-                  <h3 className="text-[13px] font-semibold text-[#1a1a1a] group-hover:text-[#005667] transition-colors line-clamp-1">
+                <div className="p-3.5">
+                  <h3 className="text-[14px] font-semibold text-[#1a1a1a] group-hover:text-[#005667] transition-colors line-clamp-1">
                     {cantina.name}
                   </h3>
                   <div className="flex items-center justify-between mt-1">
                     {cantina.region ? (
-                      <span className="text-[10px] text-[#005667] font-medium">{cantina.region}</span>
+                      <span className="text-[11px] text-[#005667] font-medium">{cantina.region}</span>
                     ) : <span />}
                     {cantina.count > 0 && (
                       <span className="text-[10px] text-[#888]">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
                     )}
                   </div>
+                  {cantina.description && (
+                    <p className="text-[11px] text-gray-500 leading-relaxed mt-2 line-clamp-2">{cantina.description}</p>
+                  )}
                 </div>
               </Link>
             ))}
