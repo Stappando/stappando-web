@@ -183,11 +183,53 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Partners & Presence */}
+      <div className="border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Partner di */}
+          <div className="mb-4">
+            <p className="text-[10px] uppercase tracking-wider text-white/40 mb-3">Partner di</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a href="https://vineis.eu" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vineis-2.png" alt="Vineis" className="h-6 object-contain brightness-0 invert" />
+              </a>
+              <span className="opacity-70">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-ostia-film.png" alt="Ostia Film Festival" className="h-6 object-contain brightness-0 invert" />
+              </span>
+              <a href="https://noidisala.it" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-noidisala-2.png" alt="Noi di Sala" className="h-6 object-contain brightness-0 invert" />
+              </a>
+            </div>
+          </div>
+
+          {/* Presente su */}
+          <div className="mb-4">
+            <p className="text-[10px] uppercase tracking-wider text-white/40 mb-3">Stappando lo trovi anche su</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a href="https://www.vivino.com" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-vivino-2.png" alt="Vivino" className="h-5 object-contain brightness-0 invert" />
+              </a>
+              <a href="https://www.wine-searcher.com" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-wine-search-2.png" alt="Wine-Searcher" className="h-5 object-contain brightness-0 invert" />
+              </a>
+              <a href="https://www.trovino.it" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity">
+                <img src="https://stappando.it/wp-content/uploads/2025/11/logo-Trovino-2.png" alt="Trovino" className="h-5 object-contain brightness-0 invert" />
+              </a>
+            </div>
+          </div>
+
+          {/* Anbrekabol */}
+          <p className="text-[11px] text-white/50">
+            Stappando utilizza scatole per spedizione <a href="https://anbrekabol.com" target="_blank" rel="noopener noreferrer" className="text-white/70 font-semibold hover:text-white transition-colors">Anbrekabol®</a>
+          </p>
+        </div>
+      </div>
+
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
-            <p>&copy; {new Date().getFullYear()} Stappando Srl Semplificata — P.IVA 15855161003. Tutti i diritti riservati.</p>
+            <p>&copy; {new Date().getFullYear()} Stappando Srl — P.IVA 15855161003. Tutti i diritti riservati.</p>
             <p className="font-medium text-white/60"><span className="inline-flex items-center gap-1"><svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>18+</span> Vietata la vendita ai minori di 18 anni</p>
           </div>
         </div>
