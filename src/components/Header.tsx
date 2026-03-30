@@ -349,7 +349,7 @@ export default function Header() {
             <div className="flex-1" />
 
             {/* RIGHT — Actions */}
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-1 lg:flex-none justify-end">
+            <div className="flex items-center gap-0 sm:gap-1 flex-1 lg:flex-none justify-end min-w-0">
               {/* Search pill — desktop: full width */}
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
@@ -376,12 +376,12 @@ export default function Header() {
               </button>
 
               {/* Account — always visible */}
-              <div className="shrink-0">
+              <div className="shrink-0 -ml-0.5">
                 <AccountIcon onOpenAuth={() => setAuthModalOpen(true)} />
               </div>
 
               {/* Cart */}
-              <div className="shrink-0">
+              <div className="shrink-0 -ml-1">
                 <CartIcon />
               </div>
 
@@ -395,7 +395,7 @@ export default function Header() {
               {/* Hamburger — mobile/tablet */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden flex items-center justify-center w-11 h-11 -mr-1 rounded-lg text-gray-600 hover:text-[#005667] hover:bg-gray-50 transition-colors"
+                className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 -mr-1 rounded-lg text-gray-600 hover:text-[#005667] hover:bg-gray-50 transition-colors"
                 aria-label="Menu"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
