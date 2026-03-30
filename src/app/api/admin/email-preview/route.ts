@@ -529,37 +529,30 @@ function buildFollowUp3(): string {
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Sono passate due settimane dal nostro incontro. Questa &egrave; l&rsquo;ultima mail che ti invio, ma volevo farti sapere che <strong>l&rsquo;offerta di lancio &egrave; ancora attiva</strong>.
+Sono passate due settimane dal nostro incontro. Questa &egrave; l&rsquo;ultima mail che ti invio, ma abbiamo pensato a qualcosa di speciale per te.
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:16px;background:linear-gradient(135deg,#005667,#007a8f);border-radius:12px;text-align:center;">
-  <p style="margin:0 0 4px;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Offerta esclusiva fiere</p>
-  <p style="margin:0 0 8px;font-size:22px;color:#ffffff;font-weight:800;">Commissione ridotta al 12%</p>
-  <p style="margin:0;font-size:13px;color:#ffffff;opacity:0.8;">Per i primi 3 mesi &mdash; invece del 15% standard</p>
+<tr><td style="padding:20px;background:linear-gradient(135deg,#005667,#007a8f);border-radius:12px;text-align:center;">
+  <p style="margin:0 0 6px;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Offerta esclusiva fiere</p>
+  <p style="margin:0 0 10px;font-size:20px;color:#ffffff;font-weight:800;line-height:1.3;">1 Circuito Visibilit&agrave; Gratuito</p>
+  <p style="margin:0 0 6px;font-size:15px;color:#ffffff;font-weight:600;">1 Storia + 1 Reel</p>
+  <p style="margin:0;font-size:13px;color:#ffffff;opacity:0.85;">se ci invii le tue bottiglie &mdash; <strong>+15.000 follower</strong></p>
 </td></tr>
 </table>
-<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
-Registrati entro questa settimana e partirai con la commissione agevolata. Dopo si torna al 15%.
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;font-weight:600;">
+Registrati entro domani alle 24 e ti inseriamo nel nostro calendario editoriale.
 </p>
-<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Cosa include Stappando:</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;">
-  <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
-    \uD83C\uDF77 Vendita online a migliaia di clienti in tutta Italia<br>
-    \uD83D\uDE9A Gestione spedizioni e corriere inclusa<br>
-    \uD83D\uDCF8 Servizio fotografico prodotti gratuito<br>
-    \uD83C\uDF3F Accesso a Vineis.eu per esperienze in cantina<br>
-    \uD83D\uDCE6 Scatole Anbrekabol&reg; per spedizioni assicurate
-  </p>
-</td></tr>
-</table>
 <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
 <tr><td style="background:#005667;border-radius:8px;">
-  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Approfitta dell&rsquo;offerta &rarr;</a>
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati ora &rarr;</a>
 </td></tr>
 </table>
+<p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#005667;">Invio bottiglie a:</p>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Stappando Srl &ndash; Via Pomonte 67, Roma (Scarico 7&ndash;12)
+</p>
 <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
-Se hai bisogno di aiuto con la registrazione, rispondi a questa mail o chiamaci al <strong>06 92915330</strong>.
+Per qualsiasi domanda rispondi a questa mail o chiamaci al <strong>06 92915330</strong>.
 </p>
 <p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
 Un caro saluto,<br><strong>Il team Stappando</strong>
