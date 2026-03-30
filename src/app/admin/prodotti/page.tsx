@@ -126,6 +126,11 @@ function Spinner() {
 
 export default function ProdottiPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [mode, setMode] = useState<'create' | 'edit'>('create');
+  const [editProductId, setEditProductId] = useState<number | null>(null);
+  const [existingSearch, setExistingSearch] = useState('');
+  const [existingResults, setExistingResults] = useState<{ id: number; name: string; price: string; image: string; status: string }[]>([]);
+  const [searchingExisting, setSearchingExisting] = useState(false);
   const [searchName, setSearchName] = useState('');
   const [techText, setTechText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -169,6 +174,44 @@ export default function ProdottiPage() {
       });
   }, []);
 
+  /* ── Search existing products ────────────────────────── */
+
+  const searchExisting = useCallback(async (q: string) => {
+    if (q.length < 2) { setExistingResults([]); return; }
+    setSearchingExisting(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&per_page=8`);
+      if (res.ok) {
+        const data = await res.json();
+        setExistingResults((data.products || []).map((p: { id: number; name: string; price: string; image: string | null; on_sale: boolean }) => ({
+          id: p.id, name: p.name, price: p.price, image: p.image || '', status: p.on_sale ? 'In offerta' : 'Pubblicato',
+        })));
+      }
+    } catch { /* */ }
+    finally { setSearchingExisting(false); }
+  }, []);
+
+  const loadExistingProduct = useCallback(async (productId: number) => {
+    setLoading(true);
+    setError('');
+    try {
+      const wc = await fetch(`/api/admin/prodotti/load?id=${productId}`);
+      if (wc.ok) {
+        const data = await wc.json();
+        setForm({ ...emptyProduct, ...data });
+        setFoundFields(Object.keys(data).filter(k => data[k as keyof typeof data]));
+        setEditProductId(productId);
+        setMode('edit');
+        setStep(2);
+        setExistingResults([]);
+        setExistingSearch('');
+      } else {
+        setError('Errore caricamento prodotto');
+      }
+    } catch { setError('Errore di rete'); }
+    finally { setLoading(false); }
+  }, []);
+
   /* ── Helpers ────────────────────────────────────────── */
 
   const updateField = useCallback(
@@ -183,7 +226,12 @@ export default function ProdottiPage() {
 
   const resetAll = () => {
     setStep(1);
+    setMode('create');
+    setEditProductId(null);
     setSearchName('');
+    setTechText('');
+    setExistingSearch('');
+    setExistingResults([]);
     setForm(emptyProduct);
     setFoundFields([]);
     setCreateResult(null);
@@ -228,10 +276,17 @@ export default function ProdottiPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/admin/prodotti/create', {
+      const url = mode === 'edit' && editProductId
+        ? '/api/admin/prodotti/create'
+        : '/api/admin/prodotti/create';
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          ...(mode === 'edit' && editProductId ? { updateId: editProductId } : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -287,11 +342,38 @@ export default function ProdottiPage() {
         {/* ── STEP 1: Search ──────────────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
-            <div className="text-center py-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Crea scheda prodotto</h2>
-              <p className="text-sm text-gray-500">
-                Inserisci il nome del vino e incolla la scheda tecnica
-              </p>
+            {/* Search existing product */}
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-bold text-[#005667] mb-2">📝 Modifica prodotto esistente</h3>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={existingSearch}
+                  onChange={(e) => { setExistingSearch(e.target.value); searchExisting(e.target.value); }}
+                  placeholder="Cerca per nome..."
+                  className="w-full h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667]"
+                />
+                {searchingExisting && <div className="absolute right-3 top-3"><div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" /></div>}
+                {existingResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {existingResults.map(p => (
+                      <button key={p.id} onClick={() => loadExistingProduct(p.id)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0">
+                        {p.image && <img src={p.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800 truncate">{p.name}</p>
+                          <p className="text-xs text-gray-400">#{p.id} · {p.price}€ · {p.status}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 font-medium">oppure crea nuovo</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
 
             <div>
@@ -603,7 +685,7 @@ export default function ProdottiPage() {
                     <Spinner /> Creando...
                   </>
                 ) : (
-                  'Crea bozza su WooCommerce \u2192'
+                  mode === 'edit' ? 'Aggiorna su WooCommerce \u2192' : 'Crea bozza su WooCommerce \u2192'
                 )}
               </button>
             </div>

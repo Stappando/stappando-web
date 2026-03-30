@@ -173,7 +173,7 @@ function buildWCProduct(body: ProductBody) {
 /* ── POST handler ──────────────────────────────────────── */
 
 export async function POST(req: NextRequest) {
-  let body: ProductBody;
+  let body: ProductBody & { updateId?: number };
   try {
     body = await req.json();
   } catch {
@@ -184,12 +184,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nome prodotto obbligatorio' }, { status: 400 });
   }
 
+  const isUpdate = !!body.updateId;
+
   try {
     const wcProduct = buildWCProduct(body);
     const wc = getWCSecrets();
 
-    const res = await fetch(wcUrl('/products'), {
-      method: 'POST',
+    // If updating, use PUT; if creating, use POST
+    const url = isUpdate ? wcUrl(`/products/${body.updateId}`) : wcUrl('/products');
+    const method = isUpdate ? 'PUT' : 'POST';
+
+    // For updates, don't change status
+    if (isUpdate) {
+      delete (wcProduct as Record<string, unknown>).status;
+    }
+
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(wcProduct),
     });
