@@ -18,7 +18,7 @@ export default function EmailPreviewPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/email-preview?pwd=stappando2026');
+      const res = await fetch('/api/admin/email-preview');
       const data = await res.json();
       setPreviews(data.previews || []);
       if (data.previews?.length > 0) setSelected(data.previews[0].id);
