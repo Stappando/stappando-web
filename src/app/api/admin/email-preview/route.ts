@@ -458,10 +458,10 @@ Ci siamo conosciuti qualche giorno fa e ti abbiamo presentato <strong>Stappando<
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
 <tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
   <p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
-    <strong style="color:#005667;">\u2713 Zero costi di iscrizione</strong> &mdash; nessun canone mensile, paghi solo una commissione del 15% sulle vendite<br>
+    <strong style="color:#005667;">\u2713 Zero costi di iscrizione</strong> &mdash; nessun canone mensile, solo una commissione del 15% sulle vendite<br>
     <strong style="color:#005667;">\u2713 Spedizioni gestite da noi</strong> &mdash; quando l&rsquo;ordine arriva, voi preparate il pacco. Il ritiro del corriere lo organizziamo noi<br>
-    <strong style="color:#005667;">\u2713 Visibilit&agrave; immediata</strong> &mdash; i vostri vini davanti a migliaia di appassionati che cercano qualit&agrave;<br>
-    <strong style="color:#005667;">\u2713 Pagamenti sicuri</strong> &mdash; incassate direttamente, noi gestiamo solo la piattaforma
+    <strong style="color:#005667;">\u2713 Visibilit&agrave; immediata</strong> &mdash; i vostri vini davanti a migliaia di appassionati che cercano qualit&agrave;, 50.000 visitatori al mese<br>
+    <strong style="color:#005667;">\u2713 Pagamenti sicuri</strong> &mdash; il 10 di ogni mese incassate il vostro 85%
   </p>
 </td></tr>
 </table>
