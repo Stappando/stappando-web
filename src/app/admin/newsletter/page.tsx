@@ -22,7 +22,12 @@ export default function NewsletterPage() {
   const [provincia, setProvincia] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [products, setProducts] = useState('');
+  const [title, setTitle] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState<{ id: number; name: string; price: string; image: string }[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<{ id: number; name: string; price: string; image: string }[]>([]);
+  const [searchingProducts, setSearchingProducts] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [preview, setPreview] = useState(false);
@@ -38,7 +43,7 @@ export default function NewsletterPage() {
       const res = await fetch('/api/admin/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audience, template, provincia, subject, body, products: products.split(',').map(s => s.trim()).filter(Boolean) }),
+        body: JSON.stringify({ audience, template, provincia, subject, title, bannerUrl, body, products: selectedProducts.map(p => p.id) }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -51,7 +56,35 @@ export default function NewsletterPage() {
     } finally {
       setSending(false);
     }
-  }, [audience, template, provincia, subject, body, products]);
+  }, [audience, template, provincia, subject, title, bannerUrl, body, selectedProducts]);
+
+  // Search products by name
+  const searchProducts = useCallback(async (q: string) => {
+    if (q.length < 2) { setProductResults([]); return; }
+    setSearchingProducts(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&per_page=6`);
+      if (res.ok) {
+        const data = await res.json();
+        setProductResults((data.products || []).map((p: { id: number; name: string; price: string; image: string | null }) => ({
+          id: p.id, name: p.name, price: p.price, image: p.image || '',
+        })));
+      }
+    } catch { /* */ }
+    finally { setSearchingProducts(false); }
+  }, []);
+
+  const addProduct = useCallback((p: { id: number; name: string; price: string; image: string }) => {
+    if (!selectedProducts.find(s => s.id === p.id)) {
+      setSelectedProducts(prev => [...prev, p]);
+    }
+    setProductSearch('');
+    setProductResults([]);
+  }, [selectedProducts]);
+
+  const removeProduct = useCallback((id: number) => {
+    setSelectedProducts(prev => prev.filter(p => p.id !== id));
+  }, []);
 
   const inputClass = 'w-full h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent';
   const labelClass = 'block text-xs font-semibold text-gray-600 mb-1';
@@ -169,17 +202,64 @@ export default function NewsletterPage() {
           </div>
         )}
 
-        {/* Products to feature */}
+        {/* Title */}
         <div>
-          <label className={labelClass}>Prodotti in evidenza (ID separati da virgola, opzionale)</label>
-          <input
-            type="text"
-            value={products}
-            onChange={(e) => setProducts(e.target.value)}
-            placeholder="es. 69890, 69817, 12345"
-            className={inputClass}
-          />
-          <p className="text-[10px] text-gray-400 mt-1">I prodotti verranno mostrati con immagine, nome e prezzo nella mail</p>
+          <label className={labelClass}>Titolo nella mail (opzionale)</label>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="es. Le novità di primavera" className={inputClass} />
+        </div>
+
+        {/* Banner */}
+        <div>
+          <label className={labelClass}>Banner immagine URL (opzionale)</label>
+          <input type="text" value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://stappando.it/wp-content/uploads/..." className={inputClass} />
+          {bannerUrl && (
+            <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
+              <img src={bannerUrl} alt="Banner preview" className="w-full h-auto max-h-40 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </div>
+          )}
+        </div>
+
+        {/* Products search */}
+        <div>
+          <label className={labelClass}>Prodotti in evidenza (cerca per nome)</label>
+          <div className="relative">
+            <input
+              type="text"
+              value={productSearch}
+              onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }}
+              placeholder="Cerca un vino..."
+              className={inputClass}
+            />
+            {searchingProducts && <div className="absolute right-3 top-3"><div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" /></div>}
+            {productResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {productResults.map(p => (
+                  <button key={p.id} onClick={() => addProduct(p)} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-left">
+                    {p.image && <img src={p.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 truncate">{p.name}</p>
+                      <p className="text-xs text-[#005667] font-semibold">{p.price} €</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Selected products */}
+          {selectedProducts.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {selectedProducts.map(p => (
+                <div key={p.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                  {p.image && <img src={p.image} alt="" className="w-8 h-8 rounded object-cover shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-700 truncate">{p.name}</p>
+                    <p className="text-[10px] text-[#005667] font-semibold">{p.price} €</p>
+                  </div>
+                  <button onClick={() => removeProduct(p.id)} className="text-gray-400 hover:text-red-500 text-xs">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -210,11 +290,22 @@ export default function NewsletterPage() {
         {/* Preview */}
         {preview && (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="bg-[#005667] px-6 py-4">
-              <p className="text-white font-bold">Stappando</p>
-              <p className="text-white/70 text-xs mt-0.5">{subject || 'Oggetto...'}</p>
+            {/* Header logo + stars */}
+            <div className="py-6 text-center border-b border-gray-100">
+              <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" className="inline-block h-8" />
+              <p className="text-[11px] text-gray-400 mt-2">
+                <span className="text-[#d9c39a] tracking-wider">★★★★★</span>
+                <span className="text-[#005667] font-semibold ml-1">4.6/5</span>
+                <span className="text-gray-400 ml-0.5">· 1000+ recensioni</span>
+              </p>
             </div>
+            {/* Banner */}
+            {bannerUrl && (
+              <div><img src={bannerUrl} alt="Banner" className="w-full h-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+            )}
             <div className="px-6 py-5 text-sm text-gray-700 leading-relaxed">
+              {/* Title */}
+              {title && <h2 className="text-xl font-bold text-[#005667] mb-4">{title}</h2>}
               <p className="mb-3">Gentile {'{'} nome {'}'},</p>
               {template === 'libera' && <p className="whitespace-pre-wrap">{body || 'Il testo della tua mail apparirà qui...'}</p>}
               {template === 'upsell-vineis' && (
@@ -232,15 +323,28 @@ export default function NewsletterPage() {
                   <p>Scopri le novità → <strong>shop.stappando.it</strong></p>
                 </div>
               )}
-              {products && (
+              {/* Products */}
+              {selectedProducts.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">PRODOTTI IN EVIDENZA</p>
-                  <p className="text-xs text-gray-400">ID: {products}</p>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Prodotti in evidenza</p>
+                  <div className="space-y-2">
+                    {selectedProducts.map(p => (
+                      <div key={p.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
+                        {p.image && <img src={p.image} alt="" className="w-12 h-12 rounded object-cover shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-800 font-medium truncate">{p.name}</p>
+                          <p className="text-sm text-[#005667] font-bold">{p.price} €</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-            <div className="bg-gray-50 px-6 py-3 border-t border-gray-100">
-              <p className="text-[10px] text-gray-400 text-center">Stappando Srl — info@stappando.it</p>
+            {/* Footer */}
+            <div className="bg-[#1a1a1a] px-6 py-4 text-center">
+              <p className="text-[10px] text-gray-500">Instagram | Facebook | <span className="text-[#d9c39a] font-semibold">stappando.it</span></p>
+              <p className="text-[9px] text-gray-600 mt-1">© 2026 Stappando Srl — P.IVA 15855161003</p>
             </div>
           </div>
         )}
