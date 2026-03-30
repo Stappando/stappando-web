@@ -116,16 +116,24 @@ export default function ProdottiPage() {
   const [createResult, setCreateResult] = useState<CreateResult | null>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
-  // Fetch vendors on mount
+  const [producers, setProducers] = useState<{ name: string; slug: string }[]>([]);
+
+  // Fetch vendors + producers on mount
   useEffect(() => {
     fetch('/api/vendor/products?listVendors=1')
       .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setVendors(data); })
+      .catch(() => {});
+    setVendors([{ id: 0, name: 'Stappando Enoteca (default)' }]);
+
+    // Fetch producers for dropdown
+    fetch('https://stappando.it/wp-json/stp-app/v1/producer-logos')
+      .then(r => r.ok ? r.json() : [])
       .then(data => {
-        if (Array.isArray(data)) setVendors(data);
+        const list = Array.isArray(data) ? data : [];
+        setProducers(list.map((p: { name: string; slug: string }) => ({ name: p.name, slug: p.slug })).sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name)));
       })
       .catch(() => {});
-    // Fallback: add Stappando Enoteca as default
-    setVendors([{ id: 0, name: 'Stappando Enoteca (default)' }]);
   }, []);
 
   /* ── Helpers ────────────────────────────────────────── */
@@ -306,7 +314,17 @@ export default function ProdottiPage() {
 
               <div>
                 <label className={labelClass}>Produttore {dot('produttore')}</label>
-                <input type="text" value={form.produttore} onChange={updateField('produttore')} className={inputClass} />
+                <input
+                  type="text"
+                  value={form.produttore}
+                  onChange={updateField('produttore')}
+                  list="producers-list"
+                  placeholder="Cerca o seleziona produttore..."
+                  className={inputClass}
+                />
+                <datalist id="producers-list">
+                  {producers.map(p => <option key={p.slug} value={p.name} />)}
+                </datalist>
               </div>
 
               <div>
