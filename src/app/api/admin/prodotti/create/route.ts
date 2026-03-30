@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
+import { getGoogleAccessToken, sheetsAppend } from '@/lib/google-sheets';
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -170,6 +171,18 @@ export async function POST(req: NextRequest) {
     const product = await res.json();
     const productId = product.id as number;
     const editUrl = `${wc.baseUrl}/wp-admin/post.php?post=${productId}&action=edit`;
+
+    // Save to Google Sheets (elenco prodotti)
+    try {
+      const PRODUCTS_SHEET_ID = '1ZPjUqED0c4I7EPqa0h9bNFkCijBzXe3Y0XiiL0QNKxc';
+      const accessToken = await getGoogleAccessToken();
+      await sheetsAppend(accessToken, PRODUCTS_SHEET_ID, 'elenco prodotti!D:E', [
+        [body.sku || '', body.nome.trim()],
+      ]);
+    } catch (sheetErr) {
+      console.error('Google Sheets save error (non-blocking):', sheetErr);
+      // Non-blocking — product is already created on WC
+    }
 
     return NextResponse.json({
       success: true,
