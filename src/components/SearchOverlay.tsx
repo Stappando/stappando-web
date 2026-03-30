@@ -240,10 +240,11 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
   }, [doSearch]);
 
   const handleSuggestion = useCallback((term: string) => {
-    setQuery(term);
-    doSearch(term);
-    inputRef.current?.focus();
-  }, [doSearch]);
+    // Navigate directly to search results
+    const param = term === 'Sotto 15€' ? 'max_price=15' : `q=${encodeURIComponent(term)}`;
+    window.location.href = `/cerca?${param}`;
+    onClose();
+  }, [onClose]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
