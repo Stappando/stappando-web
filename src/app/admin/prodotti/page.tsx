@@ -120,20 +120,29 @@ export default function ProdottiPage() {
 
   // Fetch vendors + producers on mount
   useEffect(() => {
-    fetch('/api/vendor/products?listVendors=1')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => { if (Array.isArray(data)) setVendors(data); })
-      .catch(() => {});
-    setVendors([{ id: 0, name: 'Stappando Enoteca (default)' }]);
+    // Vendors are just the known ones for now
+    setVendors([
+      { id: 0, name: 'Stappando Enoteca (default)' },
+      { id: 6611, name: 'Cantina Merlotta (vendor7)' },
+    ]);
 
-    // Fetch producers for dropdown
-    fetch('https://stappando.it/wp-json/stp-app/v1/producer-logos')
+    // Fetch ALL producers (including empty ones) from WC API via our proxy
+    fetch('/api/vendor/taxonomies?slug=pa_produttore&per_page=200')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setProducers(list.map((p: { name: string; slug: string }) => ({ name: p.name, slug: p.slug })).sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name)));
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback to producer-logos endpoint
+        fetch('https://stappando.it/wp-json/stp-app/v1/producer-logos')
+          .then(r => r.ok ? r.json() : [])
+          .then(data => {
+            const list = Array.isArray(data) ? data : [];
+            setProducers(list.map((p: { name: string; slug: string }) => ({ name: p.name, slug: p.slug })).sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name)));
+          })
+          .catch(() => {});
+      });
   }, []);
 
   /* ── Helpers ────────────────────────────────────────── */
