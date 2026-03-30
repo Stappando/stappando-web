@@ -269,7 +269,113 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
       title: '17. Vendor approvato — negozio attivo',
       html: vendorApproved('Cantina Oddero').html,
     },
+    {
+      id: 'fiere-presentazione',
+      title: '18. Presentazione fiere — Stappando/Vineis/Anbrekabol',
+      html: buildFiereEmail(),
+    },
   ];
+}
+
+function buildFiereEmail(): string {
+  return `<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:600px;width:100%;">
+<tr><td style="background:#005667;padding:24px 30px;">
+  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Stappando</h1>
+  <p style="margin:4px 0 0;color:#d9c39a;font-size:13px;">Presentazione del Gruppo</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Gentile <strong>Mario Rossi</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ci siamo conosciuti a <strong>Vinitaly 2026</strong>, come da accordi presi con <strong>Roberto</strong>, invio una presentazione del nostro gruppo.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-left:4px solid #005667;">
+<tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:0 6px 6px 0;">
+<p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#005667;">\uD83C\uDF77 Stappando.it &mdash; Marketplace</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Piattaforma per la vendita online di vini al pubblico.<br>
+<strong>Iscrizione gratuita &ndash; Commissione 15%.</strong><br>
+Quando l&rsquo;ordine &egrave; pagato arriva a voi la mail con la lettera di vettura, preparate il pacco e lo consegnate al corriere, il ritiro lo predisponiamo noi.
+</p>
+</td></tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-left:4px solid #4a8c3f;">
+<tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:0 6px 6px 0;">
+<p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#4a8c3f;">\uD83C\uDF3F Vineis.eu &mdash; Esperienze in cantina</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Portale dedicato a visite, tour ed esperienze in cantina.<br>
+<strong>Iscrizione gratuita &ndash; Commissione 15%.</strong><br>
+Inseriamo noi le esperienze per voi, gestiamo prenotazioni e parte tecnica. Voi accogliete i clienti che hanno prenotato.
+</p>
+</td></tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-left:4px solid #c0792a;">
+<tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:0 6px 6px 0;">
+<p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#c0792a;">\uD83D\uDCE6 Anbrekabol.com &mdash; Spedizioni sicure</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Scatole per spedire bottiglie in sicurezza.<br>
+Le spedizioni con Anbrekabol sono <strong>assicurate</strong>.<br>
+Acquisto e maggiori info su <a href="https://anbrekabol.com" style="color:#c0792a;">anbrekabol.com</a>
+</p>
+</td></tr>
+</table>
+<hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0;">
+<p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#005667;">Come si parte?</p>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Registrazione a <a href="https://stappando.it" style="color:#005667;font-weight:600;">Stappando.it</a> e/o <a href="https://vineis.eu" style="color:#4a8c3f;font-weight:600;">Vineis.eu</a> andando sul link nel sito &laquo;Vendi con noi&raquo;, &laquo;Ospita con noi&raquo;.
+</p>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
+Se non avete foto possiamo farle per voi.<br>
+<strong>Invio prodotti a:</strong> Stappando Srl &ndash; Via Pomonte 67, Roma (Scarico 7&ndash;12)
+</p>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Il sistema &egrave; tutto automatizzato, vi basta registrarvi.<br>
+Se interessati potete procedere in autonomia o rispondere a questa mail.
+</p>
+<hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0;">
+<p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#005667;">\uD83D\uDCCE Allegati</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:8px 12px;background:#f0f7f9;border-radius:6px;">
+  <a href="https://stappando.it/wp-content/uploads/2026/03/Presentazione-Vendi-su-stappando.it-Vendor.pdf" style="color:#005667;font-size:13px;font-weight:600;text-decoration:none;">
+    \uD83D\uDCC4 Presentazione Vendi su Stappando.it
+  </a>
+</td></tr>
+<tr><td style="height:4px;"></td></tr>
+<tr><td style="padding:8px 12px;background:#f0f9f2;border-radius:6px;">
+  <a href="https://stappando.it/wp-content/uploads/2026/03/Presentazione-Ospita-con-Vineis.pdf" style="color:#4a8c3f;font-size:13px;font-weight:600;text-decoration:none;">
+    \uD83D\uDCC4 Presentazione Ospita con Vineis
+  </a>
+</td></tr>
+<tr><td style="height:4px;"></td></tr>
+<tr><td style="padding:8px 12px;background:#fdf6ee;border-radius:6px;">
+  <a href="https://stappando.it/wp-content/uploads/2026/03/Presentazione-Spedisci-con-Anbrekabol-non-rompere-piu-le-scatole.pdf" style="color:#c0792a;font-size:13px;font-weight:600;text-decoration:none;">
+    \uD83D\uDCC4 Presentazione Spedisci con Anbrekabol
+  </a>
+</td></tr>
+</table>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Un saluto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;font-weight:600;">Stappando</span>
+</p>
+</td></tr>
+<tr><td style="background:#f8f9fa;padding:16px 30px;border-top:1px solid #e5e5e5;">
+<p style="margin:0;font-size:11px;color:#999;text-align:center;">
+Stappando Srl &mdash; info@stappando.it
+</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
 }
 
 export async function GET(req: NextRequest) {
