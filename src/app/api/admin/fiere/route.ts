@@ -315,7 +315,10 @@ export async function POST(req: NextRequest) {
 
     // 2. Send email via Mandrill with attachments
     await sendEmail({
-      to: [{ email: body.email, name: `${body.nome} ${body.cognome}` }, { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' }],
+      to: [
+        { email: body.email, name: body.nome ? `${body.nome} ${body.cognome || ''}`.trim() : body.email, type: 'to' as const },
+        { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' as const },
+      ],
       from_email: 'info@stappando.it',
       from_name: 'Stappando',
       subject: 'Presentazione Stappando, Vineis e Anbrekabol',
@@ -323,6 +326,7 @@ export async function POST(req: NextRequest) {
       tags: ['fiere', 'crm'],
       ...(attachments.length > 0 ? { attachments } : {}),
     });
+    console.log('[CRM Fiere] Email sent to:', body.email, '| Attachments:', attachments.length, '| BCC: info@stappando.it');
 
     // 2. Save to Google Sheets
     const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;

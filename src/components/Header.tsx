@@ -367,12 +367,12 @@ export default function Header() {
                   if (mobile) setMobileSearchOpen(true);
                   else setSearchOpen(!searchOpen);
                 }}
-                className="lg:hidden flex items-center flex-1 min-w-0 pl-2.5 pr-1 py-1 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
+                className="lg:hidden flex items-center flex-1 min-w-0 gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-3.5 h-3.5 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[11px] sm:text-[12px] text-[#aaa] flex-1 text-left ml-1.5 truncate">Cerca...</span>
-                <span className="bg-[#005667] text-white text-[9px] sm:text-[10px] font-semibold px-2 py-1 rounded-full shrink-0">Cerca</span>
+                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[12px] text-[#999] flex-1 text-left truncate">Cosa vuoi cercare?</span>
+                <span className="bg-[#005667] text-white text-[10px] font-semibold px-3 py-1 rounded-full shrink-0">Cerca</span>
               </button>
 
               {/* Account — always visible */}
