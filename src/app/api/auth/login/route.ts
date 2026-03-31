@@ -39,28 +39,35 @@ export async function POST(req: NextRequest) {
     const firstName = tokenData.data?.firstName || '';
     const lastName = tokenData.data?.lastName || '';
 
-    // 2. Fetch customer data from WooCommerce
+    // 2. Fetch customer data — try WC first, then direct customer by ID
     let custFirstName = firstName;
     let custLastName = lastName;
     let custId = userId;
     let custRole = 'customer';
     let vendorStatus: string | null = null;
     try {
-      const custUrl = `${wc.baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+      // Try by email first
+      let customer = null;
+      const custUrl = `${wc.baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&role=all`;
       const custRes = await fetch(custUrl);
       if (custRes.ok) {
         const customers = await custRes.json();
-        if (customers[0]) {
-          custFirstName = customers[0].first_name || custFirstName;
-          custLastName = customers[0].last_name || custLastName;
-          custId = customers[0].id || custId;
-          const isVendorMeta = customers[0].meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
-          custRole = isVendorMeta || ['vendor', 'wcfm_vendor', 'dc_vendor', 'seller'].includes(customers[0].role) ? 'vendor' : (customers[0].role || 'customer');
-          const vendorStatusMeta = customers[0].meta_data?.find((m: { key: string; value: string }) => m.key === '_vendor_status');
-          if (vendorStatusMeta) {
-            vendorStatus = vendorStatusMeta.value;
-          }
-        }
+        if (customers[0]) customer = customers[0];
+      }
+      // If not found by email (vendor role not in WC customers), try by ID
+      if (!customer && custId) {
+        const byIdUrl = `${wc.baseUrl}/wp-json/wc/v3/customers/${custId}?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+        const byIdRes = await fetch(byIdUrl);
+        if (byIdRes.ok) customer = await byIdRes.json();
+      }
+      if (customer) {
+        custFirstName = customer.first_name || custFirstName;
+        custLastName = customer.last_name || custLastName;
+        custId = customer.id || custId;
+        const isVendorMeta = customer.meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
+        custRole = isVendorMeta || customer.role === 'wcfm_vendor' || ['vendor', 'wcfm_vendor', 'dc_vendor', 'seller'].includes(customer.role) ? 'vendor' : (customer.role || 'customer');
+        const vendorStatusMeta = customer.meta_data?.find((m: { key: string; value: string }) => m.key === '_vendor_status');
+        if (vendorStatusMeta) vendorStatus = vendorStatusMeta.value;
       }
     } catch { /* use JWT data */ }
 
