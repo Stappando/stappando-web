@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
       const token = tokenData.data?.token || tokenData.token;
       if (token) {
         // Check if vendor by fetching customer meta (with short timeout)
-        const customer = await fetchCustomer(wc.baseUrl, auth, email);
+        const jwtUserId = tokenData.data?.id || tokenData.user_id || 0;
+        const customer = await fetchCustomer(wc.baseUrl, auth, email, jwtUserId);
         const isVendorMeta = customer?.meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
         const wpRole = customer?.role || 'customer';
         const isWcfmVendor = wpRole === 'wcfm_vendor' || wpRole === 'dc_vendor' || wpRole === 'vendor';
@@ -164,16 +165,26 @@ async function tryLogin(baseUrl: string, email: string, password: string): Promi
 }
 
 /** Fetch WC customer by email — short timeout, best effort */
-async function fetchCustomer(baseUrl: string, auth: string, email: string) {
+async function fetchCustomer(baseUrl: string, auth: string, email: string, userId?: number) {
   try {
+    // Try by email first
     const res = await fetch(`${baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&${auth}`, {
       signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
       const customers = await res.json();
-      return customers[0] || null;
+      if (customers[0]) return customers[0];
     }
-  } catch { /* timeout — meta won't be available but login still works */ }
+  } catch { /* timeout */ }
+  // Fallback: fetch by ID (WC email search doesn't return wcfm_vendor role users)
+  if (userId) {
+    try {
+      const res = await fetch(`${baseUrl}/wp-json/wc/v3/customers/${userId}?${auth}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) return await res.json();
+    } catch { /* */ }
+  }
   return null;
 }
 
