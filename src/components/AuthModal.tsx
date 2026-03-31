@@ -102,7 +102,8 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
       setLoading(false);
 
       // Redirect vendor
-      if (vendorMode || isVendorRole(data.role || '') || data.isVendor) {
+      const roleStr = data.role || '';
+      if (vendorMode || isVendorRole(roleStr) || roleStr === 'vendor' || data.isVendor) {
         localStorage.setItem('stappando-is-vendor', 'true');
         localStorage.setItem('stappando-vendor-status', data.vendorStatus || 'pending_contract');
         window.location.href = '/vendor/dashboard';
