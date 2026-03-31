@@ -48,7 +48,7 @@ export default async function ProductPage({ params }: Props) {
     const attr = product.attributes?.find((a: { name: string; options: string[] }) =>
       a.name.toLowerCase() === name.toLowerCase()
     );
-    return attr?.options?.join(', ') || '';
+    return attr?.options?.map(o => decodeHtml(o)).join(', ') || '';
   };
 
   const alcol = getAttr('Alcol');
@@ -58,7 +58,7 @@ export default async function ProductPage({ params }: Props) {
   // Filter attributes for specs table
   const specs = (product.attributes || [])
     .filter((a: { name: string }) => ALLOWED_ATTRS.has(a.name) && a.name !== 'Abbinamento')
-    .map((a: { name: string; options: string[] }) => ({ key: a.name, value: a.options.join(', ') }));
+    .map((a: { name: string; options: string[] }) => ({ key: a.name, value: a.options.map(o => decodeHtml(o)).join(', ') }));
 
   // Get circuito badge text
   const circuitoBadge = product.meta_data?.find((m: { key: string; value: string }) => m.key === '_circuito_badge')?.value || 'Un vino che racconta il territorio con eleganza e carattere.';

@@ -89,7 +89,8 @@ async function request<T>(
 
 export function getProduttore(product: WCProduct): string | undefined {
   const attr = product.attributes?.find((a) => a.name.toLowerCase() === 'produttore');
-  return attr?.options?.[0];
+  const val = attr?.options?.[0];
+  return val ? decodeHtml(val) : undefined;
 }
 
 export function decodeHtml(html: string): string {

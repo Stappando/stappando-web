@@ -33,6 +33,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     }
     if (!term) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
 
+    // Fetch logo, region, address from producer-logos endpoint
+    let producerLogo = '';
+    let producerRegion = '';
+    let producerAddress = '';
+    let producerBanner = '';
+    try {
+      const logosRes = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { next: { revalidate: 3600 } });
+      if (logosRes.ok) {
+        const logos: { name: string; slug: string; image: string; region?: string; address?: string; banner?: string }[] = await logosRes.json();
+        const match = logos.find(l => l.slug === term.slug || l.name === term.name);
+        if (match) {
+          producerLogo = match.image || '';
+          producerRegion = match.region || '';
+          producerAddress = match.address || '';
+          producerBanner = match.banner || '';
+        }
+      }
+    } catch { /* fallback: no logo data */ }
+
     // Fetch products with this producer attribute
     const productsRes = await fetch(
       `${wc.baseUrl}/wp-json/wc/v3/products?attribute=pa_produttore&attribute_term=${term.id}&per_page=50&status=publish&${auth}`,
@@ -84,7 +103,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       slug: term.slug,
       description: term.description || '',
       count: term.count || products.length,
-      image: firstImage,
+      image: producerLogo || firstImage,
+      banner: producerBanner || null,
+      region: producerRegion || null,
+      address: producerAddress || null,
       products: mappedProducts,
     }, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },

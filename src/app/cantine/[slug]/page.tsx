@@ -13,6 +13,9 @@ interface CantinaDetail {
   description: string;
   count: number;
   image: string | null;
+  banner: string | null;
+  region: string | null;
+  address: string | null;
   products: WCProduct[];
 }
 
@@ -61,16 +64,16 @@ export default function CantinaPage() {
   }
 
   const hasProducts = cantina.products.length > 0;
-  const heroImage = cantina.products[0]?.images?.[0]?.src || cantina.image;
+  const heroImage = cantina.banner || cantina.products[0]?.images?.[0]?.src || null;
 
   return (
     <div className="bg-[#f8f6f1] min-h-screen">
       {/* Hero */}
-      <div className="relative h-48 sm:h-56 bg-gradient-to-br from-[#005667] to-[#003d4a] overflow-hidden">
+      <div className="relative h-56 sm:h-64 bg-gradient-to-br from-[#005667] to-[#003d4a] overflow-hidden">
         {heroImage && (
-          <Image src={heroImage} alt={cantina.name} fill className="object-cover opacity-20" sizes="100vw" />
+          <Image src={heroImage} alt={cantina.name} fill className="object-cover opacity-30" sizes="100vw" />
         )}
-        <div className="absolute inset-0 flex items-center">
+        <div className="absolute inset-0 flex items-end pb-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <nav className="text-[12px] text-white/60 mb-3">
               <Link href="/" className="hover:text-white/80">Home</Link>
@@ -81,16 +84,26 @@ export default function CantinaPage() {
             </nav>
 
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white shadow-lg flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white shadow-lg flex items-center justify-center shrink-0 overflow-hidden">
                 {cantina.image ? (
-                  <Image src={cantina.image} alt={cantina.name} width={80} height={80} className="object-contain p-2" />
+                  <Image src={cantina.image} alt={cantina.name} width={96} height={96} className="object-contain p-2" />
                 ) : (
-                  <span className="text-2xl sm:text-3xl font-bold text-[#005667]">{cantina.name.charAt(0)}</span>
+                  <span className="text-3xl sm:text-4xl font-bold text-[#005667]">{cantina.name.charAt(0)}</span>
                 )}
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">{cantina.name}</h1>
-                <span className="text-[12px] text-white/60">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  {cantina.region && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/15 backdrop-blur rounded-full text-[12px] text-white font-medium">
+                      📍 {cantina.region}
+                    </span>
+                  )}
+                  <span className="text-[12px] text-white/60">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
+                </div>
+                {cantina.address && (
+                  <p className="text-[11px] text-white/50 mt-1">{cantina.address}</p>
+                )}
               </div>
             </div>
           </div>
