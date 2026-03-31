@@ -13,9 +13,13 @@ const CATEGORIE = [
   'Vini Bianchi',
   'Vini Rosati',
   'Bollicine',
+  'Spumanti',
+  'Prosecco',
+  'Champagne',
   'Distillati',
   'Liquori',
   'Birre',
+  'Vini',
 ] as const;
 
 /* ── Types ─────────────────────────────────────────────── */

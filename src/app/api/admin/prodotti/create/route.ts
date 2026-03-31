@@ -42,13 +42,17 @@ interface ProductBody {
 /* ── Category to WC category mapping ───────────────────── */
 
 const CATEGORY_MAP: Record<string, number> = {
-  'Vini Rossi': 49,
-  'Vini Bianchi': 50,
-  'Vini Rosati': 51,
-  'Bollicine': 52,
-  'Distillati': 53,
-  'Liquori': 54,
-  'Birre': 55,
+  'Vini Rossi': 4447,
+  'Vini Bianchi': 4448,
+  'Vini Rosati': 4449,
+  'Bollicine': 19461,
+  'Spumanti': 19461,
+  'Prosecco': 5202,
+  'Champagne': 1397,
+  'Distillati': 19488,
+  'Liquori': 12855,
+  'Birre': 1612,
+  'Vini': 5347,
 };
 
 /* ── WC API helper ─────────────────────────────────────── */
