@@ -159,13 +159,11 @@ export default function CantinaPage() {
       {/* ── Content ─────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Description card */}
+        {/* Description */}
         {cantina.description && (
-          <div className="relative -mt-4 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 max-w-3xl">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#005667] mb-2">Chi siamo</h2>
-              <p className="text-[14px] text-[#555] leading-relaxed">{decodeHtml(cantina.description)}</p>
-            </div>
+          <div className="mb-6 max-w-3xl pt-6">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#005667] mb-2">La cantina</h2>
+            <p className="text-[14px] text-[#555] leading-relaxed">{decodeHtml(cantina.description)}</p>
           </div>
         )}
 
