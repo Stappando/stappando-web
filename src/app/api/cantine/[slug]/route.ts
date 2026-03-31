@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     let producerAddress = '';
     let producerBanner = '';
     try {
-      const logosRes = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { next: { revalidate: 3600 } });
+      const logosRes = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos?nocache=1`, { cache: 'no-store' });
       if (logosRes.ok) {
         const logos: { name: string; slug: string; image: string; region?: string; address?: string; banner?: string }[] = await logosRes.json();
         const match = logos.find(l => l.slug === term.slug || l.name === term.name);
