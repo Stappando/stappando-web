@@ -360,19 +360,23 @@ export default function Header() {
                 <span className="bg-[#005667] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full">Cerca</span>
               </button>
 
-              {/* Mobile + Tablet search: compact pill */}
+              {/* Tablet search: compact pill */}
               <button
-                onClick={() => {
-                  const mobile = window.innerWidth < 640;
-                  if (mobile) setMobileSearchOpen(true);
-                  else setSearchOpen(!searchOpen);
-                }}
-                className="lg:hidden flex items-center flex-1 min-w-0 gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="hidden sm:flex lg:hidden items-center gap-2 px-3 py-1.5 rounded-full border border-[#e5e5e5] bg-white hover:border-[#005667] transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-4 h-4 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span className="text-[12px] text-[#999] flex-1 text-left truncate">Cosa vuoi cercare?</span>
-                <span className="bg-[#005667] text-white text-[10px] font-semibold px-3 py-1 rounded-full shrink-0">Cerca</span>
+                <svg className="w-4 h-4 text-[#888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[12px] text-[#999]">Cerca</span>
+              </button>
+
+              {/* Mobile search: just icon */}
+              <button
+                onClick={() => setMobileSearchOpen(true)}
+                className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-50 transition-colors"
+                aria-label="Cerca"
+              >
+                <svg className="w-5 h-5 text-[#555]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </button>
 
               {/* Account — always visible */}
