@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const s = customer.shipping || {};
 
     // Parse shop data from shipping.company
-    let shop = { logo: '', banner: '', descrizione: '' };
+    let shop = { logo: '', banner: '', descrizione: '', regione: '', indirizzo: '' };
     try {
       if (s.company && s.company.startsWith('{')) {
         shop = { ...shop, ...JSON.parse(s.company) };
@@ -57,6 +57,8 @@ export async function PUT(req: NextRequest) {
       logo: sanitize(body.logo || '', 500),
       banner: sanitize(body.banner || '', 500),
       descrizione: sanitize(body.descrizione || '', 2000),
+      regione: sanitize(body.regione || '', 100),
+      indirizzo: sanitize(body.indirizzo || '', 300),
     };
 
     const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.vendorId}?${auth}`, {

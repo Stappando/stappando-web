@@ -3,15 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 
+const REGIONI = [
+  '', 'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna',
+  'Friuli Venezia Giulia', 'Lazio', 'Liguria', 'Lombardia', 'Marche',
+  'Molise', 'Piemonte', 'Puglia', 'Sardegna', 'Sicilia', 'Toscana',
+  'Trentino-Alto Adige', 'Umbria', "Valle d'Aosta", 'Veneto',
+];
+
 interface ShopData {
   logo: string;
   banner: string;
   descrizione: string;
+  regione: string;
+  indirizzo: string;
 }
 
 export default function VendorNegozioPage() {
   const { user } = useAuthStore();
-  const [shop, setShop] = useState<ShopData>({ logo: '', banner: '', descrizione: '' });
+  const [shop, setShop] = useState<ShopData>({ logo: '', banner: '', descrizione: '', regione: '', indirizzo: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
@@ -72,8 +81,8 @@ export default function VendorNegozioPage() {
 
   if (!hydrated) return null;
 
-  const filledCount = [shop.logo, shop.banner, shop.descrizione].filter(Boolean).length;
-  const completionPercent = Math.round((filledCount / 3) * 100);
+  const filledCount = [shop.logo, shop.banner, shop.descrizione, shop.regione, shop.indirizzo].filter(Boolean).length;
+  const completionPercent = Math.round((filledCount / 5) * 100);
 
   return (
     <div>
@@ -186,9 +195,37 @@ export default function VendorNegozioPage() {
             </div>
           </div>
 
+          {/* Regione + Indirizzo */}
+          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
+            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-4">Dove ti trovi</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-1.5">Regione</label>
+                <select
+                  value={shop.regione}
+                  onChange={e => setShop({ ...shop, regione: e.target.value })}
+                  className="h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 w-full bg-white"
+                >
+                  <option value="">— Seleziona regione —</option>
+                  {REGIONI.filter(Boolean).map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-1.5">Indirizzo cantina</label>
+                <input
+                  type="text"
+                  value={shop.indirizzo}
+                  onChange={e => setShop({ ...shop, indirizzo: e.target.value })}
+                  placeholder="Via/Località, CAP Città"
+                  className="h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 w-full bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Descrizione */}
           <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-4">Descrizione cantina</p>
+            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-4">La tua storia</p>
             <p className="text-[12px] text-[#888] mb-3">Racconta la storia della tua cantina ai clienti Stappando</p>
 
             <textarea
@@ -203,7 +240,7 @@ export default function VendorNegozioPage() {
           </div>
 
           {/* Anteprima */}
-          {(shop.banner || shop.logo || shop.descrizione) && (
+          {(shop.banner || shop.logo || shop.descrizione || shop.regione) && (
             <div className="bg-white border border-[#e8e4dc] rounded-xl overflow-hidden">
               <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider px-6 pt-5 pb-3">Anteprima</p>
 
@@ -219,7 +256,11 @@ export default function VendorNegozioPage() {
               </div>
 
               <div className="px-6 pt-14 pb-6">
-                <p className="text-[16px] font-bold text-[#1a1a1a] mb-2">La tua cantina</p>
+                <p className="text-[16px] font-bold text-[#1a1a1a] mb-1">La tua cantina</p>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {shop.regione && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#005667]/10 rounded-full text-[11px] text-[#005667] font-medium">📍 {shop.regione}</span>}
+                  {shop.indirizzo && <span className="text-[11px] text-[#888]">{shop.indirizzo}</span>}
+                </div>
                 {shop.descrizione && <p className="text-[13px] text-[#666] leading-relaxed">{shop.descrizione.slice(0, 200)}{shop.descrizione.length > 200 ? '...' : ''}</p>}
               </div>
             </div>
