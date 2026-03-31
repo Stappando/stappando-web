@@ -34,6 +34,18 @@ export async function POST(req: NextRequest) {
       if (!meta.customer_email || !meta.items_json) {
         console.error('Payment intent missing metadata:', pi.id);
       } else {
+        // Idempotency check: skip if order with this transaction_id already exists
+        const { getWCSecrets } = await import('@/lib/config');
+        const wc = getWCSecrets();
+        const checkUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}&search=${pi.id}&per_page=1`;
+        const checkRes = await fetch(checkUrl);
+        if (checkRes.ok) {
+          const existing = await checkRes.json();
+          if (existing.length > 0) {
+            console.log(`[Stripe webhook] Order already exists for PI ${pi.id}, skipping`);
+            return NextResponse.json({ received: true, skipped: true });
+          }
+        }
         const items = JSON.parse(meta.items_json);
         const [firstName, ...lastParts] = (meta.customer_name || '').split(' ');
 

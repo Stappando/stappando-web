@@ -370,13 +370,14 @@ export default function Header() {
                 <span className="text-[12px] text-[#999]">Cerca</span>
               </button>
 
-              {/* Mobile search: just icon */}
+              {/* Mobile search: compact pill */}
               <button
                 onClick={() => setMobileSearchOpen(true)}
-                className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-50 transition-colors"
+                className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-[#e5e5e5] bg-white active:border-[#005667] transition-colors"
                 aria-label="Cerca"
               >
-                <svg className="w-5 h-5 text-[#555]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="w-3.5 h-3.5 text-[#888] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span className="text-[10px] font-semibold text-[#005667]">Cerca</span>
               </button>
 
               {/* Account — always visible */}
