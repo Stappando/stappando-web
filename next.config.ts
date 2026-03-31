@@ -4,6 +4,30 @@ import { withSentryConfig } from "@sentry/nextjs";
 const WP_BACKEND = process.env.WP_BACKEND_URL || 'https://stappando.it';
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Old WooCommerce product URLs → new product pages
+      // /shop/vini/categoria/sotto-categoria/slug/ → /prodotto/slug
+      { source: '/shop/:path1/:path2/:path3/:slug/', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:path1/:path2/:slug/', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:path1/:slug/', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:slug/', destination: '/prodotto/:slug', permanent: true },
+      // Same without trailing slash
+      { source: '/shop/:path1/:path2/:path3/:slug', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:path1/:path2/:slug', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:path1/:slug', destination: '/prodotto/:slug', permanent: true },
+      { source: '/shop/:slug', destination: '/prodotto/:slug', permanent: true },
+      // /prodotto/ old WP product URLs
+      { source: '/prodotto/:slug/', destination: '/prodotto/:slug', permanent: true },
+      // /product/ english URLs
+      { source: '/product/:slug/', destination: '/prodotto/:slug', permanent: true },
+      { source: '/product/:slug', destination: '/prodotto/:slug', permanent: true },
+      // Old category pages
+      { source: '/product-category/:path*', destination: '/cerca', permanent: true },
+      { source: '/shop/', destination: '/cerca', permanent: true },
+      { source: '/shop', destination: '/cerca', permanent: true },
+    ];
+  },
   async rewrites() {
     return [
       // Proxy WordPress paths to SiteGround backend
