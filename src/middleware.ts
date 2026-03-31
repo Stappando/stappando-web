@@ -26,8 +26,9 @@ export function middleware(request: NextRequest) {
     if (slug) return NextResponse.redirect(new URL(`/cantina/${slug}`, request.url), 301);
   }
 
-  // ── /vendor/slug → /cantine ──────────────────────────
-  if (pathname.startsWith('/vendor/')) {
+  // ── /vendor/slug → /cantine (only old WP vendor URLs, NOT our backend) ──
+  const vendorBackendPaths = ['/vendor/dashboard', '/vendor/profilo', '/vendor/negozio', '/vendor/ordini', '/vendor/prodotti', '/vendor/recensioni', '/vendor/contratto'];
+  if (pathname.startsWith('/vendor/') && !vendorBackendPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/cantine', request.url), 301);
   }
 
