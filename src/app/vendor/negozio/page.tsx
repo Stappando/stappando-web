@@ -239,33 +239,6 @@ export default function VendorNegozioPage() {
             <p className="text-[11px] text-[#aaa] mt-1 text-right">{shop.descrizione.length}/2000</p>
           </div>
 
-          {/* Anteprima */}
-          {(shop.banner || shop.logo || shop.descrizione || shop.regione) && (
-            <div className="bg-white border border-[#e8e4dc] rounded-xl overflow-hidden">
-              <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider px-6 pt-5 pb-3">Anteprima</p>
-
-              {/* Banner preview */}
-              <div className="relative w-full aspect-[3/1] bg-[#f8f6f1]">
-                {shop.banner && <img src={shop.banner} alt="" className="w-full h-full object-cover" />}
-                {/* Logo overlay */}
-                {shop.logo && (
-                  <div className="absolute bottom-0 left-6 translate-y-1/2 w-20 h-20 rounded-xl bg-white shadow-lg border border-[#e8e4dc] overflow-hidden">
-                    <img src={shop.logo} alt="" className="w-full h-full object-contain p-2" />
-                  </div>
-                )}
-              </div>
-
-              <div className="px-6 pt-14 pb-6">
-                <p className="text-[16px] font-bold text-[#1a1a1a] mb-1">La tua cantina</p>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {shop.regione && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#005667]/10 rounded-full text-[11px] text-[#005667] font-medium">📍 {shop.regione}</span>}
-                  {shop.indirizzo && <span className="text-[11px] text-[#888]">{shop.indirizzo}</span>}
-                </div>
-                {shop.descrizione && <p className="text-[13px] text-[#666] leading-relaxed">{shop.descrizione.slice(0, 200)}{shop.descrizione.length > 200 ? '...' : ''}</p>}
-              </div>
-            </div>
-          )}
-
           {/* Save sticky */}
           <div className="sticky bottom-0 z-10 bg-[#f8f6f1]/95 backdrop-blur-sm pt-4 pb-6 border-t border-[#e8e4dc] mt-4">
             <button

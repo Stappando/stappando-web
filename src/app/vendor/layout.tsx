@@ -44,7 +44,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
       } else { setProfileComplete(false); }
       if (shopRes.ok) {
         const shop = await shopRes.json();
-        setShopComplete(!!(shop.logo && shop.banner && shop.descrizione));
+        setShopComplete(!!(shop.logo && shop.banner && shop.descrizione && shop.regione && shop.indirizzo));
       } else { setShopComplete(false); }
     } catch {
       setProfileComplete(false);
@@ -71,9 +71,12 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
     return <>{children}</>;
   }
 
-  // Profile incomplete: block everything except /vendor/profilo
+  // Block if profile or shop incomplete (allow profilo and negozio pages)
   const isProfilePage = pathname === '/vendor/profilo';
-  const showBlockOverlay = profileComplete === false && !isProfilePage;
+  const isShopPage = pathname === '/vendor/negozio';
+  const profileIncomplete = profileComplete === false;
+  const shopIncomplete = shopComplete === false;
+  const showBlockOverlay = (profileIncomplete && !isProfilePage) || (profileComplete === true && shopIncomplete && !isShopPage && !isProfilePage);
 
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
@@ -132,12 +135,27 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
             ))}
           </div>
 
-          {/* Profile completion warning */}
-          {profileComplete === false && (
+          {/* Esci */}
+          <div className="mt-4 pt-4 border-t border-[#e8e4dc]">
+            <Link href="/" className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#888] hover:text-[#005667] transition-colors rounded-lg hover:bg-white">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
+              Torna al sito
+            </Link>
+          </div>
+
+          {/* Completion warnings */}
+          {profileIncomplete && (
             <div className="mt-4 bg-[#fef3c7] border border-[#f59e0b]/30 rounded-xl p-4">
               <p className="text-[12px] font-semibold text-[#92400e] mb-1">Profilo incompleto</p>
               <p className="text-[11px] text-[#b45309] leading-relaxed">Completa il profilo cantina per sbloccare tutte le funzionalità.</p>
               <Link href="/vendor/profilo" className="mt-2 inline-block text-[11px] font-semibold text-[#005667] hover:underline">Completa ora →</Link>
+            </div>
+          )}
+          {profileComplete === true && shopIncomplete && (
+            <div className="mt-4 bg-[#fef3c7] border border-[#f59e0b]/30 rounded-xl p-4">
+              <p className="text-[12px] font-semibold text-[#92400e] mb-1">Negozio incompleto</p>
+              <p className="text-[11px] text-[#b45309] leading-relaxed">Completa il negozio (logo, banner, descrizione, regione e indirizzo) per essere visibile ai clienti.</p>
+              <Link href="/vendor/negozio" className="mt-2 inline-block text-[11px] font-semibold text-[#005667] hover:underline">Completa ora →</Link>
             </div>
           )}
         </aside>

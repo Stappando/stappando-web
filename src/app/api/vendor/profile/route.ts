@@ -2,6 +2,61 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { isPositiveInt, sanitize } from '@/lib/validation';
 
+/** Find or create pa_produttore term, save _producer_term_id on customer */
+async function linkVendorToProducer(baseUrl: string, auth: string, vendorId: number, cantinaName: string) {
+  // 1. Get all producer attribute terms, search for match
+  const attrsRes = await fetch(`${baseUrl}/wp-json/wc/v3/products/attributes?${auth}`);
+  if (!attrsRes.ok) return;
+  const attrs: { id: number; slug: string }[] = await attrsRes.json();
+  const produttoreAttr = attrs.find(a => a.slug === 'pa_produttore');
+  if (!produttoreAttr) return;
+
+  // 2. Search for existing term
+  const termsRes = await fetch(`${baseUrl}/wp-json/wc/v3/products/attributes/${produttoreAttr.id}/terms?search=${encodeURIComponent(cantinaName)}&per_page=5&${auth}`);
+  let termId: number | null = null;
+  if (termsRes.ok) {
+    const terms: { id: number; name: string }[] = await termsRes.json();
+    const match = terms.find(t => t.name.toLowerCase() === cantinaName.toLowerCase());
+    if (match) termId = match.id;
+  }
+
+  // 3. Create term if not exists
+  if (!termId) {
+    const createRes = await fetch(`${baseUrl}/wp-json/wc/v3/products/attributes/${produttoreAttr.id}/terms?${auth}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: cantinaName }),
+    });
+    if (createRes.ok) {
+      const created: { id: number } = await createRes.json();
+      termId = created.id;
+    }
+  }
+
+  // 4. Save _producer_term_id on the customer via meta
+  if (termId) {
+    // Store in billing address_2 JSON (where we already store extra fields)
+    // We'll read it back in the shop API to update the term
+    console.log(`[Vendor Profile] Linked vendor ${vendorId} to producer term ${termId} (${cantinaName})`);
+
+    // Update customer meta with term ID — use the existing billing.address_2 JSON
+    const custRes = await fetch(`${baseUrl}/wp-json/wc/v3/customers/${vendorId}?${auth}`);
+    if (custRes.ok) {
+      const cust = await custRes.json();
+      const addr2 = cust.billing?.address_2 || '{}';
+      let extra: Record<string, string> = {};
+      try { extra = JSON.parse(addr2); } catch { /* */ }
+      extra._producer_term_id = String(termId);
+
+      await fetch(`${baseUrl}/wp-json/wc/v3/customers/${vendorId}?${auth}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billing: { address_2: JSON.stringify(extra) } }),
+      });
+    }
+  }
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -137,6 +192,17 @@ export async function PUT(req: NextRequest) {
       const err = await res.json().catch(() => ({}));
       console.error('WC profile update failed:', res.status, err);
       return NextResponse.json({ error: `Errore WC (${res.status})`, details: err }, { status: res.status });
+    }
+
+    // Link vendor to pa_produttore term (create if not exists)
+    const cantinaName = sanitize(body.cantina || '', 200).trim();
+    if (cantinaName) {
+      try {
+        await linkVendorToProducer(wc.baseUrl, auth, body.vendorId, cantinaName);
+      } catch (e) {
+        console.error('Failed to link vendor to producer term:', e);
+        // Don't fail the profile save
+      }
     }
 
     return NextResponse.json({ success: true });

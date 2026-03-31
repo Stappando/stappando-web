@@ -77,6 +77,61 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: `Errore WC (${res.status})`, details: err }, { status: res.status });
     }
 
+    // Sync shop data to pa_produttore term meta (so /cantine/slug page shows it)
+    try {
+      // Get _producer_term_id from customer billing.address_2
+      const custRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.vendorId}?${auth}`);
+      if (custRes.ok) {
+        const cust = await custRes.json();
+        const addr2 = cust.billing?.address_2 || '{}';
+        let extra: Record<string, string> = {};
+        try { extra = JSON.parse(addr2); } catch { /* */ }
+        const termId = extra._producer_term_id;
+
+        if (termId) {
+          // Update term description
+          const attrRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/attributes?${auth}`);
+          if (attrRes.ok) {
+            const attrs: { id: number; slug: string }[] = await attrRes.json();
+            const prodAttr = attrs.find(a => a.slug === 'pa_produttore');
+            if (prodAttr) {
+              // Update term description via WC API
+              await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/attributes/${prodAttr.id}/terms/${termId}?${auth}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: shopData.descrizione }),
+              });
+            }
+          }
+
+          // Update term meta (region, address, banner) via WP snippet endpoint
+          // The producer-logos snippet reads these metas
+          const wpUser = process.env.WP_USER;
+          const wpPass = process.env.WP_APP_PASSWORD;
+          if (wpUser && wpPass) {
+            const wpAuth = Buffer.from(`${wpUser}:${wpPass}`).toString('base64');
+            // Update term meta via custom endpoint
+            await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/update-producer-meta`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Basic ${wpAuth}` },
+              body: JSON.stringify({
+                term_id: parseInt(termId),
+                region: shopData.regione,
+                address: shopData.indirizzo,
+                banner: shopData.banner,
+                logo: shopData.logo,
+              }),
+            }).catch(e => console.error('Failed to update producer meta:', e));
+          }
+
+          // Clear transient cache
+          console.log(`[Shop] Synced vendor ${body.vendorId} shop to producer term ${termId}`);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to sync shop to producer:', e);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Vendor shop update error:', err);
