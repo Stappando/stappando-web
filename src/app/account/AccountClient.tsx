@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
 import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
+import { useRouter } from 'next/navigation';
 
 /* ── Status badge colors ───────────────────────────────── */
 
@@ -188,12 +189,22 @@ const allSections = sectionGroups.flatMap(g => g.items);
 /* ── Main component ────────────────────────────────────── */
 
 export default function AccountClient() {
-  const { user, isLoading, error, isAuthenticated, logout, clearError } = useAuthStore();
+  const { user, isLoading, error, isAuthenticated, isVendor, logout, clearError } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  // Vendor redirect: if vendor, go to vendor dashboard
+  useEffect(() => {
+    if (!hydrated) return;
+    const vendorCheck = isVendor() || (typeof window !== 'undefined' && localStorage.getItem('stappando-is-vendor') === 'true');
+    if (isAuthenticated() && vendorCheck) {
+      router.replace('/vendor/dashboard');
+    }
+  }, [hydrated, isAuthenticated, isVendor, router]);
 
   if (!hydrated) {
     return (
@@ -205,6 +216,16 @@ export default function AccountClient() {
 
   if (!isAuthenticated()) {
     return <AccountLoginPrompt />;
+  }
+
+  // Show loading while redirecting vendor
+  const vendorCheck = isVendor() || (typeof window !== 'undefined' && localStorage.getItem('stappando-is-vendor') === 'true');
+  if (vendorCheck) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return <Dashboard user={user!} onLogout={logout} />;
