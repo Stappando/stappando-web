@@ -334,7 +334,7 @@ export async function POST(req: NextRequest) {
         { email: body.email, name: body.nome ? `${body.nome} ${body.cognome || ''}`.trim() : body.email, type: 'to' as const },
         { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' as const },
       ],
-      from_email: 'info@stappando.it',
+      from_email: 'ordini@stappando.it',
       from_name: 'Stappando',
       subject: 'Presentazione Stappando, Vineis e Anbrekabol',
       html: buildEmailHtml(body),
