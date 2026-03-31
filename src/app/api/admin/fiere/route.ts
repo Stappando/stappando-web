@@ -283,6 +283,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'JSON non valido' }, { status: 400 });
   }
 
+  // Default all fields to empty string to prevent .trim() errors
+  body.nome = body.nome || '';
+  body.cognome = body.cognome || '';
+  body.azienda = body.azienda || '';
+  body.indirizzo = body.indirizzo || '';
+  body.cap = body.cap || '';
+  body.citta = body.citta || '';
+  body.provincia = body.provincia || '';
+  body.regione = body.regione || '';
+  body.telefono = body.telefono || '';
+  body.partitaIva = body.partitaIva || '';
+  body.conosciutoA = body.conosciutoA || '';
+  body.contattatoDa = body.contattatoDa || '';
+  body.note = body.note || '';
+
   // Only email is required
   if (!body.email?.trim()) {
     return NextResponse.json({ error: 'Email obbligatoria' }, { status: 400 });
