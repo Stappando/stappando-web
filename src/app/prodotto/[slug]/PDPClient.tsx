@@ -143,12 +143,75 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
 
           {/* Abbinamenti — desktop only */}
           {p.abbinamenti.length > 0 && (
-            <div className="hidden lg:block">
+            <div className="hidden lg:block mb-6">
               <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
                 {p.abbinamenti.map((a, i) => (
                   <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[15px] font-medium">{a}</span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Note degustazione — desktop, sotto abbinamenti */}
+          {(p.allaVista || p.alNaso || p.alPalato) && (
+            <div className="hidden lg:block mb-6">
+              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Note di degustazione</h3>
+              <div className="space-y-3">
+                {p.allaVista && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#b8973f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="32" cy="32" rx="28" ry="16"/><circle cx="32" cy="32" r="8" fill="#b8973f"/><line x1="22" y1="12" x2="24" y2="18"/><line x1="32" y1="8" x2="32" y2="14"/><line x1="42" y1="12" x2="40" y2="18"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.allaVista}</p>
+                    </div>
+                  </div>
+                )}
+                {p.alNaso && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#7b5ea7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M28 8c-2 8-8 16-8 28 0 8 4 14 12 14s12-6 12-14"/><path d="M38 42c2-2 6-4 8-2"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alNaso}</p>
+                    </div>
+                  </div>
+                )}
+                {p.alPalato && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#005667" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 4h24v16c0 8-6 14-12 14s-12-6-12-14V4z"/><path d="M24 20c4 2 12 2 16 0"/><line x1="32" y1="34" x2="32" y2="52"/><line x1="22" y1="52" x2="42" y2="52"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alPalato}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Produzione — desktop, sotto note degustazione */}
+          {(p.vinificazione || p.affinamento) && (
+            <div className="hidden lg:block mb-6">
+              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Produzione</h3>
+              <div className="space-y-2.5">
+                {p.vinificazione && (
+                  <div>
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Vinificazione</p>
+                    <p className="text-[13px] text-[#444] leading-relaxed">{p.vinificazione}</p>
+                  </div>
+                )}
+                {p.affinamento && (
+                  <div>
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Affinamento</p>
+                    <p className="text-[13px] text-[#444] leading-relaxed">{p.affinamento}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -261,9 +324,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
               <div className="space-y-2.5">
                 {p.allaVista && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-[#b8973f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </div>
+                    <div className="w-9 h-9 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#b8973f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="32" cy="32" rx="28" ry="16"/><circle cx="32" cy="32" r="8" fill="#b8973f"/><line x1="22" y1="12" x2="24" y2="18"/><line x1="32" y1="8" x2="32" y2="14"/><line x1="42" y1="12" x2="40" y2="18"/></svg></div>
                     <div>
                       <p className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</p>
                       <p className="text-[13px] text-[#555] leading-relaxed">{p.allaVista}</p>
@@ -272,8 +334,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                 )}
                 {p.alNaso && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-[#7b5ea7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="w-9 h-9 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#7b5ea7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M28 8c-2 8-8 16-8 28 0 8 4 14 12 14s12-6 12-14"/><path d="M38 42c2-2 6-4 8-2"/></svg>
                     </div>
                     <div>
                       <p className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</p>
@@ -283,8 +345,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                 )}
                 {p.alPalato && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                    <div className="w-9 h-9 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#005667" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 4h24v16c0 8-6 14-12 14s-12-6-12-14V4z"/><path d="M24 20c4 2 12 2 16 0"/><line x1="32" y1="34" x2="32" y2="52"/><line x1="22" y1="52" x2="42" y2="52"/></svg>
                     </div>
                     <div>
                       <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</p>
