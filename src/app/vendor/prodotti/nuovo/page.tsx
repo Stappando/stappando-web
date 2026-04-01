@@ -293,10 +293,8 @@ function NuovoProdottoInner() {
   // Toggle a value in a comma-separated form field
   const togglePill = (field: keyof ProductData, value: string) => {
     setForm((prev) => {
-      const current = prev[field]
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const raw = prev[field] || '';
+      const current = String(raw).split(',').map((s) => s.trim()).filter(Boolean);
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
         : [...current, value];
@@ -305,10 +303,8 @@ function NuovoProdottoInner() {
   };
 
   const isPillSelected = (field: keyof ProductData, value: string) => {
-    return form[field]
-      .split(',')
-      .map((s) => s.trim())
-      .includes(value);
+    const raw = form[field] || '';
+    return String(raw).split(',').map((s) => s.trim()).includes(value);
   };
 
   /* ── Save / Submit ────────────────────────────────────── */
