@@ -874,14 +874,16 @@ export default function ProdottiPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
               <h3 className="text-sm font-bold text-[#005667] mb-2">Vigneto</h3>
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="col-span-2">
                   <label className={labelClass}>Terreno {dot('terreno')}</label>
-                  <select value={form.terreno} onChange={updateField('terreno')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {(taxTerms['pa_terreno'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
+                      <button key={t.slug} type="button" onClick={() => togglePill('terreno', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('terreno', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                        {t.name}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>Esposizione {dot('esposizione')}</label>
