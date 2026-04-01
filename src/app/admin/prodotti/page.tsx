@@ -640,6 +640,31 @@ export default function ProdottiPage() {
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    placeholder="Aggiungi uvaggio..."
+                    className="flex-1 h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !isPillSelected('uvaggio', val)) {
+                          togglePill('uvaggio', val);
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={(e) => {
+                    const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                    const val = input?.value?.trim();
+                    if (val && !isPillSelected('uvaggio', val)) {
+                      togglePill('uvaggio', val);
+                      if (input) input.value = '';
+                    }
+                  }} className="h-9 px-3 text-[11px] font-semibold bg-[#005667] text-white rounded-lg hover:bg-[#004555]">+ Aggiungi</button>
+                </div>
               </div>
             </div>
 
