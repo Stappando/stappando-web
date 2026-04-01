@@ -157,6 +157,8 @@ export default function ProdottiPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
   const [producers, setProducers] = useState<{ name: string; slug: string }[]>([]);
+  const [newUvaggio, setNewUvaggio] = useState('');
+  const [wcTags, setWcTags] = useState<{ name: string; slug: string }[]>([]);
   const [producerSearch, setProducerSearch] = useState('');
   const [producerOpen, setProducerOpen] = useState(false);
 
@@ -193,6 +195,14 @@ export default function ProdottiPage() {
           })
           .catch(() => {});
       });
+  }, []);
+
+  // Fetch WC product tags
+  useEffect(() => {
+    fetch('/api/admin/prodotti/tags')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setWcTags(data); })
+      .catch(() => {});
   }, []);
 
   // Fetch all taxonomy terms on mount
@@ -680,28 +690,26 @@ export default function ProdottiPage() {
                 </div>
                 <div className="flex gap-2 mt-2">
                   <input
-                    id="new-uvaggio-input"
                     type="text"
+                    value={newUvaggio}
+                    onChange={(e) => setNewUvaggio(e.target.value)}
                     placeholder="Aggiungi uvaggio..."
                     className="flex-1 h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val && !isPillSelected('uvaggio', val)) {
-                          togglePill('uvaggio', val);
-                          (e.target as HTMLInputElement).value = '';
+                        if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
+                          togglePill('uvaggio', newUvaggio.trim());
                         }
+                        setNewUvaggio('');
                       }
                     }}
                   />
                   <button type="button" onClick={() => {
-                    const input = document.getElementById('new-uvaggio-input') as HTMLInputElement;
-                    const val = input?.value?.trim();
-                    if (val && !isPillSelected('uvaggio', val)) {
-                      togglePill('uvaggio', val);
-                      input.value = '';
+                    if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
+                      togglePill('uvaggio', newUvaggio.trim());
                     }
+                    setNewUvaggio('');
                   }} className="h-9 px-3 text-[11px] font-semibold bg-[#005667] text-white rounded-lg hover:bg-[#004555] shrink-0">+ Aggiungi</button>
                 </div>
               </div>
@@ -952,8 +960,22 @@ export default function ProdottiPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <h3 className="text-sm font-bold text-[#005667] mb-2">Tag</h3>
               <label className={labelClass}>Tag {dot('tags')}</label>
-              <input type="text" value={form.tags} onChange={updateField('tags')} placeholder="es. best-seller, occasione" className={inputClass} />
-              <p className="text-[10px] text-gray-400 mt-1">Separati da virgola: best-seller, confezione-regalo, circuito, occasione, regali</p>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {wcTags.map((t) => (
+                  <button
+                    key={t.slug}
+                    type="button"
+                    onClick={() => togglePill('tags', t.name)}
+                    className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                      isPillSelected('tags', t.name)
+                        ? 'bg-[#005667] text-white border-[#005667]'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Buttons */}
