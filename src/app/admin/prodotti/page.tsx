@@ -60,6 +60,9 @@ interface ProductData {
   resa: string;
   vendemmia: string;
   bottiglieProdotte: string;
+  raccolta: string;
+  categoriaGoogle: string;
+  gtin: string;
   certificazioni: string;
   tags: string;
 }
@@ -106,6 +109,9 @@ const emptyProduct: ProductData = {
   resa: '',
   vendemmia: '',
   bottiglieProdotte: '',
+  raccolta: '',
+  categoriaGoogle: '',
+  gtin: '',
   certificazioni: '',
   tags: '',
 };
@@ -195,6 +201,8 @@ export default function ProdottiPage() {
       'pa_temperatura-di-servizio',
       'pa_allergeni',
       'pa_certificazioni',
+      'pa_raccolta',
+      'pa_categoria-google',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -840,6 +848,15 @@ export default function ProdottiPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className={labelClass}>Raccolta {dot('raccolta')}</label>
+                  <select value={form.raccolta} onChange={updateField('raccolta')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_raccolta'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
                   <input type="text" value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} placeholder="es. 5.000" className={inputClass} />
                 </div>
@@ -861,6 +878,26 @@ export default function ProdottiPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* GOOGLE & GTIN */}
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Google & Codici</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Categoria Google</label>
+                  <select value={form.categoriaGoogle} onChange={updateField('categoriaGoogle')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_categoria-google'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>GTIN / EAN</label>
+                  <input type="text" value={form.gtin} onChange={updateField('gtin')} placeholder="es. 8001234567890" className={inputClass} />
                 </div>
               </div>
             </div>

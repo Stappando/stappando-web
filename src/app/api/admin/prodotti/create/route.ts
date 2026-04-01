@@ -36,6 +36,9 @@ interface ProductBody {
   vendemmia: string;
   bottiglieProdotte: string;
   certificazioni: string;
+  raccolta: string;
+  categoriaGoogle: string;
+  gtin: string;
   tags: string;
 }
 
@@ -70,63 +73,72 @@ function wcUrl(path: string, params?: Record<string, string | number>): string {
 
 /* ── Build WC product payload ──────────────────────────── */
 
+// WC attribute IDs — must match WooCommerce
+const ATTR_IDS: Record<string, number> = {
+  'pa_produttore': 10,
+  'pa_denominazione': 33,
+  'pa_regione': 5,
+  'pa_nazione': 22,
+  'pa_uvaggio': 1,
+  'pa_gradazione-alcolica': 24,
+  'pa_annata': 11,
+  'pa_formato': 15,
+  'pa_abbinamenti': 7,
+  'pa_temperatura-di-servizio': 27,
+  'pa_momento-di-consumo': 12,
+  'pa_allergeni': 87,
+  'pa_terreno': 48,
+  'pa_certificazioni': 88,
+  'pa_resa': 50,
+  'pa_raccolta': 25,
+  'pa_bottiglie-prodotte': 92,
+  'pa_zona-di-produzione': 44,
+  'pa_dosaggio': 29,
+  'pa_categoria-google': 69,
+  'pa_per-adulti': 86,
+};
+
 function buildWCProduct(body: ProductBody) {
-  // Build attributes array
+  // Build attributes array with IDs for proper WC mapping
   const attributes: {
+    id?: number;
     name: string;
     slug?: string;
     visible: boolean;
     options: string[];
   }[] = [];
 
-  if (body.produttore) {
-    attributes.push({ name: 'Produttore', slug: 'pa_produttore', visible: true, options: [body.produttore] });
-  }
-  if (body.denominazione) {
-    attributes.push({ name: 'Denominazione', slug: 'pa_denominazione', visible: true, options: [body.denominazione] });
-  }
-  if (body.regione) {
-    attributes.push({ name: 'Regione', slug: 'pa_regione', visible: true, options: [body.regione] });
-  }
-  if (body.nazione) {
-    attributes.push({ name: 'Nazione', slug: 'pa_nazione', visible: true, options: [body.nazione] });
-  }
-  if (body.uvaggio) {
-    const grapes = body.uvaggio.split(',').map((g) => g.trim()).filter(Boolean);
-    attributes.push({ name: 'Uvaggio', slug: 'pa_uvaggio', visible: true, options: grapes });
-  }
-  if (body.gradazione) {
-    attributes.push({ name: 'Gradazione alcolica', slug: 'pa_gradazione-alcolica', visible: true, options: [body.gradazione] });
-  }
-  if (body.annata) {
-    attributes.push({ name: 'Annata', slug: 'pa_annata', visible: true, options: [body.annata] });
-  }
-  if (body.formato) {
-    attributes.push({ name: 'Formato', slug: 'pa_formato', visible: true, options: [body.formato] });
-  }
-  if (body.abbinamenti) {
-    const pairings = body.abbinamenti.split(',').map((p) => p.trim()).filter(Boolean);
-    attributes.push({ name: 'Abbinamenti', slug: 'pa_abbinamenti', visible: true, options: pairings });
-  }
-  if (body.temperaturaServizio) {
-    attributes.push({ name: 'Temperatura di servizio', slug: 'pa_temperatura-di-servizio', visible: true, options: [body.temperaturaServizio] });
-  }
-  if (body.momentoConsumo) {
-    attributes.push({ name: 'Momento di consumo', slug: 'pa_momento-di-consumo', visible: true, options: [body.momentoConsumo] });
-  }
-  if (body.allergeni) {
-    attributes.push({ name: 'Allergeni', slug: 'pa_allergeni', visible: true, options: [body.allergeni] });
-  }
-  if (body.terreno) {
-    attributes.push({ name: 'Terreno', slug: 'pa_terreno', visible: true, options: [body.terreno] });
-  }
-  if (body.certificazioni) {
-    const certs = body.certificazioni.split(',').map((c) => c.trim()).filter(Boolean);
-    attributes.push({ name: 'Certificazioni', slug: 'pa_certificazioni', visible: true, options: certs });
-  }
-  if (body.resa) {
-    attributes.push({ name: 'Resa', slug: 'pa_resa', visible: true, options: [body.resa] });
-  }
+  const addAttr = (slug: string, name: string, options: string[]) => {
+    const id = ATTR_IDS[slug];
+    if (id) {
+      attributes.push({ id, name, visible: true, options });
+    } else {
+      attributes.push({ name, slug, visible: true, options });
+    }
+  };
+
+  if (body.produttore) addAttr('pa_produttore', 'Produttore', [body.produttore]);
+  if (body.denominazione) addAttr('pa_denominazione', 'Denominazione', [body.denominazione]);
+  if (body.regione) addAttr('pa_regione', 'Regione', [body.regione]);
+  if (body.nazione) addAttr('pa_nazione', 'Nazione', [body.nazione]);
+  if (body.uvaggio) addAttr('pa_uvaggio', 'Uvaggio', body.uvaggio.split(',').map(g => g.trim()).filter(Boolean));
+  if (body.gradazione) addAttr('pa_gradazione-alcolica', 'Gradazione alcolica', [body.gradazione]);
+  if (body.annata) addAttr('pa_annata', 'Annata', [body.annata]);
+  if (body.formato) addAttr('pa_formato', 'Formato', [body.formato]);
+  if (body.abbinamenti) addAttr('pa_abbinamenti', 'Abbinamento', body.abbinamenti.split(',').map(p => p.trim()).filter(Boolean));
+  if (body.temperaturaServizio) addAttr('pa_temperatura-di-servizio', 'Temperatura di servizio', [body.temperaturaServizio]);
+  if (body.momentoConsumo) addAttr('pa_momento-di-consumo', 'Momento di consumo', body.momentoConsumo.split(',').map(m => m.trim()).filter(Boolean));
+  if (body.allergeni) addAttr('pa_allergeni', 'Allergeni', body.allergeni.split(',').map(a => a.trim()).filter(Boolean));
+  if (body.terreno) addAttr('pa_terreno', 'Terreno', [body.terreno]);
+  if (body.certificazioni) addAttr('pa_certificazioni', 'Certificazioni', body.certificazioni.split(',').map(c => c.trim()).filter(Boolean));
+  if (body.resa) addAttr('pa_resa', 'Resa', [body.resa]);
+  if (body.raccolta) addAttr('pa_raccolta', 'Raccolta', [body.raccolta]);
+  if (body.bottiglieProdotte) addAttr('pa_bottiglie-prodotte', 'Bottiglie prodotte', [body.bottiglieProdotte]);
+  if (body.zonaProduzione) addAttr('pa_zona-di-produzione', 'Zona di produzione', [body.zonaProduzione]);
+  // Per adulti: sempre SI
+  addAttr('pa_per-adulti', 'Per adulti', ['Sì']);
+  // Categoria Google se presente
+  if (body.categoriaGoogle) addAttr('pa_categoria-google', 'categoria Google', [body.categoriaGoogle]);
 
   // Build meta_data for ACF fields (tasting notes, vinification, etc.)
   const metaData: { key: string; value: string }[] = [];
@@ -142,6 +154,10 @@ function buildWCProduct(body: ProductBody) {
   if (body.vendemmia) metaData.push({ key: 'vendemmia', value: body.vendemmia });
   if (body.bottiglieProdotte) metaData.push({ key: 'bottiglie_prodotte', value: body.bottiglieProdotte });
   if (body.terreno) metaData.push({ key: 'terreno', value: body.terreno });
+  if (body.gtin) {
+    metaData.push({ key: '_wpm_gtin_code', value: body.gtin });
+    metaData.push({ key: '_global_unique_id', value: body.gtin });
+  }
 
   // Build categories array
   const categories: { id: number }[] = [];
