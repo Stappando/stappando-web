@@ -78,17 +78,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Step 2: fetch terms for this attribute
-    const termsRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products/attributes/${attribute.id}/terms?per_page=100&${auth}`,
-    );
-    if (!termsRes.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch attribute terms' },
-        { status: 502 },
+    // Step 2: fetch ALL terms for this attribute (paginate if > 100)
+    let allTerms: WCTerm[] = [];
+    let page = 1;
+    while (true) {
+      const termsRes = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/products/attributes/${attribute.id}/terms?per_page=100&page=${page}&${auth}`,
       );
+      if (!termsRes.ok) break;
+      const batch: WCTerm[] = await termsRes.json();
+      allTerms = [...allTerms, ...batch];
+      if (batch.length < 100) break;
+      page++;
     }
-    const terms: WCTerm[] = await termsRes.json();
+    const terms = allTerms;
 
     return NextResponse.json(
       terms.map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
