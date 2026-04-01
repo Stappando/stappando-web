@@ -40,6 +40,7 @@ interface ProductBody {
   bottiglieProdotte: string;
   certificazioni: string;
   raccolta: string;
+  densitaImpianto: string;
   spumantizzazione: string;
   categoriaSpumanti: string;
   dosaggio: string;
@@ -111,6 +112,7 @@ const ATTR_IDS: Record<string, number> = {
   'pa_tipo-di-vigneto': 44,
   'pa_identificazione-esistente': 73,
   'pa_ean': 57,
+  'pa_densita-dimpianto': 94,
 };
 
 function buildWCProduct(body: ProductBody) {
@@ -155,6 +157,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
   if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
   if (body.altitudine) addAttr('pa_altitudine-dei-vigneti', 'Altitudine dei vigneti', [body.altitudine]);
+  if (body.densitaImpianto) addAttr('pa_densita-dimpianto', "Densità d'impianto", [body.densitaImpianto]);
   if (body.esposizione) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.esposizione]);
   // Per adulti: sempre SI
   addAttr('pa_per-adulti', 'Per adulti', ['Sì']);

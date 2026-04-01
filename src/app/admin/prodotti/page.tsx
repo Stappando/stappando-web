@@ -64,6 +64,7 @@ interface ProductData {
   vendemmia: string;
   bottiglieProdotte: string;
   raccolta: string;
+  densitaImpianto: string;
   spumantizzazione: string;
   categoriaSpumanti: string;
   dosaggio: string;
@@ -121,6 +122,7 @@ const emptyProduct: ProductData = {
   vendemmia: '',
   bottiglieProdotte: '',
   raccolta: '',
+  densitaImpianto: '',
   spumantizzazione: '',
   categoriaSpumanti: '',
   dosaggio: '',
@@ -238,6 +240,7 @@ export default function ProdottiPage() {
       'pa_dosaggio',
       'pa_orientamento-delle-vigne',
       'pa_terreno',
+      'pa_densita-dimpianto',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -896,11 +899,20 @@ export default function ProdottiPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
-                  <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
+                  <label className={labelClass}>Densità d&apos;impianto</label>
+                  <select value={form.densitaImpianto} onChange={updateField('densitaImpianto')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_densita-dimpianto'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
+                  <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
+                </div>
                 <div>
                   <label className={labelClass}>Resa {dot('resa')}</label>
                   <select value={form.resa} onChange={updateField('resa')} className={inputClass}>
