@@ -362,8 +362,6 @@ function NuovoProdottoInner() {
         al_palato: form.alPalato,
         vinificazione: stripHtml(form.vinificazione),
         affinamento: stripHtml(form.affinamento),
-        allergeni: form.allergeni,
-        zona_produzione: form.zonaProduzione,
       },
       ...(draftId ? { draftId } : {}),
     };

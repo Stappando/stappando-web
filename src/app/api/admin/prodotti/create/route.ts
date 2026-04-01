@@ -183,10 +183,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.affinamento) metaData.push({ key: 'affinamento', value: body.affinamento });
   if (body.esposizione) metaData.push({ key: 'esposizione', value: body.esposizione });
   if (body.altitudine) metaData.push({ key: 'altitudine', value: body.altitudine });
-  if (body.zonaProduzione) metaData.push({ key: 'zona_produzione', value: body.zonaProduzione });
-  if (body.vendemmia) metaData.push({ key: 'vendemmia', value: body.vendemmia });
-  if (body.bottiglieProdotte) metaData.push({ key: 'bottiglie_prodotte', value: body.bottiglieProdotte });
-  if (body.terreno) metaData.push({ key: 'terreno', value: body.terreno });
+  // zona_produzione, bottiglie_prodotte, terreno are saved as WC attributes, not meta
   if (body.gtin) {
     metaData.push({ key: '_wpm_gtin_code', value: body.gtin });
     metaData.push({ key: '_global_unique_id', value: body.gtin });
