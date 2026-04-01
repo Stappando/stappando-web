@@ -154,6 +154,8 @@ function buildWCProduct(body: ProductBody) {
   if (body.categoriaSpumanti) addAttr('pa_spumantizzazione', 'Categoria spumanti', [body.categoriaSpumanti]);
   if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
   if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
+  if (body.altitudine) addAttr('pa_altitudine-dei-vigneti', 'Altitudine dei vigneti', [body.altitudine]);
+  if (body.esposizione) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.esposizione]);
   // Per adulti: sempre SI
   addAttr('pa_per-adulti', 'Per adulti', ['Sì']);
   // Categoria Google se presente
