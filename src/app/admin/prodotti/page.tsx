@@ -152,15 +152,16 @@ function Spinner() {
   );
 }
 
+/* ── Sub-step labels ──────────────────────────────────── */
+
+const SUB_STEP_LABELS = ['Base', 'Classificazione', 'Territorio', 'Testi'] as const;
+type SubStep = 1 | 2 | 3 | 4;
+
 /* ── Page Component ────────────────────────────────────── */
 
 export default function ProdottiPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [mode, setMode] = useState<'create' | 'edit'>('create');
-  const [editProductId, setEditProductId] = useState<number | null>(null);
-  const [existingSearch, setExistingSearch] = useState('');
-  const [existingResults, setExistingResults] = useState<{ id: number; name: string; price: string; image: string; status: string }[]>([]);
-  const [searchingExisting, setSearchingExisting] = useState(false);
+  const [subStep, setSubStep] = useState<SubStep>(1);
   const [searchName, setSearchName] = useState('');
   const [techText, setTechText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -268,44 +269,6 @@ export default function ProdottiPage() {
     });
   }, []);
 
-  /* ── Search existing products ────────────────────────── */
-
-  const searchExisting = useCallback(async (q: string) => {
-    if (q.length < 2) { setExistingResults([]); return; }
-    setSearchingExisting(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&per_page=8`);
-      if (res.ok) {
-        const data = await res.json();
-        setExistingResults((data.products || []).map((p: { id: number; name: string; price: string; image: string | null; on_sale: boolean }) => ({
-          id: p.id, name: p.name, price: p.price, image: p.image || '', status: p.on_sale ? 'In offerta' : 'Pubblicato',
-        })));
-      }
-    } catch { /* */ }
-    finally { setSearchingExisting(false); }
-  }, []);
-
-  const loadExistingProduct = useCallback(async (productId: number) => {
-    setLoading(true);
-    setError('');
-    try {
-      const wc = await fetch(`/api/admin/prodotti/load?id=${productId}`);
-      if (wc.ok) {
-        const data = await wc.json();
-        setForm({ ...emptyProduct, ...data });
-        setFoundFields(Object.keys(data).filter(k => data[k as keyof typeof data]));
-        setEditProductId(productId);
-        setMode('edit');
-        setStep(2);
-        setExistingResults([]);
-        setExistingSearch('');
-      } else {
-        setError('Errore caricamento prodotto');
-      }
-    } catch { setError('Errore di rete'); }
-    finally { setLoading(false); }
-  }, []);
-
   /* ── Helpers ────────────────────────────────────────── */
 
   const updateField = useCallback(
@@ -320,12 +283,9 @@ export default function ProdottiPage() {
 
   const resetAll = () => {
     setStep(1);
-    setMode('create');
-    setEditProductId(null);
+    setSubStep(1);
     setSearchName('');
     setTechText('');
-    setExistingSearch('');
-    setExistingResults([]);
     setForm(emptyProduct);
     setFoundFields([]);
     setCreateResult(null);
@@ -355,6 +315,7 @@ export default function ProdottiPage() {
       const merged = { ...emptyProduct, ...result.data, nome: result.data.nome || searchName.trim() };
       setForm(merged);
       setFoundFields(result.foundFields || []);
+      setSubStep(1);
       setStep(2);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore di rete');
@@ -370,17 +331,10 @@ export default function ProdottiPage() {
     setError('');
 
     try {
-      const url = mode === 'edit' && editProductId
-        ? '/api/admin/prodotti/create'
-        : '/api/admin/prodotti/create';
-
-      const res = await fetch(url, {
+      const res = await fetch('/api/admin/prodotti/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          ...(mode === 'edit' && editProductId ? { updateId: editProductId } : {}),
-        }),
+        body: JSON.stringify(form),
       });
 
       if (!res.ok) {
@@ -459,40 +413,6 @@ export default function ProdottiPage() {
         {/* ── STEP 1: Search ──────────────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
-            {/* Search existing product */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="text-sm font-bold text-[#005667] mb-2">📝 Modifica prodotto esistente</h3>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={existingSearch}
-                  onChange={(e) => { setExistingSearch(e.target.value); searchExisting(e.target.value); }}
-                  placeholder="Cerca per nome..."
-                  className="w-full h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667]"
-                />
-                {searchingExisting && <div className="absolute right-3 top-3"><div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" /></div>}
-                {existingResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {existingResults.map(p => (
-                      <button key={p.id} onClick={() => loadExistingProduct(p.id)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0">
-                        {p.image && <img src={p.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-800 truncate">{p.name}</p>
-                          <p className="text-xs text-gray-400">#{p.id} · {p.price}€ · {p.status}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 font-medium">oppure crea nuovo</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Nome del vino *</label>
               <input
@@ -523,7 +443,7 @@ export default function ProdottiPage() {
               className="w-full h-[52px] text-white rounded-xl font-semibold text-sm disabled:opacity-60"
               style={{ backgroundColor: PRIMARY }}
             >
-              {loading ? <Spinner /> : '🔍 Analizza e compila scheda'}
+              {loading ? <Spinner /> : 'Analizza e compila scheda'}
             </button>
 
             {loading && (
@@ -545,310 +465,322 @@ export default function ProdottiPage() {
           </div>
         )}
 
-        {/* ── STEP 2: Preview & Edit ──────────────────── */}
+        {/* ── STEP 2: 4-step Wizard ──────────────────── */}
         {step === 2 && (
           <div className="space-y-5">
-            {/* SEZIONE BASE */}
-            <div className={sectionClass}>
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Base</h3>
-
-              <div>
-                <label className={labelClass}>Nome prodotto {dot('nome')}</label>
-                <input type="text" value={form.nome} onChange={updateField('nome')} className={inputClass} />
-              </div>
-
-              <div className="relative">
-                <label className={labelClass}>Produttore {dot('produttore')}</label>
-                <input
-                  type="text"
-                  value={form.produttore}
-                  onChange={(e) => {
-                    setForm((prev) => ({ ...prev, produttore: e.target.value }));
-                    setProducerSearch(e.target.value);
-                    setProducerOpen(true);
-                  }}
-                  onFocus={() => setProducerOpen(true)}
-                  placeholder="Cerca o seleziona produttore..."
-                  className={inputClass}
-                />
-                {producerOpen && (() => {
-                  const q = (producerSearch || form.produttore).toLowerCase();
-                  const filtered = q.length > 0
-                    ? producers.filter((p) => p.name.toLowerCase().includes(q))
-                    : producers;
-                  if (filtered.length === 0) return null;
-                  return (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filtered.map((p) => (
-                        <button
-                          key={p.slug}
-                          type="button"
-                          onClick={() => {
-                            setForm((prev) => ({ ...prev, produttore: p.name }));
-                            setProducerSearch('');
-                            setProducerOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                        >
-                          {p.name}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <div>
-                <label className={labelClass}>Vendor / Negozio</label>
-                <select value={form.vendorId} onChange={updateField('vendorId')} className={inputClass}>
-                  <option value="">Stappando Enoteca (default)</option>
-                  {vendors.filter(v => v.id > 0).map(v => (
-                    <option key={v.id} value={v.id}>{v.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={labelClass}>SKU</label>
-                <input type="text" value={form.sku} onChange={updateField('sku')} placeholder="Codice prodotto" className={inputClass} />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Prezzo € *</label>
-                  <input type="text" value={form.prezzo} onChange={updateField('prezzo')} placeholder="es. 12.50" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Prezzo scontato €</label>
-                  <input type="text" value={form.prezzoScontato} onChange={updateField('prezzoScontato')} placeholder="es. 9.90" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Giacenza *</label>
-                  <input type="number" value={form.giacenza} onChange={updateField('giacenza')} placeholder="es. 100" className={inputClass} />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Categoria</label>
-                <select value={form.categoria} onChange={updateField('categoria')} className={inputClass}>
-                  <option value="">-- Seleziona --</option>
-                  {wcCategories.map((parent) => (
-                    <optgroup key={parent.id} label={parent.name}>
-                      <option value={String(parent.id)}>{parent.name}</option>
-                      {parent.children.map((child) => (
-                        <option key={child.id} value={String(child.id)}>  {child.name}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Annata {dot('annata')}</label>
-                  <select value={form.annata} onChange={updateField('annata')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_annata'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Formato</label>
-                  <select value={form.formato} onChange={updateField('formato')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_formato'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            {/* Sub-step indicator */}
+            <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-3">
+              {SUB_STEP_LABELS.map((label, i) => {
+                const num = (i + 1) as SubStep;
+                const isActive = subStep === num;
+                const isCompleted = subStep > num;
+                return (
+                  <div key={label} className="flex items-center flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setSubStep(num)}
+                      className={`flex items-center gap-1.5 text-xs font-semibold transition-colors w-full justify-center py-1.5 rounded-lg ${
+                        isActive
+                          ? 'text-white'
+                          : isCompleted
+                            ? 'text-[#005667]'
+                            : 'text-gray-400'
+                      }`}
+                      style={isActive ? { backgroundColor: PRIMARY } : undefined}
+                    >
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : isCompleted
+                            ? 'bg-[#005667]/10 text-[#005667]'
+                            : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {isCompleted ? '\u2713' : num}
+                      </span>
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                    {i < SUB_STEP_LABELS.length - 1 && (
+                      <div className={`w-4 h-px shrink-0 ${isCompleted ? 'bg-[#005667]' : 'bg-gray-200'}`} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* SEZIONE CLASSIFICAZIONE */}
-            <div className={sectionClass}>
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Classificazione</h3>
+            {/* ── Sub-step 2A: Base ──────────────────── */}
+            {subStep === 1 && (
+              <div className={sectionClass}>
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Base</h3>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelClass}>Denominazione {dot('denominazione')}</label>
-                  <select value={form.denominazione} onChange={updateField('denominazione')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_denominazione'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
+                  <label className={labelClass}>Nome prodotto {dot('nome')}</label>
+                  <input type="text" value={form.nome} onChange={updateField('nome')} className={inputClass} />
                 </div>
-                <div>
-                  <label className={labelClass}>Gradazione alcolica {dot('gradazione')}</label>
-                  <select value={form.gradazione} onChange={updateField('gradazione')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_gradazione-alcolica'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Regione {dot('regione')}</label>
-                  <select value={form.regione} onChange={updateField('regione')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_regione'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Nazione {dot('nazione')}</label>
-                  <input type="text" value={form.nazione} onChange={updateField('nazione')} className={inputClass} />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Uvaggio {dot('uvaggio')}</label>
-                {/* Selected pills */}
-                {form.uvaggio && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {form.uvaggio.split(',').map(u => u.trim()).filter(Boolean).map(u => (
-                      <span key={u} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] bg-[#005667] text-white border border-[#005667]">
-                        {u}
-                        <button type="button" onClick={() => togglePill('uvaggio', u)} className="ml-0.5 hover:text-red-200">✕</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {/* Search input */}
                 <div className="relative">
+                  <label className={labelClass}>Produttore {dot('produttore')}</label>
                   <input
                     type="text"
-                    value={newUvaggio}
-                    onChange={(e) => setNewUvaggio(e.target.value)}
-                    placeholder="Cerca uvaggio..."
-                    className="w-full h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
-                          togglePill('uvaggio', newUvaggio.trim());
-                        }
-                        setNewUvaggio('');
-                      }
+                    value={form.produttore}
+                    onChange={(e) => {
+                      setForm((prev) => ({ ...prev, produttore: e.target.value }));
+                      setProducerSearch(e.target.value);
+                      setProducerOpen(true);
                     }}
+                    onFocus={() => setProducerOpen(true)}
+                    placeholder="Cerca o seleziona produttore..."
+                    className={inputClass}
                   />
-                  {newUvaggio.length >= 1 && (() => {
-                    const q = newUvaggio.toLowerCase();
-                    const filtered = (taxTerms['pa_uvaggio'] || []).filter(t => t.name.toLowerCase().includes(q) && !isPillSelected('uvaggio', t.name));
+                  {producerOpen && (() => {
+                    const q = (producerSearch || form.produttore).toLowerCase();
+                    const filtered = q.length > 0
+                      ? producers.filter((p) => p.name.toLowerCase().includes(q))
+                      : producers;
                     if (filtered.length === 0) return null;
                     return (
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {filtered.slice(0, 15).map(t => (
-                          <button key={t.slug} type="button" onClick={() => { togglePill('uvaggio', t.name); setNewUvaggio(''); }}
-                            className="w-full text-left px-3 py-2 text-[12px] hover:bg-gray-50 border-b border-gray-50 last:border-0">{t.name}</button>
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filtered.map((p) => (
+                          <button
+                            key={p.slug}
+                            type="button"
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, produttore: p.name }));
+                              setProducerSearch('');
+                              setProducerOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                          >
+                            {p.name}
+                          </button>
                         ))}
                       </div>
                     );
                   })()}
                 </div>
-              </div>
-            </div>
 
-            {/* SEZIONE DESCRIZIONI */}
-            <div className={sectionClass}>
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Descrizioni</h3>
-
-              <div>
-                <label className={labelClass}>
-                  Descrizione breve {dot('descBreve')}
-                  <span className="ml-2 text-gray-400 font-normal">
-                    {form.descBreve.length}/160
-                  </span>
-                </label>
-                <textarea
-                  value={form.descBreve}
-                  onChange={updateField('descBreve')}
-                  maxLength={160}
-                  rows={2}
-                  className={textareaClass}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Descrizione lunga {dot('descLunga')}</label>
-                <textarea
-                  value={form.descLunga}
-                  onChange={updateField('descLunga')}
-                  rows={4}
-                  className={textareaClass}
-                />
-              </div>
-            </div>
-
-            {/* SEZIONE DEGUSTAZIONE */}
-            <div className={sectionClass}>
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Degustazione</h3>
-
-              <div>
-                <label className={labelClass}>Alla vista {dot('allaVista')}</label>
-                <textarea value={form.allaVista} onChange={updateField('allaVista')} rows={2} className={textareaClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Al naso {dot('alNaso')}</label>
-                <textarea value={form.alNaso} onChange={updateField('alNaso')} rows={2} className={textareaClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Al palato {dot('alPalato')}</label>
-                <textarea value={form.alPalato} onChange={updateField('alPalato')} rows={2} className={textareaClass} />
-              </div>
-            </div>
-
-            {/* SEZIONE DETTAGLI */}
-            <div className={sectionClass}>
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Dettagli</h3>
-
-              <div>
-                <label className={labelClass}>Abbinamenti {dot('abbinamenti')}</label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {(taxTerms['pa_abbinamenti'] || []).map((t) => (
-                    <button
-                      key={t.slug}
-                      type="button"
-                      onClick={() => togglePill('abbinamenti', t.name)}
-                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                        isPillSelected('abbinamenti', t.name)
-                          ? 'bg-[#005667] text-white border-[#005667]'
-                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
-                      }`}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelClass}>Temperatura di servizio {dot('temperaturaServizio')}</label>
-                  <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
+                  <label className={labelClass}>Vendor / Negozio</label>
+                  <select value={form.vendorId} onChange={updateField('vendorId')} className={inputClass}>
+                    <option value="">Stappando Enoteca (default)</option>
+                    {vendors.filter(v => v.id > 0).map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className={labelClass}>Momento di consumo {dot('momentoConsumo')}</label>
+                  <label className={labelClass}>SKU</label>
+                  <input type="text" value={form.sku} onChange={updateField('sku')} placeholder="Codice prodotto" className={inputClass} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Prezzo &euro; *</label>
+                    <input type="text" value={form.prezzo} onChange={updateField('prezzo')} placeholder="es. 12.50" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Prezzo scontato &euro;</label>
+                    <input type="text" value={form.prezzoScontato} onChange={updateField('prezzoScontato')} placeholder="es. 9.90" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Giacenza *</label>
+                    <input type="number" value={form.giacenza} onChange={updateField('giacenza')} placeholder="es. 100" className={inputClass} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Categoria</label>
+                  <select value={form.categoria} onChange={updateField('categoria')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {wcCategories.map((parent) => (
+                      <optgroup key={parent.id} label={parent.name}>
+                        <option value={String(parent.id)}>{parent.name}</option>
+                        {parent.children.map((child) => (
+                          <option key={child.id} value={String(child.id)}>  {child.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Annata {dot('annata')}</label>
+                    <select value={form.annata} onChange={updateField('annata')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_annata'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Formato</label>
+                    <select value={form.formato} onChange={updateField('formato')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_formato'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Sub-step 2B: Classificazione ──────── */}
+            {subStep === 2 && (
+              <div className={sectionClass}>
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Classificazione</h3>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Denominazione {dot('denominazione')}</label>
+                    <select value={form.denominazione} onChange={updateField('denominazione')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_denominazione'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Gradazione alcolica {dot('gradazione')}</label>
+                    <select value={form.gradazione} onChange={updateField('gradazione')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_gradazione-alcolica'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Regione {dot('regione')}</label>
+                    <select value={form.regione} onChange={updateField('regione')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_regione'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Nazione {dot('nazione')}</label>
+                    <input type="text" value={form.nazione} onChange={updateField('nazione')} className={inputClass} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Uvaggio {dot('uvaggio')}</label>
+                  {/* Selected pills */}
+                  {form.uvaggio && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {form.uvaggio.split(',').map(u => u.trim()).filter(Boolean).map(u => (
+                        <span key={u} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] bg-[#005667] text-white border border-[#005667]">
+                          {u}
+                          <button type="button" onClick={() => togglePill('uvaggio', u)} className="ml-0.5 hover:text-red-200">&times;</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Search input */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={newUvaggio}
+                      onChange={(e) => setNewUvaggio(e.target.value)}
+                      placeholder="Cerca uvaggio..."
+                      className="w-full h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
+                            togglePill('uvaggio', newUvaggio.trim());
+                          }
+                          setNewUvaggio('');
+                        }
+                      }}
+                    />
+                    {newUvaggio.length >= 1 && (() => {
+                      const q = newUvaggio.toLowerCase();
+                      const filtered = (taxTerms['pa_uvaggio'] || []).filter(t => t.name.toLowerCase().includes(q) && !isPillSelected('uvaggio', t.name));
+                      return (
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {filtered.slice(0, 15).map(t => (
+                            <button key={t.slug} type="button" onClick={() => { togglePill('uvaggio', t.name); setNewUvaggio(''); }}
+                              className="w-full text-left px-3 py-2 text-[12px] hover:bg-gray-50 border-b border-gray-50 last:border-0">{t.name}</button>
+                          ))}
+                          {filtered.length === 0 && (
+                            <button type="button" onClick={() => { togglePill('uvaggio', newUvaggio.trim()); setNewUvaggio(''); }}
+                              className="w-full text-left px-3 py-2 text-[12px] text-[#005667] font-semibold hover:bg-gray-50">
+                              + Aggiungi &quot;{newUvaggio.trim()}&quot;
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Abbinamenti {dot('abbinamenti')}</label>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
+                    {(taxTerms['pa_abbinamenti'] || []).map((t) => (
                       <button
                         key={t.slug}
                         type="button"
-                        onClick={() => togglePill('momentoConsumo', t.name)}
+                        onClick={() => togglePill('abbinamenti', t.name)}
                         className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                          isPillSelected('momentoConsumo', t.name)
+                          isPillSelected('abbinamenti', t.name)
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Temperatura di servizio {dot('temperaturaServizio')}</label>
+                    <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Momento di consumo {dot('momentoConsumo')}</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
+                        <button
+                          key={t.slug}
+                          type="button"
+                          onClick={() => togglePill('momentoConsumo', t.name)}
+                          className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                            isPillSelected('momentoConsumo', t.name)
+                              ? 'bg-[#005667] text-white border-[#005667]'
+                              : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                          }`}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Allergeni</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(taxTerms['pa_allergeni'] || []).map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('allergeni', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                          isPillSelected('allergeni', t.name)
                             ? 'bg-[#005667] text-white border-[#005667]'
                             : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
                         }`}
@@ -859,84 +791,65 @@ export default function ProdottiPage() {
                   </div>
                 </div>
               </div>
+            )}
 
-              <div>
-                <label className={labelClass}>Vinificazione {dot('vinificazione')}</label>
-                <textarea value={form.vinificazione} onChange={updateField('vinificazione')} rows={2} className={textareaClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Affinamento {dot('affinamento')}</label>
-                <textarea value={form.affinamento} onChange={updateField('affinamento')} rows={2} className={textareaClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Allergeni</label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {(taxTerms['pa_allergeni'] || []).map((t) => (
-                    <button
-                      key={t.slug}
-                      type="button"
-                      onClick={() => togglePill('allergeni', t.name)}
-                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                        isPillSelected('allergeni', t.name)
-                          ? 'bg-[#005667] text-white border-[#005667]'
-                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
-                      }`}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* SEZIONE VIGNETO */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Vigneto</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className={labelClass}>Terreno {dot('terreno')}</label>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(taxTerms['pa_terreno'] || []).map((t) => (
-                      <button key={t.slug} type="button" onClick={() => togglePill('terreno', t.name)}
-                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('terreno', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
-                        {t.name}
-                      </button>
-                    ))}
+            {/* ── Sub-step 2C: Territorio & Vigneto ─── */}
+            {subStep === 3 && (
+              <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Territorio &amp; Vigneto</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className={labelClass}>Terreno {dot('terreno')}</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(taxTerms['pa_terreno'] || []).map((t) => (
+                        <button key={t.slug} type="button" onClick={() => togglePill('terreno', t.name)}
+                          className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('terreno', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Altitudine {dot('altitudine')}</label>
-                  <select value={form.altitudine} onChange={updateField('altitudine')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_altitudine-dei-vigneti'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Altitudine {dot('altitudine')}</label>
+                    <select value={form.altitudine} onChange={updateField('altitudine')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_altitudine-dei-vigneti'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Densit&agrave; d&apos;impianto</label>
+                    <select value={form.densitaImpianto} onChange={updateField('densitaImpianto')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_densita-dimpianto'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
+                    <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Resa {dot('resa')}</label>
+                    <select value={form.resa} onChange={updateField('resa')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_resa'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className={labelClass}>Densità d&apos;impianto</label>
-                  <select value={form.densitaImpianto} onChange={updateField('densitaImpianto')} className={inputClass}>
+                  <label className={labelClass}>Raccolta {dot('raccolta')}</label>
+                  <select value={form.raccolta} onChange={updateField('raccolta')} className={inputClass}>
                     <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_densita-dimpianto'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
-                  <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Resa {dot('resa')}</label>
-                  <select value={form.resa} onChange={updateField('resa')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_resa'] || []).map((t) => (
+                    {(taxTerms['pa_raccolta'] || []).map((t) => (
                       <option key={t.slug} value={t.name}>{t.name}</option>
                     ))}
                   </select>
@@ -952,36 +865,140 @@ export default function ProdottiPage() {
                     ))}
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Orientamento delle vigne</label>
+                    <select value={form.orientamentoVigne} onChange={updateField('orientamentoVigne')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_orientamento-delle-vigne'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Tipo di vigneto</label>
+                    <select value={form.tipoVigneto} onChange={updateField('tipoVigneto')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_tipo-di-vigneto'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
+                    <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(taxTerms['pa_filosofia'] || []).map((t) => (
+                        <button
+                          key={t.slug}
+                          type="button"
+                          onClick={() => togglePill('certificazioni', t.name)}
+                          className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                            isPillSelected('certificazioni', t.name)
+                              ? 'bg-[#005667] text-white border-[#005667]'
+                              : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                          }`}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Raccolta {dot('raccolta')}</label>
-                  <select value={form.raccolta} onChange={updateField('raccolta')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_raccolta'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
+            )}
+
+            {/* ── Sub-step 2D: Testi & Degustazione ─── */}
+            {subStep === 4 && (
+              <div className="space-y-5">
+                {/* Descrizioni */}
+                <div className={sectionClass}>
+                  <h3 className="text-sm font-bold text-[#005667] mb-2">Descrizioni</h3>
+
+                  <div>
+                    <label className={labelClass}>
+                      Descrizione breve {dot('descBreve')}
+                      <span className="ml-2 text-gray-400 font-normal">
+                        {form.descBreve.length}/160
+                      </span>
+                    </label>
+                    <textarea
+                      value={form.descBreve}
+                      onChange={updateField('descBreve')}
+                      maxLength={160}
+                      rows={2}
+                      className={textareaClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Descrizione lunga {dot('descLunga')}</label>
+                    <textarea
+                      value={form.descLunga}
+                      onChange={updateField('descLunga')}
+                      rows={4}
+                      className={textareaClass}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
-                  <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
+
+                {/* Degustazione */}
+                <div className={sectionClass}>
+                  <h3 className="text-sm font-bold text-[#005667] mb-2">Degustazione</h3>
+
+                  <div>
+                    <label className={labelClass}>Alla vista {dot('allaVista')}</label>
+                    <textarea value={form.allaVista} onChange={updateField('allaVista')} rows={2} className={textareaClass} />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Al naso {dot('alNaso')}</label>
+                    <textarea value={form.alNaso} onChange={updateField('alNaso')} rows={2} className={textareaClass} />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Al palato {dot('alPalato')}</label>
+                    <textarea value={form.alPalato} onChange={updateField('alPalato')} rows={2} className={textareaClass} />
+                  </div>
                 </div>
-                <div>
-                  <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
+
+                {/* Vinificazione & Affinamento */}
+                <div className={sectionClass}>
+                  <h3 className="text-sm font-bold text-[#005667] mb-2">Produzione</h3>
+
+                  <div>
+                    <label className={labelClass}>Vinificazione {dot('vinificazione')}</label>
+                    <textarea value={form.vinificazione} onChange={updateField('vinificazione')} rows={2} className={textareaClass} />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Affinamento {dot('affinamento')}</label>
+                    <textarea value={form.affinamento} onChange={updateField('affinamento')} rows={2} className={textareaClass} />
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                  <h3 className="text-sm font-bold text-[#005667] mb-2">Tag</h3>
+                  <label className={labelClass}>Tag {dot('tags')}</label>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(taxTerms['pa_filosofia'] || []).map((t) => (
+                    {wcTags.map((t) => (
                       <button
                         key={t.slug}
                         type="button"
-                        onClick={() => togglePill('certificazioni', t.name)}
+                        onClick={() => togglePill('tags', t.name)}
                         className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                          isPillSelected('certificazioni', t.name)
+                          isPillSelected('tags', t.name)
                             ? 'bg-[#005667] text-white border-[#005667]'
                             : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
                         }`}
@@ -991,128 +1008,104 @@ export default function ProdottiPage() {
                     ))}
                   </div>
                 </div>
-              </div>
-              {/* Spumanti section */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Spumantizzazione</label>
-                  <select value={form.spumantizzazione} onChange={updateField('spumantizzazione')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_metodo-produttivo'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Categoria spumanti</label>
-                  <select value={form.categoriaSpumanti} onChange={updateField('categoriaSpumanti')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_spumantizzazione'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Dosaggio</label>
-                  <select value={form.dosaggio} onChange={updateField('dosaggio')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_dosaggio'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {/* Orientamento + Menu order */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Orientamento delle vigne</label>
-                  <select value={form.orientamentoVigne} onChange={updateField('orientamentoVigne')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_orientamento-delle-vigne'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Tipo di vigneto</label>
-                  <select value={form.tipoVigneto} onChange={updateField('tipoVigneto')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_tipo-di-vigneto'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Ordine menu</label>
-                  <input type="number" value={form.menuOrder} onChange={updateField('menuOrder')} placeholder="0" className={inputClass} />
-                </div>
-              </div>
-            </div>
 
-            {/* GOOGLE & GTIN */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Google & Codici</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Categoria Google</label>
-                  <select value={form.categoriaGoogle} onChange={updateField('categoriaGoogle')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_categoria-google'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>GTIN / EAN</label>
-                  <input type="text" value={form.gtin} onChange={updateField('gtin')} placeholder="es. 8001234567890" className={inputClass} />
+                {/* Google & Codici + Spumanti */}
+                <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+                  <h3 className="text-sm font-bold text-[#005667] mb-2">Google, Codici &amp; Spumanti</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Categoria Google</label>
+                      <select value={form.categoriaGoogle} onChange={updateField('categoriaGoogle')} className={inputClass}>
+                        <option value="">-- Seleziona --</option>
+                        {(taxTerms['pa_categoria-google'] || []).map((t) => (
+                          <option key={t.slug} value={t.name}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>GTIN / EAN</label>
+                      <input type="text" value={form.gtin} onChange={updateField('gtin')} placeholder="es. 8001234567890" className={inputClass} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelClass}>Spumantizzazione</label>
+                      <select value={form.spumantizzazione} onChange={updateField('spumantizzazione')} className={inputClass}>
+                        <option value="">-- Seleziona --</option>
+                        {(taxTerms['pa_metodo-produttivo'] || []).map((t) => (
+                          <option key={t.slug} value={t.name}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Categoria spumanti</label>
+                      <select value={form.categoriaSpumanti} onChange={updateField('categoriaSpumanti')} className={inputClass}>
+                        <option value="">-- Seleziona --</option>
+                        {(taxTerms['pa_spumantizzazione'] || []).map((t) => (
+                          <option key={t.slug} value={t.name}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Dosaggio</label>
+                      <select value={form.dosaggio} onChange={updateField('dosaggio')} className={inputClass}>
+                        <option value="">-- Seleziona --</option>
+                        {(taxTerms['pa_dosaggio'] || []).map((t) => (
+                          <option key={t.slug} value={t.name}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ordine menu</label>
+                    <input type="number" value={form.menuOrder} onChange={updateField('menuOrder')} placeholder="0" className={inputClass} />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* TAGS */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="text-sm font-bold text-[#005667] mb-2">Tag</h3>
-              <label className={labelClass}>Tag {dot('tags')}</label>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {wcTags.map((t) => (
-                  <button
-                    key={t.slug}
-                    type="button"
-                    onClick={() => togglePill('tags', t.name)}
-                    className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                      isPillSelected('tags', t.name)
-                        ? 'bg-[#005667] text-white border-[#005667]'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
-                    }`}
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Buttons */}
+            {/* Navigation buttons */}
             <div className="flex gap-3">
-              <button
-                onClick={resetAll}
-                className="flex-1 h-[48px] rounded-lg font-semibold text-sm border-2 text-gray-600 border-gray-300 bg-white"
-              >
-                &larr; Cerca un altro
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={loading}
-                className="flex-1 h-[48px] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                {loading ? (
-                  <>
-                    <Spinner /> Creando...
-                  </>
-                ) : (
-                  mode === 'edit' ? 'Aggiorna su WooCommerce \u2192' : 'Crea bozza su WooCommerce \u2192'
-                )}
-              </button>
+              {subStep === 1 ? (
+                <button
+                  onClick={resetAll}
+                  className="flex-1 h-[48px] rounded-lg font-semibold text-sm border-2 text-gray-600 border-gray-300 bg-white"
+                >
+                  &larr; Cerca un altro
+                </button>
+              ) : (
+                <button
+                  onClick={() => setSubStep((subStep - 1) as SubStep)}
+                  className="flex-1 h-[48px] rounded-lg font-semibold text-sm border-2 text-gray-600 border-gray-300 bg-white"
+                >
+                  &larr; Indietro
+                </button>
+              )}
+
+              {subStep < 4 ? (
+                <button
+                  onClick={() => setSubStep((subStep + 1) as SubStep)}
+                  className="flex-1 h-[48px] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+                  style={{ backgroundColor: PRIMARY }}
+                >
+                  Continua &rarr;
+                </button>
+              ) : (
+                <button
+                  onClick={handleCreate}
+                  disabled={loading}
+                  className="flex-1 h-[48px] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  style={{ backgroundColor: PRIMARY }}
+                >
+                  {loading ? (
+                    <>
+                      <Spinner /> Creando...
+                    </>
+                  ) : (
+                    'Crea bozza su WooCommerce \u2192'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         )}
