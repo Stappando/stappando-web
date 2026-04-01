@@ -57,7 +57,6 @@ interface ProductData {
   affinamento: string;
   allergeni: string;
   terreno: string;
-  esposizione: string;
   altitudine: string;
   zonaProduzione: string;
   resa: string;
@@ -69,6 +68,7 @@ interface ProductData {
   categoriaSpumanti: string;
   dosaggio: string;
   orientamentoVigne: string;
+  tipoVigneto: string;
   categoriaGoogle: string;
   gtin: string;
   menuOrder: string;
@@ -115,7 +115,6 @@ const emptyProduct: ProductData = {
   affinamento: '',
   allergeni: 'Contiene solfiti',
   terreno: '',
-  esposizione: '',
   altitudine: '',
   zonaProduzione: '',
   resa: '',
@@ -127,6 +126,7 @@ const emptyProduct: ProductData = {
   categoriaSpumanti: '',
   dosaggio: '',
   orientamentoVigne: '',
+  tipoVigneto: '',
   categoriaGoogle: '',
   gtin: '',
   menuOrder: '',
@@ -241,6 +241,7 @@ export default function ProdottiPage() {
       'pa_orientamento-delle-vigne',
       'pa_terreno',
       'pa_densita-dimpianto',
+      'pa_tipo-di-vigneto',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -885,10 +886,6 @@ export default function ProdottiPage() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className={labelClass}>Esposizione {dot('esposizione')}</label>
-                  <input type="text" value={form.esposizione} onChange={updateField('esposizione')} placeholder="es. Sud-Est" className={inputClass} />
-                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -999,7 +996,7 @@ export default function ProdottiPage() {
                 </div>
               </div>
               {/* Orientamento + Menu order */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={labelClass}>Orientamento delle vigne</label>
                   <select value={form.orientamentoVigne} onChange={updateField('orientamentoVigne')} className={inputClass}>
@@ -1010,8 +1007,17 @@ export default function ProdottiPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Ordine menu (visibilità)</label>
-                  <input type="number" value={form.menuOrder} onChange={updateField('menuOrder')} placeholder="0 = più visibile" className={inputClass} />
+                  <label className={labelClass}>Tipo di vigneto</label>
+                  <select value={form.tipoVigneto} onChange={updateField('tipoVigneto')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_tipo-di-vigneto'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Ordine menu</label>
+                  <input type="number" value={form.menuOrder} onChange={updateField('menuOrder')} placeholder="0" className={inputClass} />
                 </div>
               </div>
             </div>

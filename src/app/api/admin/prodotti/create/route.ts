@@ -45,6 +45,7 @@ interface ProductBody {
   categoriaSpumanti: string;
   dosaggio: string;
   orientamentoVigne: string;
+  tipoVigneto: string;
   categoriaGoogle: string;
   gtin: string;
   menuOrder: string;
@@ -156,6 +157,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.categoriaSpumanti) addAttr('pa_spumantizzazione', 'Categoria spumanti', [body.categoriaSpumanti]);
   if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
   if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
+  if (body.tipoVigneto) addAttr('pa_tipo-di-vigneto', 'Tipo di vigneto', [body.tipoVigneto]);
   if (body.altitudine) addAttr('pa_altitudine-dei-vigneti', 'Altitudine dei vigneti', [body.altitudine]);
   if (body.densitaImpianto) addAttr('pa_densita-dimpianto', "Densità d'impianto", [body.densitaImpianto]);
   if (body.esposizione) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.esposizione]);
