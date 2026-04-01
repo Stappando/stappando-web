@@ -31,6 +31,11 @@ interface PDPProduct {
   shortDesc: string;
   description: string;
   specs: Spec[];
+  allaVista: string;
+  alNaso: string;
+  alPalato: string;
+  vinificazione: string;
+  affinamento: string;
   popPoints: number;
   galleryImages: GalleryImage[];
   mainImage: string;
@@ -245,6 +250,63 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                     <span className="text-[14px] text-[#1a1a1a] font-medium text-right">{spec.value}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Note degustazione */}
+          {(p.allaVista || p.alNaso || p.alPalato) && (
+            <div className="mb-5">
+              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Note di degustazione</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {p.allaVista && (
+                  <div className="bg-[#fef9f0] rounded-xl p-4 border border-[#f0e8d8]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">👁</span>
+                      <span className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</span>
+                    </div>
+                    <p className="text-[13px] text-[#666] leading-relaxed">{p.allaVista}</p>
+                  </div>
+                )}
+                {p.alNaso && (
+                  <div className="bg-[#f5f0f8] rounded-xl p-4 border border-[#e8ddf0]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">👃</span>
+                      <span className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</span>
+                    </div>
+                    <p className="text-[13px] text-[#666] leading-relaxed">{p.alNaso}</p>
+                  </div>
+                )}
+                {p.alPalato && (
+                  <div className="bg-[#f0f7f5] rounded-xl p-4 border border-[#d8efe8]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">👅</span>
+                      <span className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</span>
+                    </div>
+                    <p className="text-[13px] text-[#666] leading-relaxed">{p.alPalato}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Vinificazione & Affinamento */}
+          {(p.vinificazione || p.affinamento) && (
+            <div className="mb-5">
+              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Produzione</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {p.vinificazione && (
+                  <div className="bg-[#f8f6f1] rounded-xl p-4">
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-1">Vinificazione</p>
+                    <p className="text-[13px] text-[#444] leading-relaxed">{p.vinificazione}</p>
+                  </div>
+                )}
+                {p.affinamento && (
+                  <div className="bg-[#f8f6f1] rounded-xl p-4">
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-1">Affinamento</p>
+                    <p className="text-[13px] text-[#444] leading-relaxed">{p.affinamento}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

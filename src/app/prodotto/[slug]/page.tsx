@@ -27,9 +27,14 @@ export async function generateMetadata({ params }: Props) {
 
 /* Allowed attribute keys for the specs table */
 const ALLOWED_ATTRS = new Set([
-  'Regione', 'Denominazione', 'Annata', 'Formato', 'Alcol',
-  'Allergeni', 'Momento di consumo', 'Uvaggio', 'Raccolta',
-  'Zona di produzione', 'Abbinamento',
+  'Annata', 'Momento di consumo', 'Formato', 'Raccolta',
+  'Zona di produzione', 'Alcol', 'Regione', 'Denominazione',
+  'Uvaggio', 'Allergeni', 'Nazione', 'Terreno', 'Resa',
+  'Altitudine dei vigneti', "Densità d'impianto",
+  'Orientamento delle vigne', 'Tipo di vigneto',
+  'Periodo vendemmia', 'Bottiglie prodotte', 'Certificazioni',
+  'Servire a', 'Spumantizzazione', 'Categoria spumanti', 'Dosaggio',
+  'Abbinamento',
 ]);
 
 export default async function ProductPage({ params }: Props) {
@@ -53,12 +58,20 @@ export default async function ProductPage({ params }: Props) {
 
   const alcol = getAttr('Alcol');
   const denominazione = getAttr('Denominazione');
-  const abbinamenti = getAttr('Abbinamento')?.split(',').map((s: string) => s.trim()).filter(Boolean) || [];
+  const abbinamenti = (product.attributes?.find((a: { name: string }) => a.name === 'Abbinamento')?.options || []).map((o: string) => decodeHtml(o));
 
   // Filter attributes for specs table
   const specs = (product.attributes || [])
     .filter((a: { name: string }) => ALLOWED_ATTRS.has(a.name) && a.name !== 'Abbinamento')
     .map((a: { name: string; options: string[] }) => ({ key: a.name, value: a.options.map(o => decodeHtml(o)).join(', ') }));
+
+  // Get tasting notes from meta
+  const getMeta = (key: string) => product.meta_data?.find((m: { key: string; value: string }) => m.key === key)?.value || '';
+  const allaVista = getMeta('alla_vista');
+  const alNaso = getMeta('al_naso');
+  const alPalato = getMeta('al_palato');
+  const vinificazione = getMeta('vinificazione');
+  const affinamento = getMeta('affinamento');
 
   // Get circuito badge text
   const circuitoBadge = product.meta_data?.find((m: { key: string; value: string }) => m.key === '_circuito_badge')?.value || 'Un vino che racconta il territorio con eleganza e carattere.';
@@ -113,6 +126,11 @@ export default async function ProductPage({ params }: Props) {
             shortDesc,
             description: product.description || '',
             specs,
+            allaVista,
+            alNaso,
+            alPalato,
+            vinificazione,
+            affinamento,
             popPoints,
             galleryImages: galleryImages.map((img: { id: number; src: string; alt?: string }) => ({
               id: img.id,
