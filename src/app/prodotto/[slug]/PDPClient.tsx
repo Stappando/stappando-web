@@ -254,56 +254,62 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             </div>
           )}
 
-          {/* Note degustazione */}
+          {/* Note degustazione — list layout */}
           {(p.allaVista || p.alNaso || p.alPalato) && (
             <div className="mb-5">
               <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Note di degustazione</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-2.5">
                 {p.allaVista && (
-                  <div className="bg-[#fef9f0] rounded-xl p-4 border border-[#f0e8d8]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">👁</span>
-                      <span className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-[#b8973f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
-                    <p className="text-[13px] text-[#666] leading-relaxed">{p.allaVista}</p>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.allaVista}</p>
+                    </div>
                   </div>
                 )}
                 {p.alNaso && (
-                  <div className="bg-[#f5f0f8] rounded-xl p-4 border border-[#e8ddf0]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">👃</span>
-                      <span className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-[#7b5ea7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
-                    <p className="text-[13px] text-[#666] leading-relaxed">{p.alNaso}</p>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alNaso}</p>
+                    </div>
                   </div>
                 )}
                 {p.alPalato && (
-                  <div className="bg-[#f0f7f5] rounded-xl p-4 border border-[#d8efe8]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">👅</span>
-                      <span className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
                     </div>
-                    <p className="text-[13px] text-[#666] leading-relaxed">{p.alPalato}</p>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</p>
+                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alPalato}</p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Vinificazione & Affinamento */}
+          {/* Produzione — stacked left */}
           {(p.vinificazione || p.affinamento) && (
             <div className="mb-5">
               <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Produzione</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2.5">
                 {p.vinificazione && (
-                  <div className="bg-[#f8f6f1] rounded-xl p-4">
-                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-1">Vinificazione</p>
+                  <div>
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Vinificazione</p>
                     <p className="text-[13px] text-[#444] leading-relaxed">{p.vinificazione}</p>
                   </div>
                 )}
                 {p.affinamento && (
-                  <div className="bg-[#f8f6f1] rounded-xl p-4">
-                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-1">Affinamento</p>
+                  <div>
+                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Affinamento</p>
                     <p className="text-[13px] text-[#444] leading-relaxed">{p.affinamento}</p>
                   </div>
                 )}
