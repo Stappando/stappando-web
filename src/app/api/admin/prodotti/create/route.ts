@@ -40,8 +40,13 @@ interface ProductBody {
   bottiglieProdotte: string;
   certificazioni: string;
   raccolta: string;
+  spumantizzazione: string;
+  categoriaSpumanti: string;
+  dosaggio: string;
+  orientamentoVigne: string;
   categoriaGoogle: string;
   gtin: string;
+  menuOrder: string;
   tags: string;
 }
 
@@ -76,29 +81,36 @@ function wcUrl(path: string, params?: Record<string, string | number>): string {
 
 /* ── Build WC product payload ──────────────────────────── */
 
-// WC attribute IDs — must match WooCommerce
+// WC attribute IDs — MUST match WooCommerce exactly
 const ATTR_IDS: Record<string, number> = {
   'pa_produttore': 10,
   'pa_denominazione': 33,
-  'pa_regione': 5,
-  'pa_nazione': 22,
-  'pa_uvaggio': 1,
+  'pa_regione': 4,
+  'pa_nazione': 5,
+  'pa_uvaggio': 17,
   'pa_gradazione-alcolica': 24,
   'pa_annata': 11,
-  'pa_formato': 15,
+  'pa_formato': 6,
   'pa_abbinamenti': 7,
-  'pa_temperatura-di-servizio': 27,
-  'pa_momento-di-consumo': 12,
+  'pa_temperatura-di-servizio': 41,   // Servire a
+  'pa_momento-di-consumo': 93,
   'pa_allergeni': 87,
-  'pa_terreno': 48,
-  'pa_certificazioni': 88,
-  'pa_resa': 50,
-  'pa_raccolta': 25,
+  'pa_terreno': 40,
+  'pa_filosofia': 15,                 // Certificazioni
+  'pa_resa': 45,
+  'pa_raccolta': 46,
   'pa_bottiglie-prodotte': 92,
-  'pa_zona-di-produzione': 44,
+  'pa_zona-di-produzione': 36,
   'pa_dosaggio': 29,
   'pa_categoria-google': 69,
-  'pa_per-adulti': 86,
+  'pa_per-adulti': 75,
+  'pa_metodo-produttivo': 38,         // Spumantizzazione
+  'pa_spumantizzazione': 37,          // Categoria spumanti
+  'pa_orientamento-delle-vigne': 47,
+  'pa_altitudine-dei-vigneti': 49,
+  'pa_tipo-di-vigneto': 44,
+  'pa_identificazione-esistente': 73,
+  'pa_ean': 57,
 };
 
 function buildWCProduct(body: ProductBody) {
@@ -125,23 +137,31 @@ function buildWCProduct(body: ProductBody) {
   if (body.regione) addAttr('pa_regione', 'Regione', [body.regione]);
   if (body.nazione) addAttr('pa_nazione', 'Nazione', [body.nazione]);
   if (body.uvaggio) addAttr('pa_uvaggio', 'Uvaggio', body.uvaggio.split(',').map(g => g.trim()).filter(Boolean));
-  if (body.gradazione) addAttr('pa_gradazione-alcolica', 'Gradazione alcolica', [body.gradazione]);
+  if (body.gradazione) addAttr('pa_gradazione-alcolica', 'Alcol', [body.gradazione]);
   if (body.annata) addAttr('pa_annata', 'Annata', [body.annata]);
   if (body.formato) addAttr('pa_formato', 'Formato', [body.formato]);
   if (body.abbinamenti) addAttr('pa_abbinamenti', 'Abbinamento', body.abbinamenti.split(',').map(p => p.trim()).filter(Boolean));
-  if (body.temperaturaServizio) addAttr('pa_temperatura-di-servizio', 'Temperatura di servizio', [body.temperaturaServizio]);
+  if (body.temperaturaServizio) addAttr('pa_temperatura-di-servizio', 'Servire a', [body.temperaturaServizio]);
   if (body.momentoConsumo) addAttr('pa_momento-di-consumo', 'Momento di consumo', body.momentoConsumo.split(',').map(m => m.trim()).filter(Boolean));
   if (body.allergeni) addAttr('pa_allergeni', 'Allergeni', body.allergeni.split(',').map(a => a.trim()).filter(Boolean));
   if (body.terreno) addAttr('pa_terreno', 'Terreno', [body.terreno]);
-  if (body.certificazioni) addAttr('pa_certificazioni', 'Certificazioni', body.certificazioni.split(',').map(c => c.trim()).filter(Boolean));
+  if (body.certificazioni) addAttr('pa_filosofia', 'Certificazioni', body.certificazioni.split(',').map(c => c.trim()).filter(Boolean));
   if (body.resa) addAttr('pa_resa', 'Resa', [body.resa]);
   if (body.raccolta) addAttr('pa_raccolta', 'Raccolta', [body.raccolta]);
   if (body.bottiglieProdotte) addAttr('pa_bottiglie-prodotte', 'Bottiglie prodotte', [body.bottiglieProdotte]);
   if (body.zonaProduzione) addAttr('pa_zona-di-produzione', 'Zona di produzione', [body.zonaProduzione]);
+  if (body.spumantizzazione) addAttr('pa_metodo-produttivo', 'Spumantizzazione', [body.spumantizzazione]);
+  if (body.categoriaSpumanti) addAttr('pa_spumantizzazione', 'Categoria spumanti', [body.categoriaSpumanti]);
+  if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
+  if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
   // Per adulti: sempre SI
   addAttr('pa_per-adulti', 'Per adulti', ['Sì']);
   // Categoria Google se presente
   if (body.categoriaGoogle) addAttr('pa_categoria-google', 'categoria Google', [body.categoriaGoogle]);
+  // GTIN → anche come attributo EAN
+  if (body.gtin) addAttr('pa_ean', 'EAN', [body.gtin]);
+  // Identificazione esistente: SI se GTIN presente
+  if (body.gtin) addAttr('pa_identificazione-esistente', 'Identificazione esistente', ['Sì']);
 
   // Build meta_data for ACF fields (tasting notes, vinification, etc.)
   const metaData: { key: string; value: string }[] = [];
@@ -188,6 +208,7 @@ function buildWCProduct(body: ProductBody) {
     ...(body.prezzoScontato ? { sale_price: body.prezzoScontato } : {}),
     manage_stock: true,
     stock_quantity: parseInt(body.giacenza) || 0,
+    menu_order: parseInt(body.menuOrder) || 0,
     short_description: body.descBreve || '',
     description: body.descLunga || '',
     categories,

@@ -64,8 +64,13 @@ interface ProductData {
   vendemmia: string;
   bottiglieProdotte: string;
   raccolta: string;
+  spumantizzazione: string;
+  categoriaSpumanti: string;
+  dosaggio: string;
+  orientamentoVigne: string;
   categoriaGoogle: string;
   gtin: string;
+  menuOrder: string;
   certificazioni: string;
   tags: string;
 }
@@ -116,8 +121,13 @@ const emptyProduct: ProductData = {
   vendemmia: '',
   bottiglieProdotte: '',
   raccolta: '',
+  spumantizzazione: '',
+  categoriaSpumanti: '',
+  dosaggio: '',
+  orientamentoVigne: '',
   categoriaGoogle: '',
   gtin: '',
+  menuOrder: '',
   certificazioni: '',
   tags: '',
 };
@@ -216,13 +226,18 @@ export default function ProdottiPage() {
       'pa_momento-di-consumo',
       'pa_temperatura-di-servizio',
       'pa_allergeni',
-      'pa_certificazioni',
+      'pa_filosofia',
       'pa_raccolta',
       'pa_categoria-google',
       'pa_gradazione-alcolica',
       'pa_altitudine-dei-vigneti',
       'pa_resa',
       'pa_bottiglie-prodotte',
+      'pa_metodo-produttivo',
+      'pa_spumantizzazione',
+      'pa_dosaggio',
+      'pa_orientamento-delle-vigne',
+      'pa_terreno',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -858,7 +873,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Terreno {dot('terreno')}</label>
-                  <input type="text" value={form.terreno} onChange={updateField('terreno')} placeholder="es. Argilloso-calcareo" className={inputClass} />
+                  <select value={form.terreno} onChange={updateField('terreno')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_terreno'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Esposizione {dot('esposizione')}</label>
@@ -917,7 +937,7 @@ export default function ProdottiPage() {
                 <div>
                   <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(taxTerms['pa_certificazioni'] || []).map((t) => (
+                    {(taxTerms['pa_filosofia'] || []).map((t) => (
                       <button
                         key={t.slug}
                         type="button"
@@ -932,6 +952,52 @@ export default function ProdottiPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+              {/* Spumanti section */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelClass}>Spumantizzazione</label>
+                  <select value={form.spumantizzazione} onChange={updateField('spumantizzazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_metodo-produttivo'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Categoria spumanti</label>
+                  <select value={form.categoriaSpumanti} onChange={updateField('categoriaSpumanti')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_spumantizzazione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Dosaggio</label>
+                  <select value={form.dosaggio} onChange={updateField('dosaggio')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_dosaggio'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {/* Orientamento + Menu order */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Orientamento delle vigne</label>
+                  <select value={form.orientamentoVigne} onChange={updateField('orientamentoVigne')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_orientamento-delle-vigne'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Ordine menu (visibilità)</label>
+                  <input type="number" value={form.menuOrder} onChange={updateField('menuOrder')} placeholder="0 = più visibile" className={inputClass} />
                 </div>
               </div>
             </div>
