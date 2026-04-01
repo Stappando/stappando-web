@@ -145,6 +145,11 @@ export default function ProdottiPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
 
   const [producers, setProducers] = useState<{ name: string; slug: string }[]>([]);
+  const [producerSearch, setProducerSearch] = useState('');
+  const [producerOpen, setProducerOpen] = useState(false);
+
+  // Taxonomy terms state
+  const [taxTerms, setTaxTerms] = useState<Record<string, { name: string; slug: string }[]>>({});
 
   // Fetch vendors + producers on mount
   useEffect(() => {
@@ -176,6 +181,35 @@ export default function ProdottiPage() {
           })
           .catch(() => {});
       });
+  }, []);
+
+  // Fetch all taxonomy terms on mount
+  useEffect(() => {
+    const slugs = [
+      'pa_abbinamenti',
+      'pa_denominazione',
+      'pa_regione',
+      'pa_uvaggio',
+      'pa_formato',
+      'pa_momento-di-consumo',
+      'pa_temperatura-di-servizio',
+      'pa_allergeni',
+      'pa_certificazioni',
+    ];
+    slugs.forEach((slug) => {
+      fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => {
+          const list = Array.isArray(data) ? data : [];
+          setTaxTerms((prev) => ({
+            ...prev,
+            [slug]: list
+              .map((t: { name: string; slug: string }) => ({ name: t.name, slug: t.slug }))
+              .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name)),
+          }));
+        })
+        .catch(() => {});
+    });
   }, []);
 
   /* ── Search existing products ────────────────────────── */
@@ -306,6 +340,29 @@ export default function ProdottiPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ── Taxonomy helpers ───────────────────────────────── */
+
+  // Toggle a value in a comma-separated form field
+  const togglePill = (field: keyof ProductData, value: string) => {
+    setForm((prev) => {
+      const current = prev[field]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      return { ...prev, [field]: next.join(', ') };
+    });
+  };
+
+  const isPillSelected = (field: keyof ProductData, value: string) => {
+    return form[field]
+      .split(',')
+      .map((s) => s.trim())
+      .includes(value);
   };
 
   /* ── Styles ─────────────────────────────────────────── */
@@ -444,19 +501,45 @@ export default function ProdottiPage() {
                 <input type="text" value={form.nome} onChange={updateField('nome')} className={inputClass} />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className={labelClass}>Produttore {dot('produttore')}</label>
                 <input
                   type="text"
                   value={form.produttore}
-                  onChange={updateField('produttore')}
-                  list="producers-list"
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, produttore: e.target.value }));
+                    setProducerSearch(e.target.value);
+                    setProducerOpen(true);
+                  }}
+                  onFocus={() => setProducerOpen(true)}
                   placeholder="Cerca o seleziona produttore..."
                   className={inputClass}
                 />
-                <datalist id="producers-list">
-                  {producers.map(p => <option key={p.slug} value={p.name} />)}
-                </datalist>
+                {producerOpen && (() => {
+                  const q = (producerSearch || form.produttore).toLowerCase();
+                  const filtered = q.length > 0
+                    ? producers.filter((p) => p.name.toLowerCase().includes(q))
+                    : producers;
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filtered.map((p) => (
+                        <button
+                          key={p.slug}
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, produttore: p.name }));
+                            setProducerSearch('');
+                            setProducerOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                        >
+                          {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>
@@ -493,7 +576,12 @@ export default function ProdottiPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Formato</label>
-                  <input type="text" value={form.formato} onChange={updateField('formato')} className={inputClass} />
+                  <select value={form.formato} onChange={updateField('formato')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_formato'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -505,7 +593,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Denominazione {dot('denominazione')}</label>
-                  <input type="text" value={form.denominazione} onChange={updateField('denominazione')} placeholder="DOCG, DOC, IGT..." className={inputClass} />
+                  <select value={form.denominazione} onChange={updateField('denominazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_denominazione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Gradazione alcolica {dot('gradazione')}</label>
@@ -516,7 +609,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Regione {dot('regione')}</label>
-                  <input type="text" value={form.regione} onChange={updateField('regione')} className={inputClass} />
+                  <select value={form.regione} onChange={updateField('regione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_regione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Nazione {dot('nazione')}</label>
@@ -526,7 +624,22 @@ export default function ProdottiPage() {
 
               <div>
                 <label className={labelClass}>Uvaggio {dot('uvaggio')}</label>
-                <input type="text" value={form.uvaggio} onChange={updateField('uvaggio')} placeholder="Uve separate da virgola" className={inputClass} />
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_uvaggio'] || []).map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => togglePill('uvaggio', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                        isPillSelected('uvaggio', t.name)
+                          ? 'bg-[#005667] text-white border-[#005667]'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -587,17 +700,52 @@ export default function ProdottiPage() {
 
               <div>
                 <label className={labelClass}>Abbinamenti {dot('abbinamenti')}</label>
-                <input type="text" value={form.abbinamenti} onChange={updateField('abbinamenti')} placeholder="Separati da virgola" className={inputClass} />
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_abbinamenti'] || []).map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => togglePill('abbinamenti', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                        isPillSelected('abbinamenti', t.name)
+                          ? 'bg-[#005667] text-white border-[#005667]'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Temperatura di servizio {dot('temperaturaServizio')}</label>
-                  <input type="text" value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} placeholder="es. 16-18 C" className={inputClass} />
+                  <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Momento di consumo {dot('momentoConsumo')}</label>
-                  <input type="text" value={form.momentoConsumo} onChange={updateField('momentoConsumo')} className={inputClass} />
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('momentoConsumo', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                          isPillSelected('momentoConsumo', t.name)
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -613,7 +761,22 @@ export default function ProdottiPage() {
 
               <div>
                 <label className={labelClass}>Allergeni</label>
-                <input type="text" value={form.allergeni} onChange={updateField('allergeni')} className={inputClass} />
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_allergeni'] || []).map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => togglePill('allergeni', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                        isPillSelected('allergeni', t.name)
+                          ? 'bg-[#005667] text-white border-[#005667]'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -657,7 +820,22 @@ export default function ProdottiPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
-                  <input type="text" value={form.certificazioni} onChange={updateField('certificazioni')} placeholder="es. Bio, Biodinamico" className={inputClass} />
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(taxTerms['pa_certificazioni'] || []).map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('certificazioni', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                          isPillSelected('certificazioni', t.name)
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
