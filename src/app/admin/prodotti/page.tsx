@@ -209,6 +209,9 @@ export default function ProdottiPage() {
       'pa_certificazioni',
       'pa_raccolta',
       'pa_categoria-google',
+      'pa_altitudine-dei-vigneti',
+      'pa_resa',
+      'pa_bottiglie-prodotte',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -671,6 +674,7 @@ export default function ProdottiPage() {
                 </div>
                 <div className="flex gap-2 mt-2">
                   <input
+                    id="new-uvaggio-input"
                     type="text"
                     placeholder="Aggiungi uvaggio..."
                     className="flex-1 h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
@@ -685,14 +689,14 @@ export default function ProdottiPage() {
                       }
                     }}
                   />
-                  <button type="button" onClick={(e) => {
-                    const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                  <button type="button" onClick={() => {
+                    const input = document.getElementById('new-uvaggio-input') as HTMLInputElement;
                     const val = input?.value?.trim();
                     if (val && !isPillSelected('uvaggio', val)) {
                       togglePill('uvaggio', val);
-                      if (input) input.value = '';
+                      input.value = '';
                     }
-                  }} className="h-9 px-3 text-[11px] font-semibold bg-[#005667] text-white rounded-lg hover:bg-[#004555]">+ Aggiungi</button>
+                  }} className="h-9 px-3 text-[11px] font-semibold bg-[#005667] text-white rounded-lg hover:bg-[#004555] shrink-0">+ Aggiungi</button>
                 </div>
               </div>
             </div>
@@ -850,7 +854,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Altitudine {dot('altitudine')}</label>
-                  <input type="text" value={form.altitudine} onChange={updateField('altitudine')} placeholder="es. 350 m s.l.m." className={inputClass} />
+                  <select value={form.altitudine} onChange={updateField('altitudine')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_altitudine-dei-vigneti'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Zona di produzione {dot('zonaProduzione')}</label>
@@ -860,7 +869,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Resa {dot('resa')}</label>
-                  <input type="text" value={form.resa} onChange={updateField('resa')} placeholder="es. 60 ql/ha" className={inputClass} />
+                  <select value={form.resa} onChange={updateField('resa')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_resa'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Vendemmia {dot('vendemmia')}</label>
@@ -879,7 +893,12 @@ export default function ProdottiPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
-                  <input type="text" value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} placeholder="es. 5.000" className={inputClass} />
+                  <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>
