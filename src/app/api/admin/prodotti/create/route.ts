@@ -160,7 +160,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
   if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
   if (body.tipoVigneto) addAttr('pa_tipo-di-vigneto', 'Tipo di vigneto', [body.tipoVigneto]);
-  if (body.periodoVendemmia) addAttr('pa_periodo-vendemmia', 'Periodo vendemmia', [body.periodoVendemmia]);
+  if (body.periodoVendemmia) addAttr('pa_periodo-vendemmia', 'Periodo vendemmia', body.periodoVendemmia.split(',').map(v => v.trim()).filter(Boolean));
   if (body.altitudine) addAttr('pa_altitudine-dei-vigneti', 'Altitudine dei vigneti', [body.altitudine]);
   if (body.densitaImpianto) addAttr('pa_densita-dimpianto', "Densità d'impianto", [body.densitaImpianto]);
   if (body.esposizione) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.esposizione]);
@@ -194,7 +194,10 @@ function buildWCProduct(body: ProductBody) {
 
   // Build categories array
   const categories: { id: number }[] = [];
-  if (body.categoria && CATEGORY_MAP[body.categoria]) {
+  const catId = parseInt(body.categoria);
+  if (catId > 0) {
+    categories.push({ id: catId });
+  } else if (body.categoria && CATEGORY_MAP[body.categoria]) {
     categories.push({ id: CATEGORY_MAP[body.categoria] });
   }
 

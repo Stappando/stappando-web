@@ -173,6 +173,7 @@ export default function ProdottiPage() {
   const [producers, setProducers] = useState<{ name: string; slug: string }[]>([]);
   const [newUvaggio, setNewUvaggio] = useState('');
   const [wcTags, setWcTags] = useState<{ name: string; slug: string }[]>([]);
+  const [wcCategories, setWcCategories] = useState<{ id: number; name: string; children: { id: number; name: string }[] }[]>([]);
   const [producerSearch, setProducerSearch] = useState('');
   const [producerOpen, setProducerOpen] = useState(false);
 
@@ -211,11 +212,15 @@ export default function ProdottiPage() {
       });
   }, []);
 
-  // Fetch WC product tags
+  // Fetch WC product tags + categories
   useEffect(() => {
     fetch('/api/admin/prodotti/tags')
       .then(r => r.ok ? r.json() : [])
       .then(data => { if (Array.isArray(data)) setWcTags(data); })
+      .catch(() => {});
+    fetch('/api/admin/prodotti/categories')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setWcCategories(data); })
       .catch(() => {});
   }, []);
 
@@ -627,10 +632,13 @@ export default function ProdottiPage() {
                 <label className={labelClass}>Categoria</label>
                 <select value={form.categoria} onChange={updateField('categoria')} className={inputClass}>
                   <option value="">-- Seleziona --</option>
-                  {CATEGORIE.filter(Boolean).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                  {wcCategories.map((parent) => (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={String(parent.id)}>{parent.name}</option>
+                      {parent.children.map((child) => (
+                        <option key={child.id} value={String(child.id)}>  {child.name}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -700,29 +708,25 @@ export default function ProdottiPage() {
 
               <div>
                 <label className={labelClass}>Uvaggio {dot('uvaggio')}</label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {(taxTerms['pa_uvaggio'] || []).map((t) => (
-                    <button
-                      key={t.slug}
-                      type="button"
-                      onClick={() => togglePill('uvaggio', t.name)}
-                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                        isPillSelected('uvaggio', t.name)
-                          ? 'bg-[#005667] text-white border-[#005667]'
-                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
-                      }`}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2 mt-2">
+                {/* Selected pills */}
+                {form.uvaggio && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {form.uvaggio.split(',').map(u => u.trim()).filter(Boolean).map(u => (
+                      <span key={u} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] bg-[#005667] text-white border border-[#005667]">
+                        {u}
+                        <button type="button" onClick={() => togglePill('uvaggio', u)} className="ml-0.5 hover:text-red-200">✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Search input */}
+                <div className="relative">
                   <input
                     type="text"
                     value={newUvaggio}
                     onChange={(e) => setNewUvaggio(e.target.value)}
-                    placeholder="Aggiungi uvaggio..."
-                    className="flex-1 h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
+                    placeholder="Cerca uvaggio..."
+                    className="w-full h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -733,12 +737,19 @@ export default function ProdottiPage() {
                       }
                     }}
                   />
-                  <button type="button" onClick={() => {
-                    if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
-                      togglePill('uvaggio', newUvaggio.trim());
-                    }
-                    setNewUvaggio('');
-                  }} className="h-9 px-3 text-[11px] font-semibold bg-[#005667] text-white rounded-lg hover:bg-[#004555] shrink-0">+ Aggiungi</button>
+                  {newUvaggio.length >= 1 && (() => {
+                    const q = newUvaggio.toLowerCase();
+                    const filtered = (taxTerms['pa_uvaggio'] || []).filter(t => t.name.toLowerCase().includes(q) && !isPillSelected('uvaggio', t.name));
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {filtered.slice(0, 15).map(t => (
+                          <button key={t.slug} type="button" onClick={() => { togglePill('uvaggio', t.name); setNewUvaggio(''); }}
+                            className="w-full text-left px-3 py-2 text-[12px] hover:bg-gray-50 border-b border-gray-50 last:border-0">{t.name}</button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -930,14 +941,16 @@ export default function ProdottiPage() {
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className={labelClass}>Periodo vendemmia</label>
-                  <select value={form.periodoVendemmia} onChange={updateField('periodoVendemmia')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {(taxTerms['pa_periodo-vendemmia'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
+                      <button key={t.slug} type="button" onClick={() => togglePill('periodoVendemmia', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('periodoVendemmia', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                        {t.name}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
