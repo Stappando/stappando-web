@@ -187,12 +187,13 @@ export async function POST(req: NextRequest) {
       const slug = attr.slug.startsWith('pa_') ? attr.slug : `pa_${attr.slug}`;
       const attrId = ATTR_IDS[slug];
 
-      // For produttore: ensure term exists
-      if (attr.slug === 'pa_produttore') {
-        const prodAttr = allAttributes.find(a => a.slug === 'pa_produttore');
-        if (prodAttr && attr.terms.length > 0) {
+      // Only create new terms for produttore and uvaggio — all others must use existing terms
+      const CREATE_TERMS_SLUGS = ['pa_produttore', 'pa_uvaggio'];
+      if (CREATE_TERMS_SLUGS.includes(slug)) {
+        const wcAttr = allAttributes.find(a => a.slug === slug.replace('pa_', ''));
+        if (wcAttr && attr.terms.length > 0) {
           for (const term of attr.terms) {
-            await ensureTermExists(wc.baseUrl, auth, prodAttr.id, term);
+            await ensureTermExists(wc.baseUrl, auth, wcAttr.id, term);
           }
         }
       }
