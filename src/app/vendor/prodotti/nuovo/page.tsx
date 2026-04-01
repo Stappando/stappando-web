@@ -52,6 +52,8 @@ interface ProductData {
   tipoVigneto: string;
   periodoVendemmia: string;
   certificazioni: string;
+  categoriaGoogle: string;
+  gtin: string;
   esposizione: string;
 }
 
@@ -95,6 +97,8 @@ const emptyProduct: ProductData = {
   tipoVigneto: '',
   periodoVendemmia: '',
   certificazioni: '',
+  categoriaGoogle: '',
+  gtin: '',
   esposizione: '',
 };
 
@@ -254,6 +258,7 @@ function NuovoProdottoInner() {
       'pa_tipo-di-vigneto',
       'pa_annata',
       'pa_periodo-vendemmia',
+      'pa_categoria-google',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -343,6 +348,9 @@ function NuovoProdottoInner() {
         form.spumantizzazione && { slug: 'pa_metodo-produttivo', terms: [form.spumantizzazione] },
         form.categoriaSpumanti && { slug: 'pa_spumantizzazione', terms: [form.categoriaSpumanti] },
         form.dosaggio && { slug: 'pa_dosaggio', terms: [form.dosaggio] },
+        form.categoriaGoogle && { slug: 'pa_categoria-google', terms: [form.categoriaGoogle] },
+        form.gtin && { slug: 'pa_ean', terms: [form.gtin] },
+        form.gtin && { slug: 'pa_identificazione-esistente', terms: ['Sì'] },
       ].filter(Boolean) as { slug: string; terms: string[] }[],
       acf: {
         alla_vista: form.allaVista,
@@ -982,6 +990,23 @@ function NuovoProdottoInner() {
                 <div>
                   <label className={labelClass}>Affinamento</label>
                   <textarea value={form.affinamento} onChange={updateField('affinamento')} rows={2} className={textareaClass} placeholder="Es. 12 mesi in barrique di rovere francese" />
+                </div>
+              </div>
+
+              {/* Google & GTIN */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div>
+                  <label className={labelClass}>Categoria Google</label>
+                  <select value={form.categoriaGoogle} onChange={updateField('categoriaGoogle')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_categoria-google'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>GTIN / EAN</label>
+                  <input type="text" value={form.gtin} onChange={updateField('gtin')} placeholder="es. 8001234567890" className={inputClass} />
                 </div>
               </div>
             </div>

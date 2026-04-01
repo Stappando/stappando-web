@@ -167,28 +167,44 @@ export async function POST(req: NextRequest) {
       ? await attrsRes.json()
       : [];
 
-    // Map attributes to WC format
+    // WC attribute IDs — must match WooCommerce exactly
+    const ATTR_IDS: Record<string, number> = {
+      'pa_produttore': 10, 'pa_denominazione': 33, 'pa_regione': 4, 'pa_nazione': 5,
+      'pa_uvaggio': 17, 'pa_gradazione-alcolica': 24, 'pa_annata': 11, 'pa_formato': 6,
+      'pa_abbinamenti': 7, 'pa_temperatura-di-servizio': 41, 'pa_momento-di-consumo': 93,
+      'pa_allergeni': 87, 'pa_terreno': 40, 'pa_filosofia': 15, 'pa_resa': 45,
+      'pa_raccolta': 46, 'pa_bottiglie-prodotte': 92, 'pa_zona-di-produzione': 36,
+      'pa_dosaggio': 29, 'pa_per-adulti': 75, 'pa_metodo-produttivo': 38,
+      'pa_spumantizzazione': 37, 'pa_orientamento-delle-vigne': 47,
+      'pa_altitudine-dei-vigneti': 49, 'pa_tipo-di-vigneto': 44, 'pa_ean': 57,
+      'pa_densita-dimpianto': 94, 'pa_periodo-vendemmia': 95, 'pa_identificazione-esistente': 73,
+      'pa_categoria-google': 69,
+    };
+
+    // Map attributes to WC format with IDs
     const wcAttributes = [];
     for (const attr of body.attributes || []) {
-      const attrSlugNoPa = attr.slug.startsWith('pa_') ? attr.slug.slice(3) : attr.slug;
-      const attrSlugWithPa = attr.slug.startsWith('pa_') ? attr.slug : `pa_${attr.slug}`;
-      const wcAttr = allAttributes.find((a) => a.slug === attrSlugNoPa || a.slug === attrSlugWithPa || a.slug === attr.slug);
+      const slug = attr.slug.startsWith('pa_') ? attr.slug : `pa_${attr.slug}`;
+      const attrId = ATTR_IDS[slug];
 
       // For produttore: ensure term exists
-      if (attr.slug === 'pa_produttore' && wcAttr && attr.terms.length > 0) {
-        for (const term of attr.terms) {
-          await ensureTermExists(wc.baseUrl, auth, wcAttr.id, term);
+      if (attr.slug === 'pa_produttore') {
+        const prodAttr = allAttributes.find(a => a.slug === 'pa_produttore');
+        if (prodAttr && attr.terms.length > 0) {
+          for (const term of attr.terms) {
+            await ensureTermExists(wc.baseUrl, auth, prodAttr.id, term);
+          }
         }
       }
 
-      wcAttributes.push({
-        name: attrDisplayName(attr.slug),
-        slug: attr.slug,
-        options: attr.terms,
-        visible: true,
-        variation: false,
-      });
+      if (attrId) {
+        wcAttributes.push({ id: attrId, name: attrDisplayName(attr.slug), options: attr.terms, visible: true, variation: false });
+      } else {
+        wcAttributes.push({ name: attrDisplayName(attr.slug), slug: attr.slug, options: attr.terms, visible: true, variation: false });
+      }
     }
+    // Always add Per adulti
+    wcAttributes.push({ id: 75, name: 'Per adulti', options: ['Sì'], visible: true, variation: false });
 
     // Build meta_data from ACF fields + vendor metadata
     const metaData: { key: string; value: string | boolean }[] = [
@@ -223,7 +239,7 @@ export async function POST(req: NextRequest) {
           const existing = await existingRes.json();
           const existingAttrs = (existing.attributes || []) as { name: string; slug: string; options: string[]; visible: boolean }[];
           // Keep existing attributes that are NOT in the new payload
-          const newSlugs = new Set(wcAttributes.map((a: { slug: string }) => a.slug.toLowerCase()));
+          const newSlugs = new Set(wcAttributes.map((a) => (a.slug || a.name || '').toLowerCase()));
           const kept = existingAttrs.filter(a => !newSlugs.has(a.slug.toLowerCase()) && !newSlugs.has(`pa_${a.slug}`.toLowerCase()) && !newSlugs.has(a.slug.replace(/^pa_/, '').toLowerCase()));
           finalAttributes = [...kept.map(a => ({ ...a, visible: true, variation: false })), ...wcAttributes];
         }
