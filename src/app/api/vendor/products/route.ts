@@ -216,6 +216,12 @@ export async function POST(req: NextRequest) {
         metaData.push({ key, value: sanitize(value, 5000) });
       }
     }
+    // GTIN: save as _wpm_gtin_code meta (for WC GTIN/UPC/EAN field)
+    const gtinAttr = (body.attributes || []).find((a: { slug: string }) => a.slug === 'pa_ean');
+    if (gtinAttr?.terms?.[0]) {
+      metaData.push({ key: '_wpm_gtin_code', value: gtinAttr.terms[0] });
+      metaData.push({ key: '_global_unique_id', value: gtinAttr.terms[0] });
+    }
 
     // Create or update product
     const isUpdate = body.draftId && body.draftId > 0;
