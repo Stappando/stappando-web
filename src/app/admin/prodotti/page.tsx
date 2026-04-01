@@ -34,6 +34,9 @@ interface ProductData {
   produttore: string;
   vendorId: string;
   sku: string;
+  prezzo: string;
+  prezzoScontato: string;
+  giacenza: string;
   categoria: string;
   annata: string;
   formato: string;
@@ -83,6 +86,9 @@ const emptyProduct: ProductData = {
   produttore: '',
   vendorId: '',
   sku: '',
+  prezzo: '',
+  prezzoScontato: '',
+  giacenza: '',
   categoria: '',
   annata: '',
   formato: '75 cl',
@@ -563,6 +569,21 @@ export default function ProdottiPage() {
               <div>
                 <label className={labelClass}>SKU</label>
                 <input type="text" value={form.sku} onChange={updateField('sku')} placeholder="Codice prodotto" className={inputClass} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelClass}>Prezzo € *</label>
+                  <input type="text" value={form.prezzo} onChange={updateField('prezzo')} placeholder="es. 12.50" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Prezzo scontato €</label>
+                  <input type="text" value={form.prezzoScontato} onChange={updateField('prezzoScontato')} placeholder="es. 9.90" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Giacenza *</label>
+                  <input type="number" value={form.giacenza} onChange={updateField('giacenza')} placeholder="es. 100" className={inputClass} />
+                </div>
               </div>
 
               <div>

@@ -9,6 +9,9 @@ interface ProductBody {
   produttore: string;
   vendorId: string;
   sku: string;
+  prezzo: string;
+  prezzoScontato: string;
+  giacenza: string;
   categoria: string;
   annata: string;
   formato: string;
@@ -181,6 +184,10 @@ function buildWCProduct(body: ProductBody) {
     status: 'draft' as const,
     type: 'simple' as const,
     sku: body.sku || '',
+    regular_price: body.prezzo || '',
+    ...(body.prezzoScontato ? { sale_price: body.prezzoScontato } : {}),
+    manage_stock: true,
+    stock_quantity: parseInt(body.giacenza) || 0,
     short_description: body.descBreve || '',
     description: body.descLunga || '',
     categories,
