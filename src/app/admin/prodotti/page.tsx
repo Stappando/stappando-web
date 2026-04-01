@@ -69,6 +69,7 @@ interface ProductData {
   dosaggio: string;
   orientamentoVigne: string;
   tipoVigneto: string;
+  periodoVendemmia: string;
   categoriaGoogle: string;
   gtin: string;
   menuOrder: string;
@@ -127,6 +128,7 @@ const emptyProduct: ProductData = {
   dosaggio: '',
   orientamentoVigne: '',
   tipoVigneto: '',
+  periodoVendemmia: '',
   categoriaGoogle: '',
   gtin: '',
   menuOrder: '',
@@ -242,6 +244,8 @@ export default function ProdottiPage() {
       'pa_terreno',
       'pa_densita-dimpianto',
       'pa_tipo-di-vigneto',
+      'pa_annata',
+      'pa_periodo-vendemmia',
     ];
     slugs.forEach((slug) => {
       fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
@@ -634,7 +638,12 @@ export default function ProdottiPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Annata {dot('annata')}</label>
-                  <input type="text" value={form.annata} onChange={updateField('annata')} placeholder="es. 2021" className={inputClass} />
+                  <select value={form.annata} onChange={updateField('annata')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_annata'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Formato</label>
@@ -922,8 +931,13 @@ export default function ProdottiPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Vendemmia {dot('vendemmia')}</label>
-                  <input type="text" value={form.vendemmia} onChange={updateField('vendemmia')} placeholder="es. Settembre, raccolta manuale" className={inputClass} />
+                  <label className={labelClass}>Periodo vendemmia</label>
+                  <select value={form.periodoVendemmia} onChange={updateField('periodoVendemmia')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_periodo-vendemmia'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

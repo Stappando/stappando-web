@@ -46,6 +46,7 @@ interface ProductBody {
   dosaggio: string;
   orientamentoVigne: string;
   tipoVigneto: string;
+  periodoVendemmia: string;
   categoriaGoogle: string;
   gtin: string;
   menuOrder: string;
@@ -114,6 +115,7 @@ const ATTR_IDS: Record<string, number> = {
   'pa_identificazione-esistente': 73,
   'pa_ean': 57,
   'pa_densita-dimpianto': 94,
+  'pa_periodo-vendemmia': 95,
 };
 
 function buildWCProduct(body: ProductBody) {
@@ -158,6 +160,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.dosaggio) addAttr('pa_dosaggio', 'Dosaggio', [body.dosaggio]);
   if (body.orientamentoVigne) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.orientamentoVigne]);
   if (body.tipoVigneto) addAttr('pa_tipo-di-vigneto', 'Tipo di vigneto', [body.tipoVigneto]);
+  if (body.periodoVendemmia) addAttr('pa_periodo-vendemmia', 'Periodo vendemmia', [body.periodoVendemmia]);
   if (body.altitudine) addAttr('pa_altitudine-dei-vigneti', 'Altitudine dei vigneti', [body.altitudine]);
   if (body.densitaImpianto) addAttr('pa_densita-dimpianto', "Densità d'impianto", [body.densitaImpianto]);
   if (body.esposizione) addAttr('pa_orientamento-delle-vigne', 'Orientamento delle vigne', [body.esposizione]);
@@ -216,8 +219,8 @@ function buildWCProduct(body: ProductBody) {
     manage_stock: true,
     stock_quantity: parseInt(body.giacenza) || 0,
     menu_order: parseInt(body.menuOrder) || 0,
-    short_description: body.descBreve || '',
-    description: body.descLunga || '',
+    short_description: (body.descBreve || '').replace(/<[^>]*>/g, '').trim(),
+    description: (body.descLunga || '').replace(/<[^>]*>/g, '').trim(),
     categories,
     attributes,
     meta_data: metaData,
