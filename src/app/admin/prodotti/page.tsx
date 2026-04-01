@@ -209,6 +209,7 @@ export default function ProdottiPage() {
       'pa_certificazioni',
       'pa_raccolta',
       'pa_categoria-google',
+      'pa_gradazione-alcolica',
       'pa_altitudine-dei-vigneti',
       'pa_resa',
       'pa_bottiglie-prodotte',
@@ -634,7 +635,12 @@ export default function ProdottiPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Gradazione alcolica {dot('gradazione')}</label>
-                  <input type="text" value={form.gradazione} onChange={updateField('gradazione')} placeholder="es. 14%" className={inputClass} />
+                  <select value={form.gradazione} onChange={updateField('gradazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_gradazione-alcolica'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
