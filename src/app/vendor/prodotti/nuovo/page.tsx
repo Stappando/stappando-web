@@ -1,109 +1,146 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-/* ── Types ─────────────────────────────────────────── */
+/* ── Constants ─────────────────────────────────────────── */
 
-interface TaxTerm { id: number; name: string; slug: string }
+const PRIMARY = '#005667';
+const GOLD = '#d9c39a';
 
-interface ProductForm {
-  // Step 1 — Base
+/* ── Types ─────────────────────────────────────────────── */
+
+interface ProductData {
+  nome: string;
   produttore: string;
-  name: string;
   sku: string;
-  regular_price: string;
-  sale_price: string;
-  stock_quantity: string;
-  category: string;
+  prezzo: string;
+  prezzoScontato: string;
+  giacenza: string;
+  categoria: string;
   annata: string;
-  short_description: string;
-  description: string;
-  // Step 2 — Classificazione
-  nazione: string;
-  regione: string;
-  denominazione: string;
-  uvaggio: string[];
   formato: string;
+  denominazione: string;
+  regione: string;
+  nazione: string;
+  uvaggio: string;
   gradazione: string;
-  momento_consumo: string[];
-  abbinamenti: string[];
-  // Step 3 — Dettagli
-  temperatura_servizio: string;
-  metodo_produttivo: string;
-  dosaggio: string;
-  spumantizzazione: string;
-  raccolta: string;
-  tipo_vigneto: string;
-  certificazioni: string[];
-  alla_vista: string;
-  al_naso: string;
-  al_palato: string;
+  descBreve: string;
+  descLunga: string;
+  allaVista: string;
+  alNaso: string;
+  alPalato: string;
+  abbinamenti: string;
+  temperaturaServizio: string;
+  momentoConsumo: string;
   vinificazione: string;
   affinamento: string;
-  vendemmia: string;
-  allergeni_solfiti: boolean;
-  allergeni_uova: boolean;
-  allergeni_latte: boolean;
-  allergeni_pesce: boolean;
-  allergeni_crostacei: boolean;
-  allergeni_frutta_guscio: boolean;
-  allergeni_cereali_glutine: boolean;
-  allergeni_sedano: boolean;
-  allergeni_senape: boolean;
-  allergeni_sesamo: boolean;
-  allergeni_lupini: boolean;
-  allergeni_molluschi: boolean;
-  allergeni_soia: boolean;
+  allergeni: string;
+  terreno: string;
+  altitudine: string;
+  zonaProduzione: string;
+  resa: string;
+  bottiglieProdotte: string;
+  raccolta: string;
+  densitaImpianto: string;
+  spumantizzazione: string;
+  categoriaSpumanti: string;
+  dosaggio: string;
+  orientamentoVigne: string;
+  tipoVigneto: string;
+  periodoVendemmia: string;
+  certificazioni: string;
+  esposizione: string;
 }
 
-const EMPTY_FORM: ProductForm = {
-  produttore: '', name: '', sku: '', regular_price: '', sale_price: '', stock_quantity: '',
-  category: '', annata: '', short_description: '', description: '',
-  nazione: '', regione: '', denominazione: '', uvaggio: [], formato: '', gradazione: '',
-  momento_consumo: [], abbinamenti: [],
-  temperatura_servizio: '', metodo_produttivo: '', dosaggio: '', spumantizzazione: '',
-  raccolta: '', tipo_vigneto: '', certificazioni: [],
-  alla_vista: '', al_naso: '', al_palato: '', vinificazione: '', affinamento: '', vendemmia: '',
-  allergeni_solfiti: true, allergeni_uova: false, allergeni_latte: false, allergeni_pesce: false,
-  allergeni_crostacei: false, allergeni_frutta_guscio: false, allergeni_cereali_glutine: false,
-  allergeni_sedano: false, allergeni_senape: false, allergeni_sesamo: false,
-  allergeni_lupini: false, allergeni_molluschi: false, allergeni_soia: false,
+const emptyProduct: ProductData = {
+  nome: '',
+  produttore: '',
+  sku: '',
+  prezzo: '',
+  prezzoScontato: '',
+  giacenza: '',
+  categoria: '',
+  annata: '',
+  formato: '75 cl',
+  denominazione: '',
+  regione: '',
+  nazione: 'Italia',
+  uvaggio: '',
+  gradazione: '',
+  descBreve: '',
+  descLunga: '',
+  allaVista: '',
+  alNaso: '',
+  alPalato: '',
+  abbinamenti: '',
+  temperaturaServizio: '',
+  momentoConsumo: '',
+  vinificazione: '',
+  affinamento: '',
+  allergeni: 'Contiene solfiti',
+  terreno: '',
+  altitudine: '',
+  zonaProduzione: '',
+  resa: '',
+  bottiglieProdotte: '',
+  raccolta: '',
+  densitaImpianto: '',
+  spumantizzazione: '',
+  categoriaSpumanti: '',
+  dosaggio: '',
+  orientamentoVigne: '',
+  tipoVigneto: '',
+  periodoVendemmia: '',
+  certificazioni: '',
+  esposizione: '',
 };
 
-const STEPS = ['Essenziali', 'Classificazione', 'Dettagli', 'Anteprima'];
+/* ── Spinner SVG ───────────────────────────────────────── */
 
-/* ── Taxonomy dropdowns ───────────────────────────── */
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin h-5 w-5 text-white inline-block"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
 
-const TAX_SLUGS = [
-  'product_cat', 'pa_annata', 'pa_nazione', 'pa_regione', 'pa_denominazione',
-  'pa_uvaggio', 'pa_formato', 'pa_gradazione-alcolica', 'pa_momento-di-consumo',
-  'pa_abbinamenti', 'pa_temperatura-di-servizio', 'pa_metodo-produttivo',
-  'pa_dosaggio', 'pa_spumantizzazione', 'pa_raccolta', 'pa_tipo-di-vigneto', 'pa_filosofia',
-];
+/* ── Sub-step labels ──────────────────────────────────── */
 
-/* ── Component ──────────────────────────────────────── */
+const SUB_STEP_LABELS = ['Base', 'Classificazione', 'Territorio', 'Testi'] as const;
+type SubStep = 1 | 2 | 3 | 4;
 
-export default function NuovoProdottoPage() {
+/* ── Inner Component (needs useSearchParams) ──────────── */
+
+function NuovoProdottoInner() {
   const { user } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const editDraftId = searchParams.get('draft');
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
-  const [taxes, setTaxes] = useState<Record<string, TaxTerm[]>>({});
-  const [images, setImages] = useState<{ id: number; src: string }[]>([]);
-  const [gallery, setGallery] = useState<{ id: number; src: string }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
-  const [draftId, setDraftId] = useState<number | null>(null);
+
+  const [subStep, setSubStep] = useState<SubStep>(1);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [form, setForm] = useState<ProductData>(emptyProduct);
   const [saveMsg, setSaveMsg] = useState('');
+  const [draftId, setDraftId] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(false);
+
+  const [newUvaggio, setNewUvaggio] = useState('');
+  const [wcCategories, setWcCategories] = useState<{ id: number; name: string; children: { id: number; name: string }[] }[]>([]);
+
+  // Taxonomy terms state
+  const [taxTerms, setTaxTerms] = useState<Record<string, { name: string; slug: string }[]>>({});
 
   useEffect(() => { setHydrated(true); }, []);
 
@@ -119,54 +156,59 @@ export default function NuovoProdottoPage() {
         setForm(f => ({
           ...f,
           produttore: data.produttore || f.produttore,
-          name: data.name || '',
+          nome: data.name || data.nome || '',
           sku: data.sku || '',
-          regular_price: data.regular_price || '',
-          sale_price: data.sale_price || '',
-          stock_quantity: data.stock_quantity != null ? String(data.stock_quantity) : '',
-          category: data.category_id ? String(data.category_id) : '',
-          short_description: data.short_description || '',
-          description: data.description || '',
+          prezzo: data.regular_price || data.prezzo || '',
+          prezzoScontato: data.sale_price || data.prezzoScontato || '',
+          giacenza: data.stock_quantity != null ? String(data.stock_quantity) : (data.giacenza || ''),
+          categoria: data.category_id ? String(data.category_id) : (data.categoria || ''),
           annata: data.annata || '',
-          nazione: data.nazione || '',
-          regione: data.regione || '',
+          formato: data.formato || '75 cl',
           denominazione: data.denominazione || '',
-          uvaggio: data.uvaggio || [],
-          formato: data.formato || '',
+          regione: data.regione || '',
+          nazione: data.nazione || 'Italia',
+          uvaggio: Array.isArray(data.uvaggio) ? data.uvaggio.join(', ') : (data.uvaggio || ''),
           gradazione: data.gradazione || '',
-          momento_consumo: data.momento_consumo || [],
-          abbinamenti: data.abbinamenti || [],
-          temperatura_servizio: data.temperatura_servizio || '',
-          metodo_produttivo: data.metodo_produttivo || '',
-          dosaggio: data.dosaggio || '',
-          spumantizzazione: data.spumantizzazione || '',
-          raccolta: data.raccolta || '',
-          tipo_vigneto: data.tipo_vigneto || '',
-          certificazioni: data.certificazioni || [],
-          alla_vista: data.alla_vista || '',
-          al_naso: data.al_naso || '',
-          al_palato: data.al_palato || '',
+          descBreve: data.short_description || data.descBreve || '',
+          descLunga: data.description || data.descLunga || '',
+          allaVista: data.alla_vista || data.allaVista || '',
+          alNaso: data.al_naso || data.alNaso || '',
+          alPalato: data.al_palato || data.alPalato || '',
+          abbinamenti: Array.isArray(data.abbinamenti) ? data.abbinamenti.join(', ') : (data.abbinamenti || ''),
+          temperaturaServizio: data.temperatura_servizio || data.temperaturaServizio || '',
+          momentoConsumo: Array.isArray(data.momento_consumo) ? data.momento_consumo.join(', ') : (data.momentoConsumo || ''),
           vinificazione: data.vinificazione || '',
           affinamento: data.affinamento || '',
-          vendemmia: data.vendemmia || '',
+          allergeni: data.allergeni || 'Contiene solfiti',
+          terreno: data.terreno || '',
+          altitudine: data.altitudine || '',
+          zonaProduzione: data.zonaProduzione || data.zona_produzione || '',
+          resa: data.resa || '',
+          bottiglieProdotte: data.bottiglieProdotte || data.bottiglie_prodotte || '',
+          raccolta: data.raccolta || '',
+          densitaImpianto: data.densitaImpianto || data.densita_impianto || '',
+          spumantizzazione: data.spumantizzazione || '',
+          categoriaSpumanti: data.categoriaSpumanti || data.categoria_spumanti || '',
+          dosaggio: data.dosaggio || '',
+          orientamentoVigne: data.orientamentoVigne || data.orientamento_vigne || '',
+          tipoVigneto: data.tipoVigneto || data.tipo_vigneto || '',
+          periodoVendemmia: Array.isArray(data.periodoVendemmia) ? data.periodoVendemmia.join(', ') : (data.periodoVendemmia || data.periodo_vendemmia || ''),
+          certificazioni: Array.isArray(data.certificazioni) ? data.certificazioni.join(', ') : (data.certificazioni || ''),
+          esposizione: data.esposizione || '',
         }));
-        if (data.images?.length > 0) setImages([data.images[0]]);
-        if (data.images?.length > 1) setGallery(data.images.slice(1));
       })
       .catch(() => {})
       .finally(() => setLoadingDraft(false));
   }, [hydrated, editDraftId]);
 
-  // Pre-fill produttore from profile cantina name (cached in localStorage for speed)
+  // Pre-fill produttore from profile cantina name
   useEffect(() => {
     if (!hydrated || !user?.id || form.produttore) return;
-    // Try localStorage first (instant)
     const cached = typeof window !== 'undefined' ? localStorage.getItem('stappando-vendor-cantina') : null;
     if (cached) {
       setForm(f => ({ ...f, produttore: f.produttore || cached }));
       return;
     }
-    // Fallback: fetch from API
     fetch(`/api/vendor/profile?vendorId=${user.id}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -178,135 +220,153 @@ export default function NuovoProdottoPage() {
       .catch(() => {});
   }, [hydrated, user?.id, form.produttore]);
 
-  // Fetch all taxonomies
-  const fetchTaxonomies = useCallback(async () => {
-    const results: Record<string, TaxTerm[]> = {};
-    await Promise.all(
-      TAX_SLUGS.map(async slug => {
-        try {
-          const res = await fetch(`/api/vendor/taxonomies?slug=${slug}`);
-          if (res.ok) results[slug] = await res.json();
-        } catch { /* ignore */ }
-      }),
-    );
-    setTaxes(results);
+  // Fetch WC categories
+  useEffect(() => {
+    fetch('/api/admin/prodotti/categories')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setWcCategories(data); })
+      .catch(() => {});
   }, []);
 
+  // Fetch all taxonomy terms on mount
   useEffect(() => {
-    if (hydrated) fetchTaxonomies();
-  }, [hydrated, fetchTaxonomies]);
+    const slugs = [
+      'pa_abbinamenti',
+      'pa_denominazione',
+      'pa_regione',
+      'pa_uvaggio',
+      'pa_formato',
+      'pa_momento-di-consumo',
+      'pa_temperatura-di-servizio',
+      'pa_allergeni',
+      'pa_filosofia',
+      'pa_raccolta',
+      'pa_gradazione-alcolica',
+      'pa_altitudine-dei-vigneti',
+      'pa_resa',
+      'pa_bottiglie-prodotte',
+      'pa_metodo-produttivo',
+      'pa_spumantizzazione',
+      'pa_dosaggio',
+      'pa_orientamento-delle-vigne',
+      'pa_terreno',
+      'pa_densita-dimpianto',
+      'pa_tipo-di-vigneto',
+      'pa_annata',
+      'pa_periodo-vendemmia',
+    ];
+    slugs.forEach((slug) => {
+      fetch(`/api/vendor/taxonomies?slug=${slug}&per_page=200`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => {
+          const list = Array.isArray(data) ? data : [];
+          setTaxTerms((prev) => ({
+            ...prev,
+            [slug]: list
+              .map((t: { name: string; slug: string }) => ({ name: t.name, slug: t.slug }))
+              .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name)),
+          }));
+        })
+        .catch(() => {});
+    });
+  }, []);
 
-  // Upload image
-  const handleImageUpload = async (file: File, target: 'main' | 'gallery') => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch('/api/vendor/media', { method: 'POST', body: formData });
-      if (res.ok) {
-        const data = await res.json();
-        if (target === 'main') setImages([{ id: data.id, src: data.src }]);
-        else setGallery(prev => [...prev, { id: data.id, src: data.src }]);
-      }
-    } catch { /* ignore */ }
-    setUploading(false);
-  };
+  /* ── Helpers ────────────────────────────────────────── */
 
-  // Form helpers
-  const set = (key: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const val = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    setForm(f => ({ ...f, [key]: val }));
-  };
+  const updateField = useCallback(
+    (field: keyof ProductData) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      },
+    [],
+  );
 
-  const toggleMulti = (key: 'uvaggio' | 'momento_consumo' | 'abbinamenti' | 'certificazioni', value: string) => {
-    setForm(f => {
-      const arr = f[key] as string[];
-      return { ...f, [key]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value] };
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
+
+  // Toggle a value in a comma-separated form field
+  const togglePill = (field: keyof ProductData, value: string) => {
+    setForm((prev) => {
+      const current = prev[field]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      return { ...prev, [field]: next.join(', ') };
     });
   };
 
-  // Price validation: only dots, no commas
-  const handlePrice = (key: 'regular_price' | 'sale_price') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(',', '.');
-    if (/^[0-9]*\.?[0-9]{0,2}$/.test(val) || val === '') {
-      setForm(f => ({ ...f, [key]: val }));
-    }
+  const isPillSelected = (field: keyof ProductData, value: string) => {
+    return form[field]
+      .split(',')
+      .map((s) => s.trim())
+      .includes(value);
   };
 
-  // Build API payload from current form state
+  /* ── Save / Submit ────────────────────────────────────── */
+
   const buildPayload = () => {
-    const allImages = [...images, ...gallery];
-    const attributes: { slug: string; terms: string[] }[] = [];
-
-    if (form.produttore) attributes.push({ slug: 'pa_produttore', terms: [form.produttore] });
-    if (form.annata) attributes.push({ slug: 'pa_annata', terms: [form.annata] });
-    if (form.nazione) attributes.push({ slug: 'pa_nazione', terms: [form.nazione] });
-    if (form.regione) attributes.push({ slug: 'pa_regione', terms: [form.regione] });
-    if (form.denominazione) attributes.push({ slug: 'pa_denominazione', terms: [form.denominazione] });
-    if (form.uvaggio.length) attributes.push({ slug: 'pa_uvaggio', terms: form.uvaggio });
-    if (form.formato) attributes.push({ slug: 'pa_formato', terms: [form.formato] });
-    if (form.gradazione) attributes.push({ slug: 'pa_gradazione-alcolica', terms: [form.gradazione] });
-    if (form.momento_consumo.length) attributes.push({ slug: 'pa_momento-di-consumo', terms: form.momento_consumo });
-    if (form.abbinamenti.length) attributes.push({ slug: 'pa_abbinamenti', terms: form.abbinamenti });
-    if (form.temperatura_servizio) attributes.push({ slug: 'pa_temperatura-di-servizio', terms: [form.temperatura_servizio] });
-    if (form.metodo_produttivo) attributes.push({ slug: 'pa_metodo-produttivo', terms: [form.metodo_produttivo] });
-    if (form.dosaggio) attributes.push({ slug: 'pa_dosaggio', terms: [form.dosaggio] });
-    if (form.spumantizzazione) attributes.push({ slug: 'pa_spumantizzazione', terms: [form.spumantizzazione] });
-    if (form.raccolta) attributes.push({ slug: 'pa_raccolta', terms: [form.raccolta] });
-    if (form.tipo_vigneto) attributes.push({ slug: 'pa_tipo-di-vigneto', terms: [form.tipo_vigneto] });
-    if (form.certificazioni.length) attributes.push({ slug: 'pa_filosofia', terms: form.certificazioni });
-
-    const allergeni: string[] = ['Contiene solfiti'];
-    if (form.allergeni_uova) allergeni.push('Uova');
-    if (form.allergeni_latte) allergeni.push('Latte');
-    if (form.allergeni_pesce) allergeni.push('Pesce');
-    if (form.allergeni_crostacei) allergeni.push('Crostacei');
-    if (form.allergeni_frutta_guscio) allergeni.push('Frutta a guscio');
-    if (form.allergeni_cereali_glutine) allergeni.push('Cereali contenenti glutine');
-    if (form.allergeni_sedano) allergeni.push('Sedano');
-    if (form.allergeni_senape) allergeni.push('Senape');
-    if (form.allergeni_sesamo) allergeni.push('Sesamo');
-    if (form.allergeni_lupini) allergeni.push('Lupini');
-    if (form.allergeni_molluschi) allergeni.push('Molluschi');
-    if (form.allergeni_soia) allergeni.push('Soia');
-
     return {
       vendorId: user!.id,
-      name: form.name || 'Bozza senza nome',
+      name: form.nome || 'Bozza senza nome',
       sku: form.sku || undefined,
-      regular_price: form.regular_price || '0',
-      sale_price: form.sale_price || undefined,
-      stock_quantity: parseInt(form.stock_quantity) || 0,
-      short_description: form.short_description,
-      description: form.description || form.short_description,
-      categories: form.category ? [parseInt(form.category)] : [],
-      images: allImages.map(img => ({ id: img.id, src: img.src })),
-      attributes,
+      regular_price: form.prezzo || '0',
+      sale_price: form.prezzoScontato || undefined,
+      stock_quantity: parseInt(form.giacenza) || 0,
+      short_description: stripHtml(form.descBreve),
+      description: stripHtml(form.descLunga) || stripHtml(form.descBreve),
+      categories: form.categoria ? [parseInt(form.categoria)] : [],
+      images: [],
+      attributes: [
+        form.produttore && { slug: 'pa_produttore', terms: [form.produttore] },
+        form.annata && { slug: 'pa_annata', terms: [form.annata] },
+        form.formato && { slug: 'pa_formato', terms: [form.formato] },
+        form.denominazione && { slug: 'pa_denominazione', terms: [form.denominazione] },
+        form.gradazione && { slug: 'pa_gradazione-alcolica', terms: [form.gradazione] },
+        form.regione && { slug: 'pa_regione', terms: [form.regione] },
+        form.uvaggio && { slug: 'pa_uvaggio', terms: form.uvaggio.split(',').map(s => s.trim()).filter(Boolean) },
+        form.abbinamenti && { slug: 'pa_abbinamenti', terms: form.abbinamenti.split(',').map(s => s.trim()).filter(Boolean) },
+        form.temperaturaServizio && { slug: 'pa_temperatura-di-servizio', terms: [form.temperaturaServizio] },
+        form.momentoConsumo && { slug: 'pa_momento-di-consumo', terms: form.momentoConsumo.split(',').map(s => s.trim()).filter(Boolean) },
+        form.allergeni && { slug: 'pa_allergeni', terms: form.allergeni.split(',').map(s => s.trim()).filter(Boolean) },
+        form.terreno && { slug: 'pa_terreno', terms: form.terreno.split(',').map(s => s.trim()).filter(Boolean) },
+        form.altitudine && { slug: 'pa_altitudine-dei-vigneti', terms: [form.altitudine] },
+        form.densitaImpianto && { slug: 'pa_densita-dimpianto', terms: [form.densitaImpianto] },
+        form.resa && { slug: 'pa_resa', terms: [form.resa] },
+        form.raccolta && { slug: 'pa_raccolta', terms: [form.raccolta] },
+        form.bottiglieProdotte && { slug: 'pa_bottiglie-prodotte', terms: [form.bottiglieProdotte] },
+        form.orientamentoVigne && { slug: 'pa_orientamento-delle-vigne', terms: [form.orientamentoVigne] },
+        form.tipoVigneto && { slug: 'pa_tipo-di-vigneto', terms: [form.tipoVigneto] },
+        form.periodoVendemmia && { slug: 'pa_periodo-vendemmia', terms: form.periodoVendemmia.split(',').map(s => s.trim()).filter(Boolean) },
+        form.certificazioni && { slug: 'pa_filosofia', terms: form.certificazioni.split(',').map(s => s.trim()).filter(Boolean) },
+        form.spumantizzazione && { slug: 'pa_metodo-produttivo', terms: [form.spumantizzazione] },
+        form.categoriaSpumanti && { slug: 'pa_spumantizzazione', terms: [form.categoriaSpumanti] },
+        form.dosaggio && { slug: 'pa_dosaggio', terms: [form.dosaggio] },
+      ].filter(Boolean) as { slug: string; terms: string[] }[],
       acf: {
-        alla_vista: form.alla_vista,
-        al_naso: form.al_naso,
-        al_palato: form.al_palato,
-        vinificazione: form.vinificazione,
-        affinamento: form.affinamento,
-        vendemmia: form.vendemmia,
-        allergeni: allergeni.join(', '),
+        alla_vista: form.allaVista,
+        al_naso: form.alNaso,
+        al_palato: form.alPalato,
+        vinificazione: stripHtml(form.vinificazione),
+        affinamento: stripHtml(form.affinamento),
+        allergeni: form.allergeni,
+        zona_produzione: form.zonaProduzione,
       },
       ...(draftId ? { draftId } : {}),
     };
   };
 
-  // Save draft at any point
   const handleSaveDraft = async () => {
     if (!user?.id) {
       setError('Errore: utente non autenticato. Ricarica la pagina.');
       return;
     }
-    setSavingDraft(true);
+    setLoading(true);
     setSaveMsg('');
     setError('');
     try {
       const payload = buildPayload();
-      console.log('[Wizard] Saving draft...', { draftId, vendorId: user.id, name: payload.name });
       const res = await fetch('/api/vendor/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -314,10 +374,8 @@ export default function NuovoProdottoPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log('[Wizard] Draft saved:', data);
         if (data.productId) {
           setDraftId(data.productId);
-          // Update URL so reload preserves draft
           const url = new URL(window.location.href);
           url.searchParams.set('draft', String(data.productId));
           window.history.replaceState({}, '', url.toString());
@@ -326,20 +384,17 @@ export default function NuovoProdottoPage() {
         setTimeout(() => setSaveMsg(''), 4000);
       } else {
         const data = await res.json().catch(() => ({}));
-        console.error('[Wizard] Save failed:', res.status, data);
         setError(data.error || `Errore salvataggio (${res.status})`);
       }
-    } catch (err) {
-      console.error('[Wizard] Network error:', err);
+    } catch {
       setError('Errore di rete. Riprova.');
     }
-    setSavingDraft(false);
+    setLoading(false);
   };
 
-  // Final submit
   const handleSubmit = async () => {
     if (!user?.id) return;
-    setSubmitting(true);
+    setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/vendor/products', {
@@ -347,21 +402,30 @@ export default function NuovoProdottoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload()),
       });
-
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setError(data.error || 'Errore nella creazione del prodotto');
         return;
       }
-
       setSaveMsg('Prodotto inviato per approvazione!');
       setTimeout(() => router.push('/vendor/prodotti?created=1'), 2000);
-    } catch (err) {
+    } catch {
       setError('Errore di rete. Riprova.');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
+
+  /* ── Styles ─────────────────────────────────────────── */
+
+  const inputClass =
+    'w-full h-[44px] px-3 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent';
+  const textareaClass =
+    'w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005667] focus:border-transparent resize-none';
+  const labelClass = 'block text-xs font-semibold text-gray-600 mb-1';
+  const sectionClass = 'bg-white rounded-xl border border-gray-200 p-4 space-y-3';
+
+  /* ── Loading state ─────────────────────────────────── */
 
   if (!hydrated || loadingDraft) {
     return (
@@ -372,429 +436,625 @@ export default function NuovoProdottoPage() {
     );
   }
 
-  const inputClass = "h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 w-full bg-white";
-  const labelClass = "block text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-1.5";
-  const star = <span className="text-red-400 ml-0.5">*</span>;
-  const taxMissing = (slug: string) => (
-    <span className="text-[10px] text-[#aaa] ml-1">
-      Non trovi? <a href="mailto:assistenza@stappando.it?subject=Taxonomy mancante: {slug}" className="text-[#005667] underline">Scrivi ad assistenza</a>
-    </span>
-  );
-
-  const renderDropdown = (label: string, taxSlug: string, formKey: keyof ProductForm, required = true) => {
-    const terms = taxes[taxSlug] || [];
-    // Categories use ID as value, attributes use name
-    const useId = taxSlug === 'product_cat';
-    return (
-      <div>
-        <label className={labelClass}>{label} {required && star}</label>
-        <select value={form[formKey] as string} onChange={set(formKey)} className={inputClass}>
-          <option value="">— Seleziona —</option>
-          {terms.map(t => <option key={t.id} value={useId ? String(t.id) : t.name}>{t.name}</option>)}
-        </select>
-        {taxMissing(taxSlug)}
-      </div>
-    );
-  };
-
-  const renderMultiCheck = (label: string, taxSlug: string, formKey: 'uvaggio' | 'momento_consumo' | 'abbinamenti' | 'certificazioni', required = true) => {
-    const terms = taxes[taxSlug] || [];
-    const selected = form[formKey] as string[];
-    return (
-      <div>
-        <label className={labelClass}>{label} {required && star}</label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {terms.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => toggleMulti(formKey, t.name)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-medium border transition-colors ${
-                selected.includes(t.name)
-                  ? 'bg-[#005667] text-white border-[#005667]'
-                  : 'bg-white text-[#666] border-[#e5e5e5] hover:border-[#005667]'
-              }`}
-            >
-              {t.name}
-            </button>
-          ))}
-        </div>
-        {taxMissing(taxSlug)}
-      </div>
-    );
-  };
-
-  // Step validation
-  const step1Valid = form.produttore.trim() && form.name.trim() && form.regular_price && form.stock_quantity && form.category && form.annata && form.short_description.trim() && images.length > 0;
-  const step2Valid = form.nazione && form.regione && form.denominazione && form.uvaggio.length > 0 && form.formato && form.gradazione && form.momento_consumo.length > 0 && form.abbinamenti.length > 0;
+  /* ── Render ─────────────────────────────────────────── */
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-[22px] font-bold text-[#1a1a1a]">Aggiungi un vino</h1>
-          <p className="text-[13px] text-[#888] mt-0.5">Step {step + 1} di {STEPS.length} — {STEPS[step]}</p>
+      <header className="sticky top-0 z-10 shadow-sm" style={{ backgroundColor: PRIMARY }}>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="text-white font-bold text-base">Nuovo Prodotto</h1>
+          <Link href="/vendor/prodotti" className="text-xs hover:underline" style={{ color: GOLD }}>
+            &larr; Annulla
+          </Link>
         </div>
-        <Link href="/vendor/prodotti" className="text-[13px] text-[#888] hover:text-[#005667]">← Annulla</Link>
-      </div>
+      </header>
 
-      {/* Progress bar */}
-      <div className="flex gap-1.5 mb-8">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex-1 flex flex-col items-center gap-1">
-            <div className={`h-1.5 w-full rounded-full ${i <= step ? 'bg-[#005667]' : 'bg-[#e8e4dc]'}`} />
-            <span className={`text-[10px] font-medium ${i <= step ? 'text-[#005667]' : 'text-[#ccc]'}`}>{s}</span>
+      <main className="max-w-2xl mx-auto px-4 py-6">
+        {/* Error banner */}
+        {error && (
+          <div className="mb-5 p-3 rounded-lg text-sm font-medium bg-red-50 text-red-800 border border-red-200">
+            {error}
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* ═══ STEP 1 — Essenziali ═══ */}
-      {step === 0 && (
-        <div className="space-y-6 max-w-2xl">
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Informazioni base</p>
-
-            <div>
-              <label className={labelClass}>Produttore / Cantina {star}</label>
-              <input value={form.produttore} onChange={set('produttore')} className={inputClass} placeholder="Es. Cantina Merlotta" />
-              <p className="text-[10px] text-[#aaa] mt-1">Questo nome apparirà su ogni prodotto — se non presente verrà creato automaticamente</p>
-            </div>
-
-            <div>
-              <label className={labelClass}>Nome prodotto {star}</label>
-              <input value={form.name} onChange={set('name')} className={inputClass} placeholder="Es. Sangiovese 'Vigna Alta' Romagna DOC Riserva 2019" />
-              <p className="text-[10px] text-[#aaa] mt-1">Formato: Vitigno &apos;Nome fantasia&apos; Denominazione Annata — verrà aggiunto il produttore in automatico</p>
-            </div>
-
-            <div>
-              <label className={labelClass}>SKU</label>
-              <input value={form.sku} onChange={set('sku')} className={inputClass} placeholder="Codice univoco (opzionale)" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Prezzo € {star}</label>
-                <input value={form.regular_price} onChange={handlePrice('regular_price')} className={inputClass} placeholder="8.90" inputMode="decimal" />
-              </div>
-              <div>
-                <label className={labelClass}>Prezzo scontato €</label>
-                <input value={form.sale_price} onChange={handlePrice('sale_price')} className={inputClass} placeholder="6.50" inputMode="decimal" />
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Giacenza (bottiglie) {star}</label>
-              <input value={form.stock_quantity} onChange={set('stock_quantity')} type="number" min="0" className={inputClass} placeholder="100" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {renderDropdown('Categoria', 'product_cat', 'category', true)}
-              {renderDropdown('Annata', 'pa_annata', 'annata', true)}
-            </div>
+        {/* Save message */}
+        {saveMsg && (
+          <div className="mb-5 rounded-xl p-3 bg-[#065f46] text-white text-[13px] font-semibold text-center">
+            {saveMsg}
           </div>
+        )}
 
-          {/* Immagini */}
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Immagini</p>
-
-            <div>
-              <label className={labelClass}>Immagine principale {star}</label>
-              <div className="flex items-start gap-4">
-                <div className="w-28 h-36 bg-[#f8f6f1] rounded-xl border-2 border-dashed border-[#e8e4dc] flex items-center justify-center overflow-hidden shrink-0">
-                  {images[0] ? (
-                    <img src={images[0].src} alt="Main" className="w-full h-full object-contain" />
-                  ) : (
-                    <label className="cursor-pointer flex flex-col items-center p-2 text-center">
-                      {uploading ? (
-                        <div className="w-5 h-5 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          <svg className="w-6 h-6 text-[#ccc] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                          <span className="text-[10px] text-[#888]">Carica foto</span>
-                        </>
-                      )}
-                      <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'main')} />
-                    </label>
+        <div className="space-y-5">
+          {/* Sub-step indicator */}
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 p-3">
+            {SUB_STEP_LABELS.map((label, i) => {
+              const num = (i + 1) as SubStep;
+              const isActive = subStep === num;
+              const isCompleted = subStep > num;
+              return (
+                <div key={label} className="flex items-center flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setSubStep(num)}
+                    className={`flex items-center gap-1.5 text-xs font-semibold transition-colors w-full justify-center py-1.5 rounded-lg ${
+                      isActive
+                        ? 'text-white'
+                        : isCompleted
+                          ? 'text-[#005667]'
+                          : 'text-gray-400'
+                    }`}
+                    style={isActive ? { backgroundColor: PRIMARY } : undefined}
+                  >
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : isCompleted
+                          ? 'bg-[#005667]/10 text-[#005667]'
+                          : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {isCompleted ? '\u2713' : num}
+                    </span>
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                  {i < SUB_STEP_LABELS.length - 1 && (
+                    <div className={`w-4 h-px shrink-0 ${isCompleted ? 'bg-[#005667]' : 'bg-gray-200'}`} />
                   )}
                 </div>
-                <p className="text-[12px] text-[#888]">Bottiglia su sfondo bianco o neutro. JPG/PNG, max 5MB. L&apos;immagine verrà ottimizzata automaticamente.</p>
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Galleria</label>
-              <div className="flex gap-3 flex-wrap">
-                {gallery.map((img, i) => (
-                  <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-[#e8e4dc] relative group">
-                    <img src={img.src} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => setGallery(g => g.filter((_, j) => j !== i))} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/50 rounded-full text-white text-[10px] opacity-0 group-hover:opacity-100">×</button>
-                  </div>
-                ))}
-                <label className="w-20 h-20 rounded-lg border-2 border-dashed border-[#e8e4dc] flex items-center justify-center cursor-pointer hover:bg-[#f8f6f1]">
-                  <svg className="w-5 h-5 text-[#ccc]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'gallery')} />
-                </label>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
-          {/* Descrizioni */}
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Descrizioni</p>
+          {/* ── Step 1: Base ──────────────────────────── */}
+          {subStep === 1 && (
+            <div className={sectionClass}>
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Base</h3>
 
-            <div>
-              <label className={labelClass}>Descrizione breve {star}</label>
-              <textarea value={form.short_description} onChange={set('short_description')} rows={2} maxLength={160} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Max 160 caratteri" />
-              <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{form.short_description.length}/160</p>
-            </div>
-
-            <div>
-              <label className={labelClass}>Descrizione lunga</label>
-              <textarea value={form.description} onChange={set('description')} rows={5} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Fino a 500 parole — se vuota verrà usata la breve" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ STEP 2 — Classificazione ═══ */}
-      {step === 1 && (
-        <div className="space-y-6 max-w-2xl">
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Origine</p>
-            <div className="grid grid-cols-2 gap-4">
-              {renderDropdown('Nazione', 'pa_nazione', 'nazione')}
-              {renderDropdown('Regione', 'pa_regione', 'regione')}
-            </div>
-            {renderDropdown('Denominazione', 'pa_denominazione', 'denominazione')}
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Caratteristiche</p>
-            {renderMultiCheck('Uvaggio', 'pa_uvaggio', 'uvaggio')}
-            <div className="grid grid-cols-2 gap-4">
-              {renderDropdown('Formato', 'pa_formato', 'formato')}
-              {renderDropdown('Gradazione alcolica', 'pa_gradazione-alcolica', 'gradazione')}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Consumo</p>
-            {renderMultiCheck('Momento di consumo', 'pa_momento-di-consumo', 'momento_consumo')}
-            {renderMultiCheck('Abbinamenti', 'pa_abbinamenti', 'abbinamenti')}
-          </div>
-        </div>
-      )}
-
-      {/* ═══ STEP 3 — Dettagli avanzati ═══ */}
-      {step === 2 && (
-        <div className="space-y-6 max-w-2xl">
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Opzionali</p>
-            <div className="grid grid-cols-2 gap-4">
-              {renderDropdown('Temperatura di servizio', 'pa_temperatura-di-servizio', 'temperatura_servizio', false)}
-              {renderDropdown('Raccolta', 'pa_raccolta', 'raccolta', false)}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {renderDropdown('Tipo di vigneto', 'pa_tipo-di-vigneto', 'tipo_vigneto', false)}
-              {renderMultiCheck('Certificazioni / Filosofia', 'pa_filosofia', 'certificazioni', false)}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Solo spumanti</p>
-            <div className="grid grid-cols-3 gap-4">
-              {renderDropdown('Metodo produttivo', 'pa_metodo-produttivo', 'metodo_produttivo', false)}
-              {renderDropdown('Dosaggio', 'pa_dosaggio', 'dosaggio', false)}
-              {renderDropdown('Spumantizzazione', 'pa_spumantizzazione', 'spumantizzazione', false)}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Note di degustazione</p>
-            <div>
-              <label className={labelClass}>Alla vista</label>
-              <input value={form.alla_vista} onChange={set('alla_vista')} className={inputClass} placeholder="Es. Rosso rubino intenso con riflessi violacei" />
-            </div>
-            <div>
-              <label className={labelClass}>Al naso</label>
-              <input value={form.al_naso} onChange={set('al_naso')} className={inputClass} placeholder="Es. Frutti rossi maturi, spezie e vaniglia" />
-            </div>
-            <div>
-              <label className={labelClass}>Al palato</label>
-              <input value={form.al_palato} onChange={set('al_palato')} className={inputClass} placeholder="Es. Morbido, tannini setosi, finale lungo" />
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6 space-y-4">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-2">Produzione</p>
-            <div>
-              <label className={labelClass}>Vinificazione</label>
-              <textarea value={form.vinificazione} onChange={set('vinificazione')} rows={3} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Es. Fermentazione in acciaio inox a temperatura controllata (16-18°C) per 15 giorni con lieviti selezionati" />
-            </div>
-            <div>
-              <label className={labelClass}>Affinamento</label>
-              <textarea value={form.affinamento} onChange={set('affinamento')} rows={3} className={`${inputClass} h-auto py-3 resize-none`} placeholder="Es. 12 mesi in barrique di rovere francese di primo e secondo passaggio, seguiti da 6 mesi in bottiglia" />
-            </div>
-            <div>
-              <label className={labelClass}>Vendemmia</label>
-              <input value={form.vendemmia} onChange={set('vendemmia')} className={inputClass} placeholder="Es. Seconda settimana di settembre" />
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-3">Allergeni {star}</p>
-            <p className="text-[11px] text-[#888] mb-4">Reg. UE 1169/2011 — seleziona tutti gli allergeni presenti nel prodotto</p>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="flex items-center gap-2.5 py-1.5 cursor-not-allowed opacity-70">
-                <input type="checkbox" checked={form.allergeni_solfiti} disabled className="w-4 h-4 text-[#005667] rounded" />
-                <span className="text-[13px] text-[#444]">Solfiti <span className="text-[10px] text-[#888]">(obbligatorio)</span></span>
-              </label>
-              {[
-                { key: 'allergeni_uova' as const, label: 'Uova', hint: 'Albumina, lisozima' },
-                { key: 'allergeni_latte' as const, label: 'Latte', hint: 'Caseina, lattosio' },
-                { key: 'allergeni_pesce' as const, label: 'Pesce', hint: 'Colla di pesce, isinglass' },
-                { key: 'allergeni_crostacei' as const, label: 'Crostacei', hint: '' },
-                { key: 'allergeni_molluschi' as const, label: 'Molluschi', hint: '' },
-                { key: 'allergeni_cereali_glutine' as const, label: 'Cereali con glutine', hint: 'Birra, distillati cereali' },
-                { key: 'allergeni_frutta_guscio' as const, label: 'Frutta a guscio', hint: 'Nocciole, mandorle, noci' },
-                { key: 'allergeni_soia' as const, label: 'Soia', hint: 'Lecitina di soia' },
-                { key: 'allergeni_sedano' as const, label: 'Sedano', hint: '' },
-                { key: 'allergeni_senape' as const, label: 'Senape', hint: '' },
-                { key: 'allergeni_sesamo' as const, label: 'Sesamo', hint: '' },
-                { key: 'allergeni_lupini' as const, label: 'Lupini', hint: '' },
-              ].map(a => (
-                <label key={a.key} className="flex items-center gap-2.5 py-1.5 cursor-pointer">
-                  <input type="checkbox" checked={form[a.key]} onChange={set(a.key)} className="w-4 h-4 text-[#005667] rounded" />
-                  <span className="text-[13px] text-[#444]">{a.label}{a.hint && <span className="text-[10px] text-[#aaa] ml-1">{a.hint}</span>}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ STEP 4 — Anteprima ═══ */}
-      {step === 3 && (
-        <div className="space-y-6 max-w-2xl">
-          <div className="bg-white border border-[#e8e4dc] rounded-xl p-6">
-            <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider mb-4">Anteprima prodotto</p>
-
-            <div className="flex gap-6">
-              {/* Image */}
-              <div className="w-32 h-44 rounded-xl bg-[#f8f6f1] overflow-hidden shrink-0">
-                {images[0] && <img src={images[0].src} alt="" className="w-full h-full object-contain" />}
+              <div>
+                <label className={labelClass}>Produttore / Cantina</label>
+                <input
+                  type="text"
+                  value={form.produttore}
+                  onChange={updateField('produttore')}
+                  placeholder="Pre-compilato dal tuo profilo"
+                  className={`${inputClass} bg-gray-50`}
+                  readOnly
+                />
               </div>
 
-              {/* Info */}
-              <div className="flex-1">
-                {form.produttore && <p className="text-[11px] text-[#888] uppercase tracking-wider mb-1">{form.produttore}</p>}
-                <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-2">{form.name || 'Nome prodotto'}</h2>
+              <div>
+                <label className={labelClass}>Nome prodotto *</label>
+                <input type="text" value={form.nome} onChange={updateField('nome')} placeholder="es. Sangiovese Riserva DOC 2019" className={inputClass} autoFocus />
+              </div>
 
-                <div className="flex items-baseline gap-2 mb-3">
-                  {form.sale_price ? (
-                    <>
-                      <span className="text-[11px] text-[#aaa] line-through">{form.regular_price} €</span>
-                      <span className="text-[20px] font-bold text-[#005667]">{form.sale_price} €</span>
-                    </>
-                  ) : (
-                    <span className="text-[20px] font-bold text-[#005667]">{form.regular_price || '0.00'} €</span>
-                  )}
+              <div>
+                <label className={labelClass}>SKU</label>
+                <input type="text" value={form.sku} onChange={updateField('sku')} placeholder="Codice prodotto (opzionale)" className={inputClass} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelClass}>Prezzo &euro; *</label>
+                  <input type="text" value={form.prezzo} onChange={updateField('prezzo')} placeholder="es. 12.50" className={inputClass} inputMode="decimal" />
                 </div>
+                <div>
+                  <label className={labelClass}>Prezzo scontato &euro;</label>
+                  <input type="text" value={form.prezzoScontato} onChange={updateField('prezzoScontato')} placeholder="es. 9.90" className={inputClass} inputMode="decimal" />
+                </div>
+                <div>
+                  <label className={labelClass}>Giacenza *</label>
+                  <input type="number" value={form.giacenza} onChange={updateField('giacenza')} placeholder="es. 100" min="0" className={inputClass} />
+                </div>
+              </div>
 
-                <p className="text-[13px] text-[#666] mb-3">{form.short_description}</p>
+              <div>
+                <label className={labelClass}>Categoria</label>
+                <select value={form.categoria} onChange={updateField('categoria')} className={inputClass}>
+                  <option value="">-- Seleziona --</option>
+                  {wcCategories.map((parent) => (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={String(parent.id)}>{parent.name}</option>
+                      {parent.children.map((child) => (
+                        <option key={child.id} value={String(child.id)}>  {child.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {form.denominazione && <span className="px-2 py-0.5 bg-[#f8f6f1] rounded text-[11px] text-[#888]">{form.denominazione}</span>}
-                  {form.regione && <span className="px-2 py-0.5 bg-[#f8f6f1] rounded text-[11px] text-[#888]">{form.regione}</span>}
-                  {form.annata && <span className="px-2 py-0.5 bg-[#f8f6f1] rounded text-[11px] text-[#888]">{form.annata}</span>}
-                  {form.formato && <span className="px-2 py-0.5 bg-[#f8f6f1] rounded text-[11px] text-[#888]">{form.formato}</span>}
-                  {form.gradazione && <span className="px-2 py-0.5 bg-[#f8f6f1] rounded text-[11px] text-[#888]">{form.gradazione}</span>}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Annata</label>
+                  <select value={form.annata} onChange={updateField('annata')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_annata'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Formato</label>
+                  <select value={form.formato} onChange={updateField('formato')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_formato'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
-
-            {/* Degustazione preview */}
-            {(form.alla_vista || form.al_naso || form.al_palato) && (
-              <div className="mt-6 pt-4 border-t border-[#f0ece4]">
-                <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-3">Note di degustazione</p>
-                <div className="grid grid-cols-3 gap-4">
-                  {form.alla_vista && <div><p className="text-[10px] text-[#005667] font-semibold mb-0.5">Alla vista</p><p className="text-[12px] text-[#666]">{form.alla_vista}</p></div>}
-                  {form.al_naso && <div><p className="text-[10px] text-[#005667] font-semibold mb-0.5">Al naso</p><p className="text-[12px] text-[#666]">{form.al_naso}</p></div>}
-                  {form.al_palato && <div><p className="text-[10px] text-[#005667] font-semibold mb-0.5">Al palato</p><p className="text-[12px] text-[#666]">{form.al_palato}</p></div>}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Submit info */}
-          <div className="bg-[#f0f7f5] border border-[#005667]/20 rounded-xl p-5">
-            <p className="text-[13px] text-[#005667] font-semibold mb-1">Cosa succede dopo?</p>
-            <p className="text-[12px] text-[#666] leading-relaxed">
-              Il prodotto verrà inviato in <strong>revisione</strong> al team Stappando.
-              Riceverai una notifica quando sarà approvato e visibile nel catalogo.
-              Tempo medio di approvazione: 24-48 ore lavorative.
-            </p>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-[13px] text-red-700">{error}</div>
           )}
-        </div>
-      )}
 
-      {/* ═══ Save message ═══ */}
-      {saveMsg && (
-        <div className="max-w-2xl mt-4 rounded-xl p-3 bg-[#065f46] text-white text-[13px] font-semibold text-center">{saveMsg}</div>
-      )}
+          {/* ── Step 2: Classificazione ──────────────── */}
+          {subStep === 2 && (
+            <div className={sectionClass}>
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Classificazione</h3>
 
-      {/* ═══ Navigation buttons ═══ */}
-      <div className="sticky bottom-0 z-10 bg-[#f8f6f1]/95 backdrop-blur-sm pt-4 pb-6 border-t border-[#e8e4dc] mt-6 max-w-2xl">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setStep(s => s - 1)}
-            disabled={step === 0}
-            className="text-[13px] text-[#888] hover:text-[#005667] disabled:invisible"
-          >
-            ← Indietro
-          </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Denominazione</label>
+                  <select value={form.denominazione} onChange={updateField('denominazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_denominazione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Gradazione alcolica</label>
+                  <select value={form.gradazione} onChange={updateField('gradazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_gradazione-alcolica'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-3">
-            {/* Save draft — always available */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Regione</label>
+                  <select value={form.regione} onChange={updateField('regione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_regione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Nazione</label>
+                  <input type="text" value={form.nazione} onChange={updateField('nazione')} className={inputClass} />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Uvaggio</label>
+                {/* Selected pills */}
+                {form.uvaggio && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {form.uvaggio.split(',').map(u => u.trim()).filter(Boolean).map(u => (
+                      <span key={u} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] bg-[#005667] text-white border border-[#005667]">
+                        {u}
+                        <button type="button" onClick={() => togglePill('uvaggio', u)} className="ml-0.5 hover:text-red-200">&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Search input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newUvaggio}
+                    onChange={(e) => setNewUvaggio(e.target.value)}
+                    placeholder="Cerca uvaggio..."
+                    className="w-full h-9 px-3 text-[12px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#005667]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newUvaggio.trim() && !isPillSelected('uvaggio', newUvaggio.trim())) {
+                          togglePill('uvaggio', newUvaggio.trim());
+                        }
+                        setNewUvaggio('');
+                      }
+                    }}
+                  />
+                  {newUvaggio.length >= 1 && (() => {
+                    const q = newUvaggio.toLowerCase();
+                    const filtered = (taxTerms['pa_uvaggio'] || []).filter(t => t.name.toLowerCase().includes(q) && !isPillSelected('uvaggio', t.name));
+                    return (
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {filtered.slice(0, 15).map(t => (
+                          <button key={t.slug} type="button" onClick={() => { togglePill('uvaggio', t.name); setNewUvaggio(''); }}
+                            className="w-full text-left px-3 py-2 text-[12px] hover:bg-gray-50 border-b border-gray-50 last:border-0">{t.name}</button>
+                        ))}
+                        {filtered.length === 0 && (
+                          <button type="button" onClick={() => { togglePill('uvaggio', newUvaggio.trim()); setNewUvaggio(''); }}
+                            className="w-full text-left px-3 py-2 text-[12px] text-[#005667] font-semibold hover:bg-gray-50">
+                            + Aggiungi &quot;{newUvaggio.trim()}&quot;
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Abbinamenti</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_abbinamenti'] || []).map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => togglePill('abbinamenti', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                        isPillSelected('abbinamenti', t.name)
+                          ? 'bg-[#005667] text-white border-[#005667]'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Temperatura di servizio</label>
+                  <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Momento di consumo</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('momentoConsumo', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                          isPillSelected('momentoConsumo', t.name)
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Allergeni</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_allergeni'] || []).map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => togglePill('allergeni', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                        isPillSelected('allergeni', t.name)
+                          ? 'bg-[#005667] text-white border-[#005667]'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Territorio & Vigneto ──────────── */}
+          {subStep === 3 && (
+            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Territorio &amp; Vigneto</h3>
+
+              <div>
+                <label className={labelClass}>Terreno</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_terreno'] || []).map((t) => (
+                    <button key={t.slug} type="button" onClick={() => togglePill('terreno', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('terreno', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Altitudine</label>
+                  <select value={form.altitudine} onChange={updateField('altitudine')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_altitudine-dei-vigneti'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Densit&agrave; d&apos;impianto</label>
+                  <select value={form.densitaImpianto} onChange={updateField('densitaImpianto')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_densita-dimpianto'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Zona di produzione</label>
+                  <input type="text" value={form.zonaProduzione} onChange={updateField('zonaProduzione')} placeholder="es. Contrada Montanello" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Resa</label>
+                  <select value={form.resa} onChange={updateField('resa')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_resa'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Raccolta</label>
+                <select value={form.raccolta} onChange={updateField('raccolta')} className={inputClass}>
+                  <option value="">-- Seleziona --</option>
+                  {(taxTerms['pa_raccolta'] || []).map((t) => (
+                    <option key={t.slug} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Periodo vendemmia</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_periodo-vendemmia'] || []).map((t) => (
+                    <button key={t.slug} type="button" onClick={() => togglePill('periodoVendemmia', t.name)}
+                      className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('periodoVendemmia', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Orientamento delle vigne</label>
+                  <select value={form.orientamentoVigne} onChange={updateField('orientamentoVigne')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_orientamento-delle-vigne'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Tipo di vigneto</label>
+                  <select value={form.tipoVigneto} onChange={updateField('tipoVigneto')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_tipo-di-vigneto'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Bottiglie prodotte</label>
+                  <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Certificazioni</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(taxTerms['pa_filosofia'] || []).map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('certificazioni', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
+                          isPillSelected('certificazioni', t.name)
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Spumanti section */}
+              <div className="pt-3 border-t border-gray-100">
+                <h4 className="text-xs font-bold text-gray-500 mb-2">Spumanti</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Spumantizzazione</label>
+                    <select value={form.spumantizzazione} onChange={updateField('spumantizzazione')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_metodo-produttivo'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Categoria spumanti</label>
+                    <select value={form.categoriaSpumanti} onChange={updateField('categoriaSpumanti')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_spumantizzazione'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Dosaggio</label>
+                    <select value={form.dosaggio} onChange={updateField('dosaggio')} className={inputClass}>
+                      <option value="">-- Seleziona --</option>
+                      {(taxTerms['pa_dosaggio'] || []).map((t) => (
+                        <option key={t.slug} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 4: Testi & Degustazione ──────────── */}
+          {subStep === 4 && (
+            <div className="space-y-5">
+              {/* Descrizioni */}
+              <div className={sectionClass}>
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Descrizioni</h3>
+
+                <div>
+                  <label className={labelClass}>
+                    Descrizione breve
+                    <span className="ml-2 text-gray-400 font-normal">
+                      {form.descBreve.length}/160
+                    </span>
+                  </label>
+                  <textarea
+                    value={form.descBreve}
+                    onChange={updateField('descBreve')}
+                    maxLength={160}
+                    rows={2}
+                    className={textareaClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Descrizione lunga</label>
+                  <textarea
+                    value={form.descLunga}
+                    onChange={updateField('descLunga')}
+                    rows={4}
+                    className={textareaClass}
+                  />
+                </div>
+              </div>
+
+              {/* Degustazione */}
+              <div className={sectionClass}>
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Degustazione</h3>
+
+                <div>
+                  <label className={labelClass}>Alla vista</label>
+                  <textarea value={form.allaVista} onChange={updateField('allaVista')} rows={2} className={textareaClass} placeholder="Es. Rosso rubino intenso con riflessi violacei" />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Al naso</label>
+                  <textarea value={form.alNaso} onChange={updateField('alNaso')} rows={2} className={textareaClass} placeholder="Es. Frutti rossi maturi, spezie e vaniglia" />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Al palato</label>
+                  <textarea value={form.alPalato} onChange={updateField('alPalato')} rows={2} className={textareaClass} placeholder="Es. Morbido, tannini setosi, finale lungo" />
+                </div>
+              </div>
+
+              {/* Produzione */}
+              <div className={sectionClass}>
+                <h3 className="text-sm font-bold text-[#005667] mb-2">Produzione</h3>
+
+                <div>
+                  <label className={labelClass}>Vinificazione</label>
+                  <textarea value={form.vinificazione} onChange={updateField('vinificazione')} rows={2} className={textareaClass} placeholder="Es. Fermentazione in acciaio inox a temperatura controllata" />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Affinamento</label>
+                  <textarea value={form.affinamento} onChange={updateField('affinamento')} rows={2} className={textareaClass} placeholder="Es. 12 mesi in barrique di rovere francese" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation buttons */}
+          <div className="flex gap-3">
+            {subStep === 1 ? (
+              <Link
+                href="/vendor/prodotti"
+                className="flex-1 h-[48px] rounded-lg font-semibold text-sm border-2 text-gray-600 border-gray-300 bg-white flex items-center justify-center"
+              >
+                &larr; Annulla
+              </Link>
+            ) : (
+              <button
+                onClick={() => setSubStep((subStep - 1) as SubStep)}
+                className="flex-1 h-[48px] rounded-lg font-semibold text-sm border-2 text-gray-600 border-gray-300 bg-white"
+              >
+                &larr; Indietro
+              </button>
+            )}
+
             <button
               onClick={handleSaveDraft}
-              disabled={savingDraft || !form.name.trim()}
-              className="border border-[#005667] text-[#005667] rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-[#005667]/5 transition-colors disabled:opacity-40 flex items-center gap-2"
+              disabled={loading || !form.nome.trim()}
+              className="h-[48px] px-5 rounded-lg font-semibold text-sm border-2 border-[#005667] text-[#005667] bg-white disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              {savingDraft ? (
-                <><div className="w-3.5 h-3.5 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /> Salvataggio...</>
-              ) : (
-                <>{draftId ? 'Aggiorna bozza' : 'Salva bozza'}</>
-              )}
+              {loading ? <Spinner /> : (draftId ? 'Aggiorna bozza' : 'Salva bozza')}
             </button>
 
-            {step < 3 ? (
+            {subStep < 4 ? (
               <button
-                onClick={() => setStep(s => s + 1)}
-                disabled={(step === 0 && !step1Valid) || (step === 1 && !step2Valid)}
-                className="bg-[#005667] text-white rounded-lg px-6 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setSubStep((subStep + 1) as SubStep)}
+                className="flex-1 h-[48px] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+                style={{ backgroundColor: PRIMARY }}
               >
-                Continua →
+                Continua &rarr;
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
-                className="bg-[#005667] text-white rounded-lg px-6 py-2.5 text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 flex items-center gap-2"
+                disabled={loading}
+                className="flex-1 h-[48px] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                style={{ backgroundColor: PRIMARY }}
               >
-                {submitting ? (
-                  <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Invio...</>
-                ) : 'Invia per approvazione'}
+                {loading ? (
+                  <>
+                    <Spinner /> Invio...
+                  </>
+                ) : (
+                  'Invia per approvazione \u2192'
+                )}
               </button>
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+/* ── Page Component (Suspense wrapper) ────────────────── */
+
+export default function NuovoProdottoPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[13px] text-[#888]">Preparazione wizard...</p>
+      </div>
+    }>
+      <NuovoProdottoInner />
+    </Suspense>
   );
 }
