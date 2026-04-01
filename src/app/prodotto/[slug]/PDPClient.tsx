@@ -153,16 +153,14 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             </div>
           )}
 
-          {/* Note degustazione — desktop, sotto abbinamenti */}
+          {/* Note degustazione — sotto abbinamenti, unica posizione */}
           {(p.allaVista || p.alNaso || p.alPalato) && (
-            <div className="hidden lg:block mb-6">
+            <div className="mb-6 mt-2">
               <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Note di degustazione</h3>
               <div className="space-y-3">
                 {p.allaVista && (
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#b8973f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="32" cy="32" rx="28" ry="16"/><circle cx="32" cy="32" r="8" fill="#b8973f"/><line x1="22" y1="12" x2="24" y2="18"/><line x1="32" y1="8" x2="32" y2="14"/><line x1="42" y1="12" x2="40" y2="18"/></svg>
-                    </div>
+                    <img src="https://stappando.it/wp-content/uploads/2026/04/vista.png" alt="Vista" className="w-7 h-7 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</p>
                       <p className="text-[13px] text-[#555] leading-relaxed">{p.allaVista}</p>
@@ -171,9 +169,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                 )}
                 {p.alNaso && (
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#7b5ea7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M28 8c-2 8-8 16-8 28 0 8 4 14 12 14s12-6 12-14"/><path d="M38 42c2-2 6-4 8-2"/></svg>
-                    </div>
+                    <img src="https://stappando.it/wp-content/uploads/2026/04/naso.png" alt="Naso" className="w-7 h-7 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</p>
                       <p className="text-[13px] text-[#555] leading-relaxed">{p.alNaso}</p>
@@ -182,9 +178,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                 )}
                 {p.alPalato && (
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#005667" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 4h24v16c0 8-6 14-12 14s-12-6-12-14V4z"/><path d="M24 20c4 2 12 2 16 0"/><line x1="32" y1="34" x2="32" y2="52"/><line x1="22" y1="52" x2="42" y2="52"/></svg>
-                    </div>
+                    <img src="https://stappando.it/wp-content/uploads/2026/04/gusto.png" alt="Gusto" className="w-7 h-7 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</p>
                       <p className="text-[13px] text-[#555] leading-relaxed">{p.alPalato}</p>
@@ -195,9 +189,9 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             </div>
           )}
 
-          {/* Produzione — desktop, sotto note degustazione */}
+          {/* Produzione — sotto note degustazione */}
           {(p.vinificazione || p.affinamento) && (
-            <div className="hidden lg:block mb-6">
+            <div className="mb-6">
               <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Produzione</h3>
               <div className="space-y-2.5">
                 {p.vinificazione && (
@@ -313,68 +307,6 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                     <span className="text-[14px] text-[#1a1a1a] font-medium text-right">{spec.value}</span>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Note degustazione — list layout */}
-          {(p.allaVista || p.alNaso || p.alPalato) && (
-            <div className="mb-5">
-              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Note di degustazione</h3>
-              <div className="space-y-2.5">
-                {p.allaVista && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#fef9f0] border border-[#f0e8d8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#b8973f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="32" cy="32" rx="28" ry="16"/><circle cx="32" cy="32" r="8" fill="#b8973f"/><line x1="22" y1="12" x2="24" y2="18"/><line x1="32" y1="8" x2="32" y2="14"/><line x1="42" y1="12" x2="40" y2="18"/></svg></div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#b8973f] uppercase tracking-wider">Alla vista</p>
-                      <p className="text-[13px] text-[#555] leading-relaxed">{p.allaVista}</p>
-                    </div>
-                  </div>
-                )}
-                {p.alNaso && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#f5f0f8] border border-[#e8ddf0] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#7b5ea7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M28 8c-2 8-8 16-8 28 0 8 4 14 12 14s12-6 12-14"/><path d="M38 42c2-2 6-4 8-2"/></svg>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#7b5ea7] uppercase tracking-wider">Al naso</p>
-                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alNaso}</p>
-                    </div>
-                  </div>
-                )}
-                {p.alPalato && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#f0f7f5] border border-[#d8efe8] flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" stroke="#005667" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 4h24v16c0 8-6 14-12 14s-12-6-12-14V4z"/><path d="M24 20c4 2 12 2 16 0"/><line x1="32" y1="34" x2="32" y2="52"/><line x1="22" y1="52" x2="42" y2="52"/></svg>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#005667] uppercase tracking-wider">Al palato</p>
-                      <p className="text-[13px] text-[#555] leading-relaxed">{p.alPalato}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Produzione — stacked left */}
-          {(p.vinificazione || p.affinamento) && (
-            <div className="mb-5">
-              <h3 className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-3">Produzione</h3>
-              <div className="space-y-2.5">
-                {p.vinificazione && (
-                  <div>
-                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Vinificazione</p>
-                    <p className="text-[13px] text-[#444] leading-relaxed">{p.vinificazione}</p>
-                  </div>
-                )}
-                {p.affinamento && (
-                  <div>
-                    <p className="text-[11px] font-bold text-[#888] uppercase tracking-wider mb-0.5">Affinamento</p>
-                    <p className="text-[13px] text-[#444] leading-relaxed">{p.affinamento}</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
