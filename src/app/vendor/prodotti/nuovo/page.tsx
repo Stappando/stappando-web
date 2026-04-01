@@ -198,7 +198,8 @@ function NuovoProdottoInner() {
           tipoVigneto: data.tipoVigneto || data.tipo_vigneto || '',
           periodoVendemmia: Array.isArray(data.periodoVendemmia) ? data.periodoVendemmia.join(', ') : (data.periodoVendemmia || data.periodo_vendemmia || ''),
           certificazioni: Array.isArray(data.certificazioni) ? data.certificazioni.join(', ') : (data.certificazioni || ''),
-          esposizione: data.esposizione || '',
+          categoriaGoogle: data.categoriaGoogle || '',
+          gtin: data.gtin || '',
         }));
       })
       .catch(() => {})
@@ -258,6 +259,7 @@ function NuovoProdottoInner() {
       'pa_tipo-di-vigneto',
       'pa_annata',
       'pa_periodo-vendemmia',
+      'pa_nazione',
       'pa_categoria-google',
     ];
     slugs.forEach((slug) => {
@@ -348,6 +350,9 @@ function NuovoProdottoInner() {
         form.spumantizzazione && { slug: 'pa_metodo-produttivo', terms: [form.spumantizzazione] },
         form.categoriaSpumanti && { slug: 'pa_spumantizzazione', terms: [form.categoriaSpumanti] },
         form.dosaggio && { slug: 'pa_dosaggio', terms: [form.dosaggio] },
+        form.zonaProduzione && { slug: 'pa_zona-di-produzione', terms: [form.zonaProduzione] },
+        form.altitudine && { slug: 'pa_altitudine-dei-vigneti', terms: [form.altitudine] },
+        form.nazione && { slug: 'pa_nazione', terms: [form.nazione] },
         form.categoriaGoogle && { slug: 'pa_categoria-google', terms: [form.categoriaGoogle] },
         form.gtin && { slug: 'pa_ean', terms: [form.gtin] },
         form.gtin && { slug: 'pa_identificazione-esistente', terms: ['Sì'] },
@@ -631,7 +636,12 @@ function NuovoProdottoInner() {
                 </div>
                 <div>
                   <label className={labelClass}>Nazione</label>
-                  <input type="text" value={form.nazione} onChange={updateField('nazione')} className={inputClass} />
+                  <select value={form.nazione} onChange={updateField('nazione')} className={inputClass}>
+                    <option value="">-- Seleziona --</option>
+                    {(taxTerms['pa_nazione'] || []).map((t) => (
+                      <option key={t.slug} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
