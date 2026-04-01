@@ -405,20 +405,26 @@ function NuovoProdottoInner() {
     if (!user?.id) return;
     setLoading(true);
     setError('');
+    setSaveMsg('');
     try {
+      const payload = buildPayload();
+      console.log('[Vendor] Submitting product:', JSON.stringify(payload).slice(0, 500));
       const res = await fetch('/api/vendor/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(payload),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Errore nella creazione del prodotto');
+        console.error('[Vendor] Submit error:', res.status, data);
+        setError(data.error || `Errore (${res.status})`);
         return;
       }
+      if (data.productId && !draftId) setDraftId(data.productId);
       setSaveMsg('Prodotto inviato per approvazione!');
       setTimeout(() => router.push('/vendor/prodotti?created=1'), 2000);
-    } catch {
+    } catch (err) {
+      console.error('[Vendor] Network error:', err);
       setError('Errore di rete. Riprova.');
     } finally {
       setLoading(false);
@@ -1064,7 +1070,7 @@ function NuovoProdottoInner() {
                     <Spinner /> Invio...
                   </>
                 ) : (
-                  'Invia per approvazione \u2192'
+                  draftId ? 'Invia \u2192' : 'Invia per approvazione \u2192'
                 )}
               </button>
             )}
