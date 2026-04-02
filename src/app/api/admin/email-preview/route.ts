@@ -730,7 +730,7 @@ Vi faccio un riepilogo veloce di quello che il gruppo Stappando offre alle canti
 </td></tr>
 </table>
 <p style="margin:16px 0 18px;font-size:13px;line-height:1.6;color:#888;text-align:center;">
-Iscrizione gratuita a tutti i servizi &mdash; nessun costo fisso, mai.
+Iscrizione gratuita a tutti i servizi &mdash; nessun costo fisso.
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
 Ogni settimana nuove cantine si registrano. Se volete far parte del network, i link sono sempre gli stessi:
