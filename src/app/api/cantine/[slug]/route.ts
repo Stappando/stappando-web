@@ -40,34 +40,80 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     }
     if (!term) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
 
-    // ── 2. Logo + description from term (WC native — always in sync) ─
-    const logo: string = term.image?.src || '';
-    const description: string = term.description || '';
+    // ── 2. Fetch all data sources in parallel ───────────────────────────
+    // Source A: producer-logos custom endpoint (banner/region/address + maybe logo)
+    // Source B: vendor customer shipping.company (fallback if term or custom endpoint missing data)
+    const [logosResult, vendorsResult] = await Promise.allSettled([
+      fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos?nocache=1`, { cache: 'no-store' }),
+      fetch(`${wc.baseUrl}/wp-json/wc/v3/customers?per_page=100&${auth}`),
+    ]);
 
-    // ── 3. Banner / region / address from producer-logos custom endpoint ─
-    // This is updated whenever vendor saves /vendor/negozio or admin saves /admin/vendors.
-    let banner = '';
-    let region = '';
-    let address = '';
+    // Parse producer-logos
+    type LogoEntry = { name: string; slug: string; image?: string; region?: string; address?: string; banner?: string };
+    let logosMeta: LogoEntry | null = null;
+    if (logosResult.status === 'fulfilled' && logosResult.value.ok) {
+      try {
+        const logos: LogoEntry[] = await logosResult.value.json();
+        logosMeta = logos.find(l => l.slug === term!.slug || l.name === term!.name) || null;
+      } catch { /* */ }
+    }
 
-    try {
-      const logosRes = await fetch(
-        `${wc.baseUrl}/wp-json/stp-app/v1/producer-logos?nocache=1`,
-        { cache: 'no-store' },
-      );
-      if (logosRes.ok) {
-        const logos: {
-          name: string; slug: string; image?: string;
-          region?: string; address?: string; banner?: string;
-        }[] = await logosRes.json();
-        const match = logos.find(l => l.slug === term!.slug || l.name === term!.name);
+    // Parse vendor shipping.company — find vendor by _producer_term_id or _vendor_cantina
+    let vendorShop: { logo: string; banner: string; descrizione: string; regione: string; indirizzo: string } | null = null;
+    if (vendorsResult.status === 'fulfilled' && vendorsResult.value.ok) {
+      try {
+        const allCustomers: {
+          first_name: string;
+          shipping?: { company?: string };
+          billing?: { address_2?: string };
+          meta_data?: { key: string; value: string }[];
+        }[] = await vendorsResult.value.json();
+
+        const vendors = allCustomers.filter(c =>
+          (c.meta_data || []).some(m => m.key === '_is_vendor' && m.value === 'true'),
+        );
+
+        const match = vendors.find(c => {
+          // Match by _producer_term_id (most reliable)
+          try {
+            const addr2 = c.billing?.address_2 || '';
+            if (addr2.startsWith('{')) {
+              const extra = JSON.parse(addr2) as Record<string, string>;
+              if (extra._producer_term_id && parseInt(extra._producer_term_id) === term!.id) return true;
+            }
+          } catch { /* */ }
+          // Match by _vendor_cantina meta or first_name
+          const cantina = (c.meta_data || []).find(m => m.key === '_vendor_cantina')?.value || c.first_name || '';
+          return cantina.toLowerCase() === term!.name.toLowerCase();
+        });
+
         if (match) {
-          banner = match.banner || '';
-          region = match.region || '';
-          address = match.address || '';
+          const company = match.shipping?.company || '';
+          if (company.startsWith('{')) {
+            const s = JSON.parse(company);
+            vendorShop = {
+              logo: s.logo || '',
+              banner: s.banner || '',
+              descrizione: s.descrizione || '',
+              regione: s.regione || '',
+              indirizzo: s.indirizzo || '',
+            };
+          }
         }
-      }
-    } catch { /* non-fatal */ }
+      } catch { /* */ }
+    }
+
+    // ── 3. Merge: term (WC native) > producer-logos > vendor shipping.company ─
+    // Logo:        term.image.src → producer-logos.image → shipping.company.logo
+    // Description: term.description → shipping.company.descrizione
+    // Banner/Region/Address: producer-logos → shipping.company
+    const logo: string = term.image?.src || logosMeta?.image || vendorShop?.logo || '';
+    const description: string = term.description || vendorShop?.descrizione || '';
+    const banner = logosMeta?.banner || vendorShop?.banner || '';
+    const region = logosMeta?.region || vendorShop?.regione || '';
+    const address = logosMeta?.address || vendorShop?.indirizzo || '';
+
+    console.log(`[Cantine/${slug}] logo=${!!logo} banner=${!!banner} region=${!!region} (term=${!!term.image?.src} logos=${!!logosMeta} vendor=${!!vendorShop})`);
 
     // ── 4. Fetch products ────────────────────────────────────────────
     const productsRes = await fetch(
