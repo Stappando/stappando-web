@@ -195,9 +195,13 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
       return;
     }
 
-    // Step 1: Instant local results
-    if (_indexCache) {
-      const localResults = searchIndex(_indexCache, trimmed, 5);
+    // Step 1: Instant local results (await index if not ready yet)
+    let index = _indexCache;
+    if (!index) {
+      index = await loadIndex();
+    }
+    if (index && index.length > 0) {
+      const localResults = searchIndex(index, trimmed, 5);
       setResults(localResults);
       setLoading(false);
       setSearched(true);
@@ -219,7 +223,8 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
         signal: controller.signal,
       });
       if (res.ok) {
-        const apiResults: SearchResult[] = await res.json();
+        const data = await res.json();
+        const apiResults: SearchResult[] = Array.isArray(data) ? data : data.products ?? [];
         if (apiResults.length > 0) {
           setResults(apiResults);
         }
