@@ -14,6 +14,7 @@ import {
   type WCOrder,
   type WCSubOrder,
   type Address,
+  type SavedAddress,
 } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
@@ -1400,32 +1401,103 @@ function ResoModal({ order, onClose, onSubmitted }: { order: WCOrder; onClose: (
 /* ── Addresses ─────────────────────────────────────────── */
 
 function AddressesSection({ userId }: { userId: number }) {
-  const [customer, setCustomer] = useState<WCCustomer | null>(null);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<'billing' | 'shipping' | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
-    fetchCustomer(userId).then((data) => { setCustomer(data); setLoading(false); });
+    fetchCustomer(userId).then(c => {
+      const meta = (c as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+      const raw = meta.find(m => m.key === '_saved_addresses')?.value;
+      if (raw) {
+        try { setAddresses(JSON.parse(raw)); } catch { setAddresses([]); }
+      } else {
+        const s = c.shipping;
+        if (s?.address_1) {
+          const migrated: SavedAddress[] = [{
+            id: Date.now().toString(),
+            first_name: s.first_name || '',
+            last_name: s.last_name || '',
+            address_1: s.address_1 || '',
+            city: s.city || '',
+            state: s.state || '',
+            postcode: s.postcode || '',
+            phone: (s as unknown as { phone?: string }).phone || '',
+            isDefault: true,
+          }];
+          setAddresses(migrated);
+        } else {
+          setAddresses([]);
+        }
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (type: 'billing' | 'shipping', address: Address) => {
+  const persist = async (updated: SavedAddress[]) => {
     setSaving(true);
-    try {
-      await updateCustomer(userId, { [type]: address });
-      setSuccessMsg('Indirizzo aggiornato con successo');
-      setEditing(null);
-      load();
-      setTimeout(() => setSuccessMsg(''), 3000);
-    } catch {
-      // keep editing
-    } finally {
-      setSaving(false);
+    const defaultAddr = updated.find(a => a.isDefault) || updated[0];
+    const wcShipping = defaultAddr ? {
+      first_name: defaultAddr.first_name,
+      last_name: defaultAddr.last_name,
+      address_1: defaultAddr.address_1,
+      city: defaultAddr.city,
+      state: defaultAddr.state,
+      postcode: defaultAddr.postcode,
+      country: 'IT',
+    } : {};
+    await updateCustomer(userId, {
+      shipping: wcShipping as Address,
+      meta_data: [{ key: '_saved_addresses', value: JSON.stringify(updated) }],
+    } as unknown as Partial<WCCustomer>);
+    setAddresses(updated);
+    setSaving(false);
+  };
+
+  const handleAdd = async (addr: Omit<SavedAddress, 'id' | 'isDefault'>) => {
+    const newAddr: SavedAddress = {
+      ...addr,
+      id: Date.now().toString(),
+      isDefault: addresses.length === 0,
+    };
+    const updated = [...addresses, newAddr];
+    await persist(updated);
+    setAdding(false);
+    setSuccessMsg('Indirizzo aggiunto');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleEdit = async (id: string, addr: Omit<SavedAddress, 'id' | 'isDefault'>) => {
+    const updated = addresses.map(a => a.id === id ? { ...a, ...addr } : a);
+    await persist(updated);
+    setEditingId(null);
+    setSuccessMsg('Indirizzo aggiornato');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Elimina questo indirizzo?')) return;
+    const wasDefault = addresses.find(a => a.id === id)?.isDefault;
+    let updated = addresses.filter(a => a.id !== id);
+    if (wasDefault && updated.length > 0) {
+      updated = updated.map((a, i) => ({ ...a, isDefault: i === 0 }));
     }
+    await persist(updated);
+    setSuccessMsg('Indirizzo eliminato');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleSetDefault = async (id: string) => {
+    const updated = addresses.map(a => ({ ...a, isDefault: a.id === id }));
+    await persist(updated);
+    setSuccessMsg('Indirizzo predefinito aggiornato');
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -1433,127 +1505,173 @@ function AddressesSection({ userId }: { userId: number }) {
   return (
     <SectionCard title="I miei indirizzi">
       {successMsg && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{successMsg}</div>
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium">{successMsg}</div>
       )}
-      <div className="grid md:grid-cols-2 gap-6">
-        <AddressCard
-          title="Indirizzo di fatturazione"
-          address={customer?.billing}
-          isEditing={editing === 'billing'}
-          onEdit={() => setEditing(editing === 'billing' ? null : 'billing')}
-          onSave={(addr) => handleSave('billing', addr)}
-          saving={saving}
-        />
-        <AddressCard
-          title="Indirizzo di spedizione"
-          address={customer?.shipping}
-          isEditing={editing === 'shipping'}
-          onEdit={() => setEditing(editing === 'shipping' ? null : 'shipping')}
-          onSave={(addr) => handleSave('shipping', addr)}
-          saving={saving}
-        />
+
+      <div className="space-y-3 mb-4">
+        {addresses.length === 0 && !adding && (
+          <p className="text-sm text-brand-muted italic py-2">Nessun indirizzo salvato.</p>
+        )}
+        {addresses.map(addr => (
+          editingId === addr.id
+            ? <AddressForm
+                key={addr.id}
+                initial={addr}
+                onSave={(a) => handleEdit(addr.id, a)}
+                onCancel={() => setEditingId(null)}
+                saving={saving}
+              />
+            : <SavedAddressCard
+                key={addr.id}
+                addr={addr}
+                onEdit={() => setEditingId(addr.id)}
+                onDelete={() => handleDelete(addr.id)}
+                onSetDefault={() => handleSetDefault(addr.id)}
+                saving={saving}
+              />
+        ))}
       </div>
+
+      {adding && (
+        <AddressForm
+          onSave={handleAdd}
+          onCancel={() => setAdding(false)}
+          saving={saving}
+        />
+      )}
+
+      {!adding && editingId === null && (
+        <button
+          onClick={() => setAdding(true)}
+          className="w-full py-2.5 border-2 border-dashed border-brand-border rounded-xl text-sm font-semibold text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+          Aggiungi indirizzo
+        </button>
+      )}
     </SectionCard>
   );
 }
 
-function AddressCard({
-  title,
-  address,
-  isEditing,
-  onEdit,
-  onSave,
-  saving,
+function SavedAddressCard({
+  addr, onEdit, onDelete, onSetDefault, saving
 }: {
-  title: string;
-  address?: Address;
-  isEditing: boolean;
+  addr: SavedAddress;
   onEdit: () => void;
-  onSave: (addr: Address) => void;
+  onDelete: () => void;
+  onSetDefault: () => void;
   saving: boolean;
 }) {
-  const [form, setForm] = useState<Address>(
-    address || { first_name: '', last_name: '', company: '', address_1: '', address_2: '', city: '', state: '', postcode: '', country: 'IT', phone: '' },
+  return (
+    <div className={`relative border rounded-xl p-4 ${addr.isDefault ? 'border-brand-primary bg-brand-primary/[0.02]' : 'border-brand-border'}`}>
+      {addr.isDefault && (
+        <span className="absolute top-3 right-3 text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wide">
+          Predefinito
+        </span>
+      )}
+      {addr.label && (
+        <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-1">{addr.label}</p>
+      )}
+      <div className="text-sm text-brand-muted space-y-0.5 pr-20">
+        <p className="text-brand-text font-semibold">{addr.first_name} {addr.last_name}</p>
+        <p>{addr.address_1}</p>
+        <p>{addr.postcode} {addr.city}{addr.state ? ` (${addr.state})` : ''}</p>
+        {addr.phone && <p className="text-brand-muted">Tel: {addr.phone}</p>}
+      </div>
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-brand-border/60">
+        <button onClick={onEdit} disabled={saving} className="text-xs text-brand-primary hover:underline font-medium">Modifica</button>
+        {!addr.isDefault && (
+          <>
+            <span className="text-brand-border">·</span>
+            <button onClick={onSetDefault} disabled={saving} className="text-xs text-brand-muted hover:text-brand-primary hover:underline font-medium">Imposta predefinito</button>
+          </>
+        )}
+        <span className="text-brand-border">·</span>
+        <button onClick={onDelete} disabled={saving} className="text-xs text-red-400 hover:text-red-600 hover:underline font-medium">Elimina</button>
+      </div>
+    </div>
   );
+}
 
-  useEffect(() => {
-    if (address) setForm(address);
-  }, [address]);
+function AddressForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial?: Partial<SavedAddress>;
+  onSave: (addr: Omit<SavedAddress, 'id' | 'isDefault'>) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    label: initial?.label || '',
+    first_name: initial?.first_name || '',
+    last_name: initial?.last_name || '',
+    address_1: initial?.address_1 || '',
+    city: initial?.city || '',
+    state: initial?.state || '',
+    postcode: initial?.postcode || '',
+    phone: initial?.phone || '',
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
   };
 
-  const hasAddress = address && (address.address_1 || address.city);
-
-  if (isEditing) {
-    return (
-      <form onSubmit={handleSubmit} className="border border-brand-primary/20 rounded-xl p-4 space-y-3 bg-brand-primary/[0.02]">
-        <h3 className="font-semibold text-brand-primary text-sm">{title}</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <AddressInput label="Nome" value={form.first_name} onChange={(v) => setForm({ ...form, first_name: v })} />
-          <AddressInput label="Cognome" value={form.last_name} onChange={(v) => setForm({ ...form, last_name: v })} />
-        </div>
-        <AddressInput label="Azienda" value={form.company} onChange={(v) => setForm({ ...form, company: v })} />
-        <AddressInput label="Indirizzo" value={form.address_1} onChange={(v) => setForm({ ...form, address_1: v })} required />
-        <AddressInput label="Indirizzo riga 2" value={form.address_2} onChange={(v) => setForm({ ...form, address_2: v })} />
-        <div className="grid grid-cols-2 gap-2">
-          <AddressInput label="Città" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
-          <AddressInput label="CAP" value={form.postcode} onChange={(v) => setForm({ ...form, postcode: v })} required />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <AddressInput label="Provincia" value={form.state} onChange={(v) => setForm({ ...form, state: v })} />
-          <AddressInput label="Telefono" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-        </div>
-        <div className="flex gap-2 pt-2">
-          <button type="submit" disabled={saving} className="flex-1 py-2 bg-brand-primary text-white text-sm font-semibold rounded-lg hover:bg-brand-primary/90 disabled:opacity-60">
-            {saving ? 'Salvataggio...' : 'Salva'}
-          </button>
-          <button type="button" onClick={onEdit} className="px-4 py-2 border border-brand-border text-sm rounded-lg hover:bg-brand-bg">
-            Annulla
-          </button>
-        </div>
-      </form>
-    );
-  }
+  const inputClass = "w-full px-3 py-2 text-sm rounded-lg border border-brand-border bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary";
+  const labelClass = "block text-xs text-brand-muted mb-1";
 
   return (
-    <div className="border border-brand-border rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-brand-text text-sm">{title}</h3>
-        <button type="button" onClick={onEdit} className="text-xs text-brand-primary hover:underline font-medium">
-          Modifica
+    <form onSubmit={handleSubmit} className="border border-brand-primary/20 rounded-xl p-4 space-y-3 bg-brand-primary/[0.02]">
+      <div>
+        <label className={labelClass}>Etichetta (opzionale, es. &quot;Casa&quot;)</label>
+        <input value={form.label} onChange={e => setForm({...form, label: e.target.value})} placeholder="Casa, Ufficio..." className={inputClass} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={labelClass}>Nome *</label>
+          <input required value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Cognome *</label>
+          <input required value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} className={inputClass} />
+        </div>
+      </div>
+      <div>
+        <label className={labelClass}>Indirizzo *</label>
+        <input required value={form.address_1} onChange={e => setForm({...form, address_1: e.target.value})} placeholder="Via Roma 42" className={inputClass} />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">
+          <label className={labelClass}>Città *</label>
+          <input required value={form.city} onChange={e => setForm({...form, city: e.target.value})} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>CAP *</label>
+          <input required value={form.postcode} onChange={e => setForm({...form, postcode: e.target.value})} maxLength={5} pattern="\d{5}" title="CAP italiano a 5 cifre" className={inputClass} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={labelClass}>Provincia</label>
+          <input value={form.state} onChange={e => setForm({...form, state: e.target.value.toUpperCase()})} maxLength={2} placeholder="RM" className={inputClass + ' uppercase'} />
+        </div>
+        <div>
+          <label className={labelClass}>Telefono</label>
+          <input type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputClass} />
+        </div>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-brand-primary text-white text-sm font-semibold rounded-lg hover:bg-brand-primary/90 disabled:opacity-60">
+          {saving ? 'Salvataggio...' : 'Salva indirizzo'}
+        </button>
+        <button type="button" onClick={onCancel} className="px-4 py-2 border border-brand-border text-sm rounded-lg hover:bg-brand-bg">
+          Annulla
         </button>
       </div>
-      {hasAddress ? (
-        <div className="text-sm text-brand-muted space-y-0.5">
-          <p className="text-brand-text font-medium">{address.first_name} {address.last_name}</p>
-          {address.company && <p>{address.company}</p>}
-          <p>{address.address_1}</p>
-          {address.address_2 && <p>{address.address_2}</p>}
-          <p>{address.postcode} {address.city} {address.state && `(${address.state})`}</p>
-          {address.phone && <p>Tel: {address.phone}</p>}
-        </div>
-      ) : (
-        <p className="text-sm text-brand-muted italic">Nessun indirizzo salvato</p>
-      )}
-    </div>
-  );
-}
-
-function AddressInput({ label, value, onChange, required }: { label: string; value: string; onChange: (v: string) => void; required?: boolean }) {
-  return (
-    <div>
-      <label className="block text-xs text-brand-muted mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        className="w-full px-3 py-2 text-sm rounded-lg border border-brand-border bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-      />
-    </div>
+    </form>
   );
 }
 

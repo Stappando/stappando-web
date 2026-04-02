@@ -27,6 +27,19 @@ export interface Address {
   email?: string;
 }
 
+export interface SavedAddress {
+  id: string;
+  label?: string;
+  first_name: string;
+  last_name: string;
+  address_1: string;
+  city: string;
+  state: string;
+  postcode: string;
+  phone?: string;
+  isDefault: boolean;
+}
+
 export interface WCCustomer {
   id: number;
   email: string;

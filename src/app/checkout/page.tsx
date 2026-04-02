@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore, type VendorShipping } from '@/store/cart';
-import { useAuthStore, fetchCustomer } from '@/store/auth';
+import { useAuthStore, fetchCustomer, type SavedAddress } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 
 /* ── Stripe singleton ─────────────────────────────────── */
@@ -59,22 +59,50 @@ export default function CheckoutPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [cardsLoading, setCardsLoading] = useState(false);
 
-  // Pre-fill address from logged-in user account
+  // Saved addresses state
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  // Pre-fill address from logged-in user account + load saved addresses
   useEffect(() => {
     if (!user?.id || prefillDone.current) return;
     prefillDone.current = true;
     fetchCustomer(user.id).then((customer) => {
-      setForm((prev) => ({
-        ...prev,
-        firstName: customer.shipping?.first_name || customer.billing?.first_name || user.firstName || prev.firstName,
-        lastName: customer.shipping?.last_name || customer.billing?.last_name || user.lastName || prev.lastName,
-        email: customer.billing?.email || user.email || prev.email,
-        phone: customer.billing?.phone || customer.shipping?.phone || prev.phone,
-        address: customer.shipping?.address_1 || prev.address,
-        city: customer.shipping?.city || prev.city,
-        province: customer.shipping?.state || prev.province,
-        zip: customer.shipping?.postcode || prev.zip,
-      }));
+      // Parse saved addresses from meta
+      const meta = (customer as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+      const raw = meta.find(m => m.key === '_saved_addresses')?.value;
+      let addrList: SavedAddress[] = [];
+      if (raw) {
+        try { addrList = JSON.parse(raw); } catch { addrList = []; }
+      }
+      if (addrList.length > 0) {
+        setSavedAddresses(addrList);
+        const def = addrList.find(a => a.isDefault) || addrList[0];
+        setSelectedAddressId(def.id);
+        setForm((prev) => ({
+          ...prev,
+          firstName: def.first_name || user.firstName || prev.firstName,
+          lastName: def.last_name || user.lastName || prev.lastName,
+          email: customer.billing?.email || user.email || prev.email,
+          phone: def.phone || customer.billing?.phone || prev.phone,
+          address: def.address_1,
+          city: def.city,
+          province: def.state,
+          zip: def.postcode,
+        }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          firstName: customer.shipping?.first_name || customer.billing?.first_name || user.firstName || prev.firstName,
+          lastName: customer.shipping?.last_name || customer.billing?.last_name || user.lastName || prev.lastName,
+          email: customer.billing?.email || user.email || prev.email,
+          phone: customer.billing?.phone || customer.shipping?.phone || prev.phone,
+          address: customer.shipping?.address_1 || prev.address,
+          city: customer.shipping?.city || prev.city,
+          province: customer.shipping?.state || prev.province,
+          zip: customer.shipping?.postcode || prev.zip,
+        }));
+      }
     }).catch(() => {
       // Non-fatal — pre-fill not available
     });
@@ -236,6 +264,52 @@ export default function CheckoutPage() {
                 🇮🇹 Solo Italia
               </span>
             </div>
+            {savedAddresses.length > 0 && (
+              <div className="mb-4 space-y-2">
+                <p className="text-sm font-semibold text-brand-text mb-2">I tuoi indirizzi salvati</p>
+                {savedAddresses.map(addr => (
+                  <label key={addr.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-border hover:border-brand-primary/40'}`}>
+                    <input type="radio" className="sr-only" checked={selectedAddressId === addr.id}
+                      onChange={() => {
+                        setSelectedAddressId(addr.id);
+                        setForm(f => ({
+                          ...f,
+                          firstName: addr.first_name || f.firstName,
+                          lastName: addr.last_name || f.lastName,
+                          address: addr.address_1,
+                          city: addr.city,
+                          province: addr.state,
+                          zip: addr.postcode,
+                          phone: addr.phone || f.phone,
+                        }));
+                      }}
+                    />
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center ${selectedAddressId === addr.id ? 'border-brand-primary' : 'border-brand-border'}`}>
+                      {selectedAddressId === addr.id && <div className="w-2 h-2 rounded-full bg-brand-primary" />}
+                    </div>
+                    <div className="text-sm min-w-0">
+                      {addr.label && <p className="text-xs font-bold text-brand-muted uppercase mb-0.5">{addr.label}</p>}
+                      <p className="font-medium text-brand-text">{addr.first_name} {addr.last_name}</p>
+                      <p className="text-brand-muted">{addr.address_1}, {addr.postcode} {addr.city}{addr.state ? ` (${addr.state})` : ''}</p>
+                    </div>
+                    {addr.isDefault && <span className="ml-auto shrink-0 text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full self-start">Default</span>}
+                  </label>
+                ))}
+                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === '__new__' || savedAddresses.length === 0 ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-border hover:border-brand-primary/40'}`}>
+                  <input type="radio" className="sr-only" checked={selectedAddressId === '__new__' || !selectedAddressId}
+                    onChange={() => {
+                      setSelectedAddressId('__new__');
+                      setForm(f => ({ ...f, address: '', city: '', province: '', zip: '' }));
+                    }}
+                  />
+                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedAddressId === '__new__' || !selectedAddressId ? 'border-brand-primary' : 'border-brand-border'}`}>
+                    {(selectedAddressId === '__new__' || !selectedAddressId) && <div className="w-2 h-2 rounded-full bg-brand-primary" />}
+                  </div>
+                  <span className="text-sm text-brand-muted">Inserisci nuovo indirizzo</span>
+                </label>
+                <hr className="border-brand-border my-2" />
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-brand-text mb-1">Nome *</label>
@@ -269,14 +343,16 @@ export default function CheckoutPage() {
                 <label className="block text-sm font-medium text-brand-text mb-1">Indirizzo *</label>
                 <input
                   type="text" name="address" value={form.address} onChange={handleChange} required
-                  className="w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                  readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null}
+                  className={`w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-brand-text mb-1">Città *</label>
                 <input
                   type="text" name="city" value={form.city} onChange={handleChange} required
-                  className="w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                  readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null}
+                  className={`w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -284,14 +360,16 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-medium text-brand-text mb-1">Provincia *</label>
                   <input
                     type="text" name="province" value={form.province} onChange={handleChange} required maxLength={2}
-                    className="w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary uppercase"
+                    readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null}
+                    className={`w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary uppercase${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-text mb-1">CAP *</label>
                   <input
                     type="text" name="zip" value={form.zip} onChange={handleChange} required maxLength={5}
-                    className="w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                    readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null}
+                    className={`w-full h-11 px-4 rounded-xl border border-brand-border text-base focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`}
                   />
                 </div>
               </div>

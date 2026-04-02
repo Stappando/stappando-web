@@ -4,10 +4,8 @@ import { getWCSecrets } from '@/lib/config';
 
 async function getStripeCustomerId(customerId: string): Promise<string | null> {
   const wc = getWCSecrets();
-  const auth = Buffer.from(`${wc.consumerKey}:${wc.consumerSecret}`).toString('base64');
-  const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${customerId}`, {
-    headers: { Authorization: `Basic ${auth}` },
-  });
+  const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+  const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${customerId}?${auth}`);
   if (!res.ok) return null;
   const customer = await res.json();
   const meta: { key: string; value: string }[] = customer.meta_data || [];

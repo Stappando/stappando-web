@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/store/cart';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore, type SavedAddress } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
@@ -448,6 +448,8 @@ function Step2Shipping() {
     needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   }));
   const [prefilled, setPrefilled] = useState(!!savedShipping);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   // Pre-fill from logged user + WC customer address
   useEffect(() => {
@@ -459,24 +461,48 @@ function Step2Shipping() {
         email: f.email || user.email || '',
       }));
       setPrefilled(true);
-      // Fetch full customer data for address
+      // Fetch full customer data for address + saved addresses
       if (user.id) {
         fetch(`/api/customers?id=${user.id}`)
           .then(r => r.ok ? r.json() : null)
           .then(data => {
             if (!data) return;
-            const b = data.billing || data.shipping || {};
-            setForm(f => ({
-              ...f,
-              firstName: f.firstName || b.first_name || user.firstName || '',
-              lastName: f.lastName || b.last_name || user.lastName || '',
-              email: f.email || b.email || user.email || '',
-              phone: f.phone || b.phone || '',
-              address: f.address || b.address_1 || '',
-              zip: f.zip || b.postcode || '',
-              city: f.city || b.city || '',
-              province: f.province || b.state || '',
-            }));
+            // Parse saved addresses from meta
+            const meta = (data as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+            const raw = meta.find((m: { key: string; value: string }) => m.key === '_saved_addresses')?.value;
+            let addrList: SavedAddress[] = [];
+            if (raw) {
+              try { addrList = JSON.parse(raw); } catch { addrList = []; }
+            }
+            if (addrList.length > 0) {
+              setSavedAddresses(addrList);
+              const def = addrList.find(a => a.isDefault) || addrList[0];
+              setSelectedAddressId(def.id);
+              setForm(f => ({
+                ...f,
+                firstName: def.first_name || user.firstName || f.firstName,
+                lastName: def.last_name || user.lastName || f.lastName,
+                email: f.email || data.billing?.email || user.email || '',
+                phone: def.phone || data.billing?.phone || f.phone || '',
+                address: def.address_1,
+                zip: def.postcode,
+                city: def.city,
+                province: def.state,
+              }));
+            } else {
+              const b = data.billing || data.shipping || {};
+              setForm(f => ({
+                ...f,
+                firstName: f.firstName || b.first_name || user.firstName || '',
+                lastName: f.lastName || b.last_name || user.lastName || '',
+                email: f.email || b.email || user.email || '',
+                phone: f.phone || b.phone || '',
+                address: f.address || b.address_1 || '',
+                zip: f.zip || b.postcode || '',
+                city: f.city || b.city || '',
+                province: f.province || b.state || '',
+              }));
+            }
           })
           .catch(() => {});
       }
@@ -525,16 +551,63 @@ function Step2Shipping() {
               <span className="text-[12px] font-semibold text-green-700">Spediamo solo in Italia</span>
             </div>
 
+            {savedAddresses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[13px] font-semibold text-[#333] mb-1">I tuoi indirizzi salvati</p>
+                {savedAddresses.map(addr => (
+                  <label key={addr.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
+                    <input type="radio" className="sr-only" checked={selectedAddressId === addr.id}
+                      onChange={() => {
+                        setSelectedAddressId(addr.id);
+                        setForm(f => ({
+                          ...f,
+                          firstName: addr.first_name || f.firstName,
+                          lastName: addr.last_name || f.lastName,
+                          address: addr.address_1,
+                          city: addr.city,
+                          province: addr.state,
+                          zip: addr.postcode,
+                          phone: addr.phone || f.phone,
+                        }));
+                      }}
+                    />
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center ${selectedAddressId === addr.id ? 'border-[#005667]' : 'border-[#ccc]'}`}>
+                      {selectedAddressId === addr.id && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+                    </div>
+                    <div className="text-[13px] min-w-0">
+                      {addr.label && <p className="text-[11px] font-bold text-[#888] uppercase mb-0.5">{addr.label}</p>}
+                      <p className="font-medium text-[#333]">{addr.first_name} {addr.last_name}</p>
+                      <p className="text-[#888]">{addr.address_1}, {addr.postcode} {addr.city}{addr.state ? ` (${addr.state})` : ''}</p>
+                    </div>
+                    {addr.isDefault && <span className="ml-auto shrink-0 text-[10px] font-bold text-[#005667] bg-[#005667]/10 px-2 py-0.5 rounded-full self-start">Default</span>}
+                  </label>
+                ))}
+                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === '__new__' || !selectedAddressId ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
+                  <input type="radio" className="sr-only" checked={selectedAddressId === '__new__' || !selectedAddressId}
+                    onChange={() => {
+                      setSelectedAddressId('__new__');
+                      setForm(f => ({ ...f, address: '', city: '', province: '', zip: '' }));
+                    }}
+                  />
+                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedAddressId === '__new__' || !selectedAddressId ? 'border-[#005667]' : 'border-[#ccc]'}`}>
+                    {(selectedAddressId === '__new__' || !selectedAddressId) && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+                  </div>
+                  <span className="text-[13px] text-[#888]">Inserisci nuovo indirizzo</span>
+                </label>
+                <hr className="border-[#e5e5e5] my-1" />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3.5">
               <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Nome *" className={`${inputClass}`} />
               <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Cognome *" className={`${inputClass}`} />
             </div>
             <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email *" className={`w-full ${inputClass}`} />
-            <input name="address" value={form.address} onChange={handleChange} placeholder="Indirizzo *" className={`w-full ${inputClass}`} />
+            <input name="address" value={form.address} onChange={handleChange} placeholder="Indirizzo *" readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`w-full ${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
             <div className="grid grid-cols-[90px_1fr_80px] gap-3.5">
-              <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} className={inputClass} />
-              <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" className={inputClass} />
-              <input name="province" value={form.province} onChange={e => setForm({ ...form, province: e.target.value.toUpperCase().slice(0, 2) })} placeholder="Prov." maxLength={2} className={`${inputClass} text-center uppercase`} />
+              <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
+              <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
+              <input name="province" value={form.province} onChange={e => setForm({ ...form, province: e.target.value.toUpperCase().slice(0, 2) })} placeholder="Prov." maxLength={2} readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass} text-center uppercase${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
             </div>
             <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
 
