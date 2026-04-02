@@ -8,8 +8,22 @@ async function getStripeCustomerId(customerId: string): Promise<string | null> {
   const res = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${customerId}?${auth}`);
   if (!res.ok) return null;
   const customer = await res.json();
+
+  // 1. Try meta_data (works if key was created before the WC meta bug)
   const meta: { key: string; value: string }[] = customer.meta_data || [];
-  return meta.find((m) => m.key === '_stripe_customer_id')?.value || null;
+  const fromMeta = meta.find((m) => m.key === '_stripe_customer_id')?.value || null;
+  if (fromMeta) return fromMeta;
+
+  // 2. Fallback: billing.address_2 JSON backup (set by setup-intent to survive WC meta bug)
+  try {
+    const addr2 = customer.billing?.address_2 || '';
+    if (addr2.startsWith('{')) {
+      const extra = JSON.parse(addr2) as Record<string, string>;
+      if (extra._stripe_customer_id) return extra._stripe_customer_id;
+    }
+  } catch { /* */ }
+
+  return null;
 }
 
 export async function GET(req: NextRequest) {
