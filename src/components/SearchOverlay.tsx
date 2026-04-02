@@ -87,7 +87,7 @@ function loadIndex(): Promise<IndexEntry[]> {
 /** Search the local index — instant, no network */
 function searchIndex(index: IndexEntry[], query: string, limit: number): SearchResult[] {
   const q = query.toLowerCase().trim();
-  if (q.length < 2) return [];
+  if (q.length < 1) return [];
 
   const terms = q.split(/\s+/);
 
@@ -159,6 +159,7 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [apiFetched, setApiFetched] = useState(false);
   const [indexReady, setIndexReady] = useState(!!_indexCache);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -186,9 +187,10 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
    */
   const doSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) {
+    if (trimmed.length < 1) {
       setResults([]);
       setSearched(false);
+      setApiFetched(false);
       setLoading(false);
       return;
     }
@@ -199,6 +201,12 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
       setResults(localResults);
       setLoading(false);
       setSearched(true);
+    }
+
+    // Only call API for 2+ chars (1-char queries use local index only)
+    if (trimmed.length < 2) {
+      setApiFetched(true);
+      return;
     }
 
     // Step 2: Background API call for fresh/accurate results
@@ -213,7 +221,6 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
       if (res.ok) {
         const apiResults: SearchResult[] = await res.json();
         if (apiResults.length > 0) {
-          // Silently update with fresher API data
           setResults(apiResults);
         }
       }
@@ -224,19 +231,21 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
     } finally {
       setLoading(false);
       setSearched(true);
+      setApiFetched(true);
     }
   }, []);
 
   const handleInput = useCallback((value: string) => {
     setQuery(value);
+    setApiFetched(false);
 
-    // Show skeleton only if index not ready yet and 2+ chars
-    if (value.trim().length >= 2 && !_indexCache) {
+    // Show skeleton only if index not ready yet and 1+ chars
+    if (value.trim().length >= 1 && !_indexCache) {
       setLoading(true);
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(value), 150);
+    debounceRef.current = setTimeout(() => doSearch(value), 30);
   }, [doSearch]);
 
   const handleSuggestion = useCallback((term: string) => {
@@ -320,8 +329,8 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
             </div>
           )}
 
-          {/* No results */}
-          {!loading && searched && results.length === 0 && query.length >= 2 && (
+          {/* No results — only after API has also responded */}
+          {!loading && searched && apiFetched && results.length === 0 && query.length >= 1 && (
             <div className="px-4 py-8 text-center">
               <p className="text-sm text-gray-500">
                 Nessun vino trovato per &ldquo;{query}&rdquo;
@@ -392,8 +401,8 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
           </div>
         )}
 
-        {/* No results */}
-        {!loading && searched && results.length === 0 && query.length >= 2 && (
+        {/* No results — only after API has also responded */}
+        {!loading && searched && apiFetched && results.length === 0 && query.length >= 1 && (
           <div className="mt-3 py-4 text-center">
             <p className="text-sm text-gray-500">
               Nessun vino trovato per &ldquo;{query}&rdquo;
