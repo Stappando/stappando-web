@@ -77,7 +77,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: `Errore WC (${res.status})`, details: err }, { status: res.status });
     }
 
-    // Sync shop data to pa_produttore term meta (so /cantine/slug page shows it)
+    // Sync shop data to pa_produttore term (logo via WC API + meta via custom endpoint)
     try {
       // Get _producer_term_id from customer billing.address_2
       const custRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.vendorId}?${auth}`);
@@ -89,29 +89,44 @@ export async function PUT(req: NextRequest) {
         const termId = extra._producer_term_id;
 
         if (termId) {
-          // Update term description
+          // Find pa_produttore attribute ID
           const attrRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/attributes?${auth}`);
+          let attrId: number | null = null;
           if (attrRes.ok) {
             const attrs: { id: number; slug: string }[] = await attrRes.json();
-            const prodAttr = attrs.find(a => a.slug === 'pa_produttore');
-            if (prodAttr) {
-              // Update term description via WC API
-              await fetch(`${wc.baseUrl}/wp-json/wc/v3/products/attributes/${prodAttr.id}/terms/${termId}?${auth}`, {
+            attrId = attrs.find(a => a.slug === 'pa_produttore')?.id ?? null;
+          }
+
+          if (attrId) {
+            // Build term update payload — always update description
+            // Also update native WC term image with logo URL so cantina page can
+            // display it without depending on the custom endpoint
+            const termPayload: Record<string, unknown> = { description: shopData.descrizione };
+            if (shopData.logo) {
+              termPayload.image = { src: shopData.logo };
+            }
+            const termPutRes = await fetch(
+              `${wc.baseUrl}/wp-json/wc/v3/products/attributes/${attrId}/terms/${termId}?${auth}`,
+              {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description: shopData.descrizione }),
-              });
+                body: JSON.stringify(termPayload),
+              },
+            );
+            if (!termPutRes.ok) {
+              const termErr = await termPutRes.text().catch(() => '');
+              console.error(`[Shop] Failed to update term ${termId} (${termPutRes.status}):`, termErr);
+            } else {
+              console.log(`[Shop] Updated WC term ${termId} (logo + description) for vendor ${body.vendorId}`);
             }
           }
 
-          // Update term meta (region, address, banner) via WP snippet endpoint
-          // The producer-logos snippet reads these metas
+          // Also call custom endpoint to sync region, address, banner (and logo as backup)
           const wpUser = process.env.WP_USER;
           const wpPass = process.env.WP_APP_PASSWORD;
           if (wpUser && wpPass) {
             const wpAuth = Buffer.from(`${wpUser}:${wpPass}`).toString('base64');
-            // Update term meta via custom endpoint
-            await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/update-producer-meta`, {
+            const metaRes = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/update-producer-meta`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Basic ${wpAuth}` },
               body: JSON.stringify({
@@ -121,11 +136,18 @@ export async function PUT(req: NextRequest) {
                 banner: shopData.banner,
                 logo: shopData.logo,
               }),
-            }).catch(e => console.error('Failed to update producer meta:', e));
+            });
+            if (!metaRes.ok) {
+              const metaErr = await metaRes.text().catch(() => '');
+              console.error(`[Shop] update-producer-meta failed (${metaRes.status}):`, metaErr);
+            } else {
+              console.log(`[Shop] Synced meta for vendor ${body.vendorId}, term ${termId}`);
+            }
+          } else {
+            console.warn('[Shop] WP_USER / WP_APP_PASSWORD not set — banner/region/address meta not synced');
           }
-
-          // Clear transient cache
-          console.log(`[Shop] Synced vendor ${body.vendorId} shop to producer term ${termId}`);
+        } else {
+          console.warn(`[Shop] No _producer_term_id found for vendor ${body.vendorId} — run profile save first`);
         }
       }
     } catch (e) {

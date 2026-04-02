@@ -169,14 +169,32 @@ async function handleOrderEvent(order: Record<string, unknown>) {
     }
 
     case 'cancelled':
-    case 'refunded':
+    case 'refunded': {
+      const cancelLabel = status === 'refunded' ? 'rimborsato' : 'annullato';
+      // Customer email
       await dispatchEmail({
         type: 'order.cancelled',
         email: billing.email,
         name: customerName,
         data: { customerName, orderNumber },
       });
+      // Admin notification
+      await sendEmail({
+        to: [{ email: 'ordini@stappando.it', name: 'Stappando Ordini' }],
+        subject: `⚠️ Ordine #${orderNumber} ${cancelLabel} — ${customerName}`,
+        html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
+          <h2 style="color:#b91c1c;margin:0 0 16px">Ordine #${orderNumber} ${cancelLabel}</h2>
+          <p style="margin:0 0 8px"><strong>Cliente:</strong> ${customerName}</p>
+          <p style="margin:0 0 8px"><strong>Email:</strong> <a href="mailto:${billing.email}">${billing.email}</a></p>
+          <p style="margin:0 0 8px"><strong>Totale ordine:</strong> €${orderTotal}</p>
+          <p style="margin:0 0 8px"><strong>Stato:</strong> ${cancelLabel.charAt(0).toUpperCase() + cancelLabel.slice(1)}</p>
+          <hr style="border:none;border-top:1px solid #e5e5e5;margin:16px 0"/>
+          <p style="font-size:12px;color:#999">Stappando — notifica automatica</p>
+        </div>`,
+        tags: ['admin.order-cancelled'],
+      }).catch(e => console.error('Failed to send admin cancel email:', e));
       break;
+    }
   }
 
   // Points update (check for YITH points meta)

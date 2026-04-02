@@ -33,8 +33,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     }
     if (!term) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
 
-    // Fetch logo, region, address from producer-logos endpoint
-    let producerLogo = '';
+    // Logo: use WC native term image (set when vendor saves shop).
+    // Region/address/banner: try the custom producer-logos endpoint first.
+    // term.image?.src is always available via WC REST API — no custom endpoint needed.
+    const termLogo: string = (term as { image?: { src?: string } }).image?.src || '';
+
+    let producerLogo = termLogo;
     let producerRegion = '';
     let producerAddress = '';
     let producerBanner = '';
@@ -44,13 +48,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
         const logos: { name: string; slug: string; image: string; region?: string; address?: string; banner?: string }[] = await logosRes.json();
         const match = logos.find(l => l.slug === term.slug || l.name === term.name);
         if (match) {
-          producerLogo = match.image || '';
+          // Prefer term image (WC native, always in sync) for logo; custom endpoint for banner/region/address
+          if (!producerLogo) producerLogo = match.image || '';
           producerRegion = match.region || '';
           producerAddress = match.address || '';
           producerBanner = match.banner || '';
         }
       }
-    } catch { /* fallback: no logo data */ }
+    } catch { /* fallback: no custom endpoint data */ }
 
     // Fetch products with this producer attribute
     const productsRes = await fetch(
