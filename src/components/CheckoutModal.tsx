@@ -61,7 +61,7 @@ export default function CheckoutModal() {
   return (
     <div className="fixed inset-0 z-[70]">
       <div className="absolute inset-0 bg-black/40" onClick={checkoutStep < 5 ? closeCheckout : undefined} />
-      <div className="absolute inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-[680px] sm:max-h-[92vh] sm:rounded-2xl bg-white flex flex-col overflow-hidden">
+      <div className="absolute inset-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-[680px] sm:min-h-[70vh] sm:max-h-[92vh] sm:rounded-2xl bg-white flex flex-col overflow-hidden">
         {/* Header with step indicator */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#f0f0f0] shrink-0">
           <div className="flex items-center gap-1">
@@ -121,7 +121,7 @@ function Step1Cart() {
   const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep, addItem, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
   const { user } = useAuthStore();
   const hasStappandoProducts = items.some(i => !i.vendorId || i.vendorId === 'default' || i.vendorName === 'Stappando Enoteca');
-  const [tab, setTab] = useState<'cart' | 'gifts'>('cart');
+  const [giftOpen, setGiftOpen] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
@@ -162,9 +162,9 @@ function Step1Cart() {
   const popPoints = Math.round(total);
   const freeShippingThreshold = API_CONFIG.freeShippingThreshold;
 
-  // Fetch gift products when switching to gifts tab
+  // Fetch gift products when opening gift section
   useEffect(() => {
-    if (tab === 'gifts' && giftProducts.length === 0 && !loadingGifts) {
+    if (giftOpen && giftProducts.length === 0 && !loadingGifts) {
       setLoadingGifts(true);
       Promise.all([
         fetch('/api/products?category=scatole-regalo&limit=8').then(r => r.ok ? r.json() : []).catch(() => []),
@@ -181,7 +181,10 @@ function Step1Cart() {
         .catch(() => {})
         .finally(() => setLoadingGifts(false));
     }
-  }, [tab, giftProducts.length, loadingGifts]);
+  }, [giftOpen, giftProducts.length, loadingGifts]);
+
+  // Count gift items already in cart
+  const giftItemsInCart = items.filter(i => i.vendorId === 'default' && (giftProducts.some(g => g.id === i.id) || giftCards.some(g => g.id === i.id))).length;
 
   const handleAddGift = (p: GiftProduct) => {
     addItem({
@@ -207,32 +210,8 @@ function Step1Cart() {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
-        {/* Tab bar: Carrello / Regali */}
-        <div className="flex border-b border-[#f0f0f0] px-6">
-          <button
-            onClick={() => setTab('cart')}
-            className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'cart' ? 'border-[#005667] text-[#005667]' : 'border-transparent text-[#aaa] hover:text-[#666]'}`}
-          >
-            Carrello ({items.length})
-          </button>
-          {hasStappandoProducts && (
-            <button
-              onClick={() => setTab('gifts')}
-              className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'gifts' ? 'border-[#005667] text-[#005667]' : 'border-transparent text-[#aaa] hover:text-[#666]'}`}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                Scatola e biglietto
-              </span>
-            </button>
-          )}
-        </div>
-
-        {/* TAB 1: CART */}
-        {tab === 'cart' && (
-          <>
-            {/* Items */}
-            <div className="px-6 py-4 space-y-4">
+        {/* Items */}
+        <div className="px-6 py-4 space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3.5">
                   <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
@@ -309,6 +288,88 @@ function Step1Cart() {
               )}
             </div>
 
+            {/* Gift banner — inline accordion */}
+            {hasStappandoProducts && (
+              <div className="mx-6 mb-5">
+                <button
+                  onClick={() => setGiftOpen(!giftOpen)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${giftOpen ? 'bg-[#fdf8f0] border-[#e8dcc8]' : 'bg-[#fdf8f0] border-[#e8dcc8] hover:border-[#d4c4a0]'}`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#f0e6d0] flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-[#8b6914]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-[13px] font-semibold text-[#1a1a1a]">Confezione regalo e dedica</p>
+                    <p className="text-[11px] text-[#999]">Scatola, biglietto di auguri e messaggio personalizzato</p>
+                  </div>
+                  {giftItemsInCart > 0 && !giftOpen && (
+                    <span className="text-[10px] font-bold text-white bg-[#005667] px-2 py-0.5 rounded-full">{giftItemsInCart} aggiunt{giftItemsInCart === 1 ? 'o' : 'i'}</span>
+                  )}
+                  <svg className={`w-4 h-4 text-[#999] transition-transform ${giftOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+
+                {giftOpen && (
+                  <div className="mt-2 border border-[#e8dcc8] rounded-xl bg-[#fdf8f0] px-4 py-4 space-y-4">
+                    {loadingGifts && (
+                      <div className="py-3 text-center text-[12px] text-[#888]">Caricamento...</div>
+                    )}
+
+                    {/* Scatole regalo */}
+                    {!loadingGifts && giftProducts.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-2">Scatole regalo</p>
+                        <div className="space-y-2">
+                          {giftProducts.map(p => (
+                            <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
+                              {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                                <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                              </div>
+                              <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Biglietti auguri */}
+                    {!loadingGifts && giftCards.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-2">Biglietti di auguri</p>
+                        <div className="space-y-2">
+                          {giftCards.map(p => (
+                            <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
+                              {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                                <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                              </div>
+                              <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dedica */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
+                      <textarea
+                        value={giftMessage}
+                        onChange={e => setGiftMessage(e.target.value)}
+                        placeholder="Scrivi la tua dedica..."
+                        rows={2}
+                        maxLength={200}
+                        className="w-full px-3 py-2 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white"
+                      />
+                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* POP points */}
             <div className="mx-6 flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-lg px-3.5 py-2.5 mb-5">
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -331,97 +392,12 @@ function Step1Cart() {
                 Continua →
               </button>
             </div>
-          </>
-        )}
-
-        {/* TAB 2: GIFTS */}
-        {tab === 'gifts' && (
-          <div className="px-6 py-5">
-            <div className="space-y-4">
-              {/* Accordion 1: Scatola regalo */}
-              <div className="border border-[#e8e4dc] rounded-xl overflow-hidden">
-                <button onClick={() => setWantBox(!wantBox)} className="w-full flex items-center justify-between px-4 py-3.5 bg-white">
-                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi una scatola regalo?</span>
-                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantBox ? 'bg-[#005667] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantBox ? 'SÌ' : 'NO'}</span>
-                </button>
-                {wantBox && (
-                  <div className="px-4 pb-4 border-t border-[#f0ece4]">
-                    {loadingGifts ? (
-                      <div className="py-4 text-center text-[12px] text-[#888]">Caricamento...</div>
-                    ) : giftProducts.length > 0 ? (
-                      <div className="space-y-2 mt-3">
-                        {giftProducts.map(p => (
-                          <div key={p.id} className="flex items-center gap-3 border border-[#eae6e0] rounded-lg p-3">
-                            {p.image && <div className="relative w-12 h-12 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="48px" /></div>}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
-                              <p className="text-[14px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
-                            </div>
-                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-2 rounded-lg hover:bg-[#004555] transition-colors">
-                              + Carrello
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[12px] text-[#888] py-3">Scatole regalo in arrivo</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Accordion 2: Biglietto auguri */}
-              <div className="border border-[#e8e4dc] rounded-xl overflow-hidden">
-                <button onClick={() => setWantCard(!wantCard)} className="w-full flex items-center justify-between px-4 py-3.5 bg-white">
-                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi il biglietto di auguri?</span>
-                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantCard ? 'bg-[#005667] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantCard ? 'SÌ' : 'NO'}</span>
-                </button>
-                {wantCard && (
-                  <div className="px-4 pb-4 border-t border-[#f0ece4]">
-                    {giftCards.length > 0 && (
-                      <div className="space-y-2 mt-3 mb-3">
-                        {giftCards.map(p => (
-                          <div key={p.id} className="flex items-center gap-3 border border-[#eae6e0] rounded-lg p-3">
-                            {p.image && <div className="relative w-12 h-12 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="48px" /></div>}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
-                              <p className="text-[14px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
-                            </div>
-                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-2 rounded-lg hover:bg-[#004555] transition-colors">
-                              + Carrello
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
-                      <textarea
-                        value={giftMessage}
-                        onChange={e => setGiftMessage(e.target.value)}
-                        placeholder="Scrivi la tua dedica..."
-                        rows={3}
-                        maxLength={200}
-                        className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
-                      />
-                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
-                ← Torna al carrello
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
-          {tab === 'gifts' ? '← Torna al carrello' : `${formatPrice(total)} € · Continua →`}
+        <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+          {formatPrice(total)} € · Continua →
         </button>
       </div>
     </>
@@ -605,35 +581,35 @@ function Step2Shipping() {
             </div>
             <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
 
-            {/* Notes */}
+            {/* Invoice section — prominent container */}
+            <div className="mt-2 border border-[#e8e4dc] bg-[#fafaf8] rounded-xl p-4 space-y-3.5">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" name="needsInvoice" checked={form.needsInvoice} onChange={handleChange} className="mt-0.5 w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
+                <div>
+                  <span className="text-[13px] font-semibold text-[#333]">Fattura elettronica</span>
+                  <p className="text-[11px] text-[#aaa] mt-0.5">La fattura viene inviata via email, non è inclusa nel pacco</p>
+                </div>
+              </label>
+
+              {form.needsInvoice && (
+                <div className="space-y-3.5 pt-3 border-t border-[#e8e4dc]">
+                  <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass}`} />
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`${inputClass}`} />
+                    <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale *" required maxLength={16} className={`${inputClass} uppercase`} />
+                  </div>
+                  <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
+                </div>
+              )}
+            </div>
+
+            {/* Notes — last, optional */}
             <textarea
               name="notes" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="Note per l'ordine"
+              placeholder="Note per l'ordine (opzionale)"
               rows={2}
               className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
             />
-
-            {/* Invoice checkbox */}
-            <label className="flex items-start gap-3 cursor-pointer mt-1">
-              <input type="checkbox" name="needsInvoice" checked={form.needsInvoice} onChange={handleChange} className="mt-0.5 w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
-              <div>
-                <span className="text-[13px] text-[#444]">Ho bisogno di fattura elettronica</span>
-                <p className="text-[11px] text-[#aaa] mt-0.5">La fattura viene inviata via email, non è inclusa nel pacco</p>
-              </div>
-            </label>
-
-            {/* Invoice fields */}
-            {form.needsInvoice && (
-              <div className="space-y-4 mt-3 pt-4 border-t border-[#f0f0f0]">
-                <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider">Dati fatturazione</p>
-                <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass}`} />
-                <div className="grid grid-cols-2 gap-3.5">
-                  <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`${inputClass}`} />
-                  <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale *" required maxLength={16} className={`${inputClass} uppercase`} />
-                </div>
-                <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
-              </div>
-            )}
 
           </div>
 
@@ -697,34 +673,26 @@ function Step3Carrier() {
             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-1">Scegli il tuo corriere</h3>
             <p className="text-[13px] text-[#888] mb-5">Tutti i corrieri includono tracking e assicurazione</p>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {carriers.map(c => (
                 <label key={c.id} onClick={() => handleSelect(c.id)}
-                  className={`flex items-start gap-4 p-5 rounded-xl border-[1.5px] cursor-pointer transition-all ${
-                    carrier === c.id ? 'border-[#005667] bg-[#f0f7f5] shadow-sm' : 'border-[#e8e4dc] hover:border-[#005667]/30'
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border-[1.5px] cursor-pointer transition-all ${
+                    carrier === c.id ? 'border-[#005667] bg-[#f0f7f5]' : 'border-[#e8e4dc] hover:border-[#005667]/30'
                   }`}>
-                  <input type="radio" name="carrier" checked={carrier === c.id} readOnly className="mt-1 w-4 h-4 text-[#005667] focus:ring-[#005667]" />
-                  <div className="w-12 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
-                    <span className="text-white text-[10px] font-bold">{c.abbr}</span>
+                  <input type="radio" name="carrier" checked={carrier === c.id} readOnly className="w-4 h-4 text-[#005667] focus:ring-[#005667] shrink-0" />
+                  <div className="w-9 h-6 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
+                    <span className="text-white text-[9px] font-bold">{c.abbr}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[14px] font-semibold text-[#1a1a1a]">{c.name}</p>
-                      <span className="text-[11px] text-[#005667] font-semibold bg-[#e8f4f1] px-2.5 py-0.5 rounded-full">{c.time.replace('Consegna ', '')}</span>
-                    </div>
-                    <p className="text-[12px] text-[#888] mt-1 leading-relaxed">{c.desc}</p>
-                  </div>
+                  <span className="text-[13px] font-medium text-[#1a1a1a] flex-1">{c.name}</span>
+                  <span className="text-[11px] text-[#005667] font-semibold bg-[#e8f4f1] px-2 py-0.5 rounded-full shrink-0">{c.time.replace('Consegna ', '')}</span>
                 </label>
               ))}
             </div>
 
             {/* Info box */}
-            <div className="flex items-start gap-3 bg-[#f8f6f1] rounded-xl p-4 mt-5">
-              <svg className="w-5 h-5 text-[#005667] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>
-              <div>
-                <p className="text-[13px] font-semibold text-[#1a1a1a]">Imballaggio protettivo incluso</p>
-                <p className="text-[12px] text-[#888]">Ogni bottiglia viene imballata in cartoni speciali con protezione antiurto</p>
-              </div>
+            <div className="flex items-center gap-2.5 bg-[#f8f6f1] rounded-lg px-3.5 py-3 mt-4">
+              <svg className="w-4 h-4 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>
+              <span className="text-[12px] text-[#666]">Imballaggio protettivo incluso per ogni bottiglia</span>
             </div>
           </div>
 
