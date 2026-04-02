@@ -768,10 +768,10 @@ function buildFollowUp8(): string {
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-&Egrave; un po&rsquo; che non ci sentiamo. Questa &egrave; l&rsquo;ultima mail della serie, non voglio essere invadente.
+&Egrave; un po&rsquo; che non ci sentiamo. Non voglio essere invadente.
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Volevo solo dirvi che <strong>la porta &egrave; sempre aperta</strong>. Se in futuro vorrete dare visibilit&agrave; ai vostri vini o alle esperienze in cantina, ci trovate qui.
+Se volete dare visibilit&agrave; gratuita ai vostri vini o alle esperienze in cantina, ci trovate qui.
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
 <tr><td style="padding:20px 24px;background:#f8f9fa;border-radius:12px;">
