@@ -195,49 +195,53 @@ export default function SearchOverlay({ onClose, isMobile = false }: Props) {
       return;
     }
 
-    // Step 1: Instant local results (await index if not ready yet)
-    let index = _indexCache;
-    if (!index) {
-      index = await loadIndex();
-    }
-    if (index && index.length > 0) {
-      const localResults = searchIndex(index, trimmed, 5);
+    // Step 1: Instant local results if index already cached
+    if (_indexCache) {
+      const localResults = searchIndex(_indexCache, trimmed, 5);
       setResults(localResults);
       setLoading(false);
       setSearched(true);
     }
 
-    // Only call API for 2+ chars (1-char queries use local index only)
-    if (trimmed.length < 2) {
-      setApiFetched(true);
-      return;
-    }
-
-    // Step 2: Background API call for fresh/accurate results
+    // Step 2: Fire index load + API call in parallel (not sequentially)
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=5`, {
-        signal: controller.signal,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const apiResults: SearchResult[] = Array.isArray(data) ? data : data.products ?? [];
-        if (apiResults.length > 0) {
-          setResults(apiResults);
+    const indexPromise = _indexCache ? Promise.resolve(_indexCache) : loadIndex();
+    const apiPromise = trimmed.length >= 2
+      ? fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=5`, { signal: controller.signal })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (!data) return;
+            const apiResults: SearchResult[] = Array.isArray(data) ? data : data.products ?? [];
+            if (apiResults.length > 0) {
+              setResults(apiResults);
+              setSearched(true);
+              setLoading(false);
+            }
+          })
+          .catch(err => { if ((err as Error).name !== 'AbortError') { /* keep local results */ } })
+          .finally(() => { setApiFetched(true); })
+      : Promise.resolve().then(() => { setApiFetched(true); });
+
+    // If index wasn't cached, wait for it and show local results ASAP
+    if (!_indexCache) {
+      const index = await indexPromise;
+      if (index && index.length > 0) {
+        const localResults = searchIndex(index, trimmed, 5);
+        if (localResults.length > 0) {
+          setResults(localResults);
         }
+        setLoading(false);
+        setSearched(true);
       }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        // Keep local results if API fails
-      }
-    } finally {
-      setLoading(false);
-      setSearched(true);
-      setApiFetched(true);
     }
+
+    // Wait for API to finish
+    await apiPromise;
+    setLoading(false);
+    setSearched(true);
   }, []);
 
   const handleInput = useCallback((value: string) => {
