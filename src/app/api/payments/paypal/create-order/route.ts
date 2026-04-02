@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPayPalOrder } from '@/lib/payments/paypal';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
+import { validateStock } from '@/lib/payments/validate-stock';
 import type { OrderPayload } from '@/lib/payments/types';
 
 export async function POST(req: NextRequest) {
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest) {
     }
     if (!isNonEmptyString(c.address) || !isNonEmptyString(c.city) || !isNonEmptyString(c.zip)) {
       return NextResponse.json({ error: 'Indirizzo completo obbligatorio' }, { status: 400 });
+    }
+
+    // Stock validation — check availability before opening PayPal
+    const stockCheck = await validateStock(
+      body.items.map((i) => ({ id: i.id, name: i.name || '', quantity: i.quantity })),
+    );
+    if (!stockCheck.ok) {
+      return NextResponse.json({ error: stockCheck.error }, { status: 409 });
     }
 
     // Calculate total (subtract coupon discount if any)

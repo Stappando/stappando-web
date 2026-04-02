@@ -11,6 +11,7 @@ import {
   sendSupportTicket,
   type WCCustomer,
   type WCOrder,
+  type WCSubOrder,
   type Address,
 } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
@@ -828,6 +829,7 @@ function OrdersSection({ userId }: { userId: number }) {
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [resoOrder, setResoOrder] = useState<WCOrder | null>(null);
   const [trackingModal, setTrackingModal] = useState<{ trackingNumber: string; zipCode: string } | null>(null);
+  const [search, setSearch] = useState('');
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
@@ -841,21 +843,25 @@ function OrdersSection({ userId }: { userId: number }) {
     alert('Prodotti aggiunti al carrello!');
   };
 
-  const getTrackingNumber = (order: WCOrder): string | null => {
-    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+  const getTrackingNumber = (order: WCOrder | WCSubOrder): string | null => {
+    const meta = order.meta_data || [];
     const t = meta.find(m => m.key === '_tracking_number' || m.key === 'tracking_number' || m.key === 'sp_tracking_number' || m.key === '_wc_shipment_tracking_items');
     if (t?.value) { try { const p = JSON.parse(t.value); return p[0]?.tracking_number || t.value; } catch { return t.value; } }
     return null;
   };
 
-  const getZipCode = (order: WCOrder): string => (order as unknown as { shipping?: { postcode?: string } }).shipping?.postcode || '';
+  const getZipCode = (order: WCOrder): string => order.shipping?.postcode || '';
 
-  const trackingSteps = ['Ordinato', 'Preparazione', 'Spedito', 'In consegna', 'Consegnato'];
-  const getStep = (status: string) => { if (status === 'completed') return 4; if (status === 'processing') return 1; return 0; };
+  const trackingSteps = ['Ordinato', 'In lavorazione', 'Spedito', 'Consegnato'];
+  const getStep = (order: WCOrder): number => {
+    if (order.status === 'completed') return 3;
+    if (getTrackingNumber(order)) return 2;
+    if (['processing', 'on-hold'].includes(order.status)) return 1;
+    return 0;
+  };
 
   const getReturnStatus = (order: WCOrder): string | null => {
-    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
-    const rs = meta.find(m => m.key === '_return_status');
+    const rs = order.meta_data?.find(m => m.key === '_return_status');
     return rs?.value || null;
   };
 
@@ -870,10 +876,21 @@ function OrdersSection({ userId }: { userId: number }) {
     { key: 'completed', label: 'Completati' }, { key: 'cancelled', label: 'Annullati' },
   ];
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => {
-    if (filter === 'processing') return ['processing', 'on-hold', 'pending'].includes(o.status);
-    return o.status === filter;
-  });
+  const filtered = (() => {
+    let result = filter === 'all' ? orders : orders.filter(o => {
+      if (filter === 'processing') return ['processing', 'on-hold', 'pending'].includes(o.status);
+      return o.status === filter;
+    });
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(o =>
+        o.number.toLowerCase().includes(q) ||
+        o.line_items.some(i => i.name.toLowerCase().includes(q)) ||
+        safeDate(o.date_created).toLowerCase().includes(q)
+      );
+    }
+    return result;
+  })();
 
   if (loading) return <LoadingSpinner />;
 
@@ -881,15 +898,27 @@ function OrdersSection({ userId }: { userId: number }) {
     <>
       <div className="bg-white rounded-2xl border border-[#e8e4dc] shadow-sm">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#e8e4dc] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-[17px] font-bold text-[#005667]">I miei ordini <span className="text-[13px] font-normal text-[#888]">({orders.length})</span></h2>
-          <div className="flex gap-2 flex-wrap">
-            {filters.map(f => (
-              <button key={f.key} onClick={() => setFilter(f.key)}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${filter === f.key ? 'bg-[#005667] text-white' : 'bg-white border border-[#e8e4dc] text-[#888] hover:border-[#005667] hover:text-[#005667]'}`}>
-                {f.label}
-              </button>
-            ))}
+        <div className="px-6 py-4 border-b border-[#e8e4dc] flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 className="text-[17px] font-bold text-[#005667]">I miei ordini <span className="text-[13px] font-normal text-[#888]">({orders.length})</span></h2>
+            <div className="flex gap-2 flex-wrap">
+              {filters.map(f => (
+                <button key={f.key} onClick={() => setFilter(f.key)}
+                  className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${filter === f.key ? 'bg-[#005667] text-white' : 'bg-white border border-[#e8e4dc] text-[#888] hover:border-[#005667] hover:text-[#005667]'}`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#bbb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"/></svg>
+            <input
+              type="text"
+              placeholder="Cerca per numero ordine o prodotto…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-8 pr-4 py-2 text-[12px] border border-[#e8e4dc] rounded-lg focus:outline-none focus:border-[#005667] text-[#444] placeholder:text-[#bbb]"
+            />
           </div>
         </div>
 
@@ -900,8 +929,9 @@ function OrdersSection({ userId }: { userId: number }) {
             <div className="space-y-4">
               {filtered.map((order) => {
                 const isOpen = expanded === order.id;
-                const currentStep = getStep(order.status);
+                const currentStep = getStep(order);
                 const trackNum = getTrackingNumber(order);
+                const hasSubOrders = (order._sub_orders?.length ?? 0) > 0;
 
                 return (
                   <div key={order.id} className={`border rounded-xl overflow-hidden transition-colors ${isOpen ? 'border-[#005667]/30' : 'border-[#e8e4dc] hover:border-[#005667]/20'}`}>
@@ -933,7 +963,7 @@ function OrdersSection({ userId }: { userId: number }) {
                       {/* Action buttons — desktop only */}
                       <div className="hidden sm:flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         <button onClick={() => handleReorder(order)} className="px-3 py-1.5 bg-[#005667] text-white rounded-md text-[11px] font-semibold hover:bg-[#004555] transition-colors">Riordina</button>
-                        {['completed', 'processing'].includes(order.status) && (
+                        {['completed', 'processing'].includes(order.status) && !hasSubOrders && (
                           <button onClick={() => trackNum ? setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) }) : alert('Tracking non ancora disponibile. Riceverai una mail con il link di tracciamento quando l\'ordine verrà spedito.')} className="px-3 py-1.5 border border-[#005667] text-[#005667] rounded-md text-[11px] font-semibold hover:bg-[#005667]/5 transition-colors">Traccia</button>
                         )}
                         {order.status === 'completed' && !getReturnStatus(order) && (
@@ -948,13 +978,13 @@ function OrdersSection({ userId }: { userId: number }) {
                     {isOpen && (
                       <div className="border-t border-[#f0f0f0] bg-[#fafaf8]">
                         {/* Timeline */}
-                        {['processing', 'completed'].includes(order.status) && (
+                        {['processing', 'on-hold', 'completed'].includes(order.status) && (
                           <div className="px-6 py-5">
                             <div className="relative flex items-start justify-between">
                               <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-[#e8e4dc]" />
-                              <div className="absolute top-4 left-[10%] h-0.5 bg-[#005667] transition-all" style={{ width: `${Math.min((currentStep / 4) * 80, 80)}%` }} />
+                              <div className="absolute top-4 left-[10%] h-0.5 bg-[#005667] transition-all" style={{ width: `${Math.min((currentStep / 3) * 80, 80)}%` }} />
                               {trackingSteps.map((s, i) => (
-                                <div key={s} className="flex flex-col items-center relative z-10" style={{ width: '20%' }}>
+                                <div key={s} className="flex flex-col items-center relative z-10" style={{ width: '25%' }}>
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
                                     i < currentStep ? 'bg-[#005667] text-white' : i === currentStep ? 'bg-[#005667] text-white animate-pulse' : 'bg-white border-2 border-[#e8e4dc] text-[#bbb]'
                                   }`}>
@@ -967,32 +997,123 @@ function OrdersSection({ userId }: { userId: number }) {
                           </div>
                         )}
 
-                        {/* Products */}
-                        <div className="px-6 pb-4 space-y-2.5">
-                          {order.line_items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3">
-                              <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
-                                {item.image?.src && <img src={item.image.src} alt={item.name} className="w-full h-full object-contain" />}
+                        {/* Products — grouped by vendor sub-order if applicable */}
+                        {hasSubOrders ? (
+                          <div className="px-6 pb-2 space-y-3 pt-2">
+                            {order._sub_orders!.map((sub: WCSubOrder) => {
+                              const subTrackNum = getTrackingNumber(sub);
+                              return (
+                                <div key={sub.id} className="border border-[#e8e4dc] rounded-xl overflow-hidden">
+                                  <div className="px-4 py-2.5 bg-[#f5f1ea] flex items-center justify-between gap-2">
+                                    <div>
+                                      <span className="text-[11px] font-bold text-[#005667]">{sub._vendor_name || 'Stappando Enoteca'}</span>
+                                      <span className="text-[10px] text-[#aaa] ml-2">#{sub.number}</span>
+                                    </div>
+                                    <button
+                                      onClick={() => subTrackNum
+                                        ? setTrackingModal({ trackingNumber: subTrackNum, zipCode: order.shipping?.postcode || '' })
+                                        : alert('Tracking non ancora disponibile. Riceverai una mail con il link di tracciamento quando l\'ordine verrà spedito.')}
+                                      className="shrink-0 px-2.5 py-1 border border-[#005667] text-[#005667] rounded-md text-[10px] font-semibold hover:bg-[#005667]/5 transition-colors"
+                                    >
+                                      Traccia
+                                    </button>
+                                  </div>
+                                  <div className="p-4 space-y-2.5">
+                                    {sub.line_items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-3">
+                                        <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
+                                          {item.image?.src && <img src={item.image.src} alt={item.name} className="w-full h-full object-contain" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">{item.name}</p>
+                                          <p className="text-[11px] text-[#888]">x{item.quantity}</p>
+                                        </div>
+                                        <p className="text-[13px] font-bold text-[#005667] shrink-0">{formatPrice(item.total)} €</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="px-6 pb-4 space-y-2.5 pt-2">
+                            {order.line_items.map((item) => (
+                              <div key={item.id} className="flex items-center gap-3">
+                                <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-[#f5f1ea] to-[#e8e0d2] overflow-hidden shrink-0 flex items-center justify-center">
+                                  {item.image?.src && <img src={item.image.src} alt={item.name} className="w-full h-full object-contain" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <a href={`/prodotto/${item.product_id}`} className="text-[13px] font-semibold text-[#1a1a1a] truncate hover:text-[#005667] transition-colors block">{item.name}</a>
+                                  <p className="text-[11px] text-[#888]">x{item.quantity}</p>
+                                </div>
+                                <p className="text-[13px] font-bold text-[#005667] shrink-0">{formatPrice(item.price)} €</p>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <a href={`/prodotto/${item.product_id}`} className="text-[13px] font-semibold text-[#1a1a1a] truncate hover:text-[#005667] transition-colors block">{item.name}</a>
-                                <p className="text-[11px] text-[#888]">x{item.quantity}</p>
-                              </div>
-                              <p className="text-[13px] font-bold text-[#005667] shrink-0">{formatPrice(item.price)} €</p>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Price breakdown */}
+                        <div className="px-6 py-3 border-t border-[#f0f0f0] space-y-1.5">
+                          {(() => {
+                            const disc = parseFloat(order.discount_total || '0');
+                            const ship = parseFloat(order.shipping_total || '0');
+                            const subtotal = parseFloat(order.total) + disc - ship;
+                            return (
+                              <>
+                                <div className="flex justify-between text-[12px] text-[#888]">
+                                  <span>Prodotti</span>
+                                  <span>{formatPrice(subtotal.toFixed(2))} €</span>
+                                </div>
+                                {ship > 0 && (
+                                  <div className="flex justify-between text-[12px] text-[#888]">
+                                    <span>Spedizione</span>
+                                    <span>{formatPrice(order.shipping_total!)} €</span>
+                                  </div>
+                                )}
+                                {disc > 0 && (
+                                  <div className="flex justify-between text-[12px] text-green-600">
+                                    <span>Sconto{order.coupon_lines?.[0]?.code ? ` (${order.coupon_lines[0].code.toUpperCase()})` : ''}</span>
+                                    <span>−{formatPrice(order.discount_total!)} €</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-[14px] font-bold text-[#005667] pt-1.5 border-t border-[#f0f0f0] mt-0.5">
+                                  <span>Totale</span>
+                                  <span>{formatPrice(order.total)} €</span>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
 
-                        {/* Summary */}
-                        <div className="px-6 py-3 border-t border-[#f0f0f0] flex items-center justify-between">
-                          <p className="text-[13px] text-[#888]">Totale ordine</p>
-                          <p className="text-[16px] font-bold text-[#005667]">{formatPrice(order.total)} €</p>
+                        {/* Order meta: shipping address + payment */}
+                        <div className="px-6 py-4 border-t border-[#f0f0f0] grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-bold text-[#888] uppercase tracking-wide mb-1.5">Indirizzo di consegna</p>
+                            <p className="text-[12px] text-[#444] leading-relaxed">
+                              {order.shipping?.first_name} {order.shipping?.last_name}<br />
+                              {order.shipping?.address_1}<br />
+                              {order.shipping?.postcode} {order.shipping?.city}{order.shipping?.state ? ` (${order.shipping.state})` : ''}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-[#888] uppercase tracking-wide mb-1.5">Pagamento</p>
+                            <p className="text-[12px] text-[#444]">{order.payment_method_title || 'N/D'}</p>
+                          </div>
                         </div>
+
+                        {/* Customer note */}
+                        {order.customer_note && (
+                          <div className="px-6 py-3 border-t border-[#f0f0f0]">
+                            <p className="text-[10px] font-bold text-[#888] uppercase tracking-wide mb-1">Note sull&apos;ordine</p>
+                            <p className="text-[12px] text-[#666] italic">&ldquo;{order.customer_note}&rdquo;</p>
+                          </div>
+                        )}
 
                         {/* Mobile actions */}
-                        <div className="sm:hidden px-6 pb-4 flex gap-2">
+                        <div className="sm:hidden px-6 pb-4 pt-2 flex gap-2">
                           <button onClick={() => handleReorder(order)} className="flex-1 py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold">Riordina</button>
-                          {['completed', 'processing'].includes(order.status) && (
+                          {['completed', 'processing'].includes(order.status) && !hasSubOrders && (
                             <button onClick={() => trackNum ? setTrackingModal({ trackingNumber: trackNum, zipCode: getZipCode(order) }) : alert('Tracking non ancora disponibile.')} className="flex-1 py-2.5 border border-[#005667] text-[#005667] rounded-lg text-[12px] font-semibold">Traccia</button>
                           )}
                           {order.status === 'completed' && !getReturnStatus(order) && <button onClick={() => setResoOrder(order)} className="py-2.5 px-4 border border-[#e8e4dc] text-[#888] rounded-lg text-[12px] font-semibold">Reso</button>}
@@ -1022,14 +1143,30 @@ function OrdersSection({ userId }: { userId: number }) {
       )}
 
       {/* Reso modal */}
-      {resoOrder && <ResoModal order={resoOrder} onClose={() => setResoOrder(null)} />}
+      {resoOrder && (
+        <ResoModal
+          order={resoOrder}
+          onClose={() => setResoOrder(null)}
+          onSubmitted={() => {
+            // Optimistically mark return status as 'requested' without refetch
+            setOrders(prev => prev.map(o => o.id === resoOrder.id ? {
+              ...o,
+              meta_data: [
+                ...(o.meta_data || []).filter(m => m.key !== '_return_status'),
+                { key: '_return_status', value: 'requested' },
+              ],
+            } : o));
+            setResoOrder(null);
+          }}
+        />
+      )}
     </>
   );
 }
 
 /* ── Reso Modal (4 step) ──────────────────────────────── */
 
-function ResoModal({ order, onClose }: { order: WCOrder; onClose: () => void }) {
+function ResoModal({ order, onClose, onSubmitted }: { order: WCOrder; onClose: () => void; onSubmitted?: () => void }) {
   const [step, setStep] = useState(1);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [reason, setReason] = useState('');
@@ -1064,8 +1201,8 @@ function ResoModal({ order, onClose }: { order: WCOrder; onClose: () => void }) 
           items: selectedItems,
           productNames: order.line_items.filter(i => selectedItems.includes(i.id)).map(i => i.name),
           productQtys: order.line_items.filter(i => selectedItems.includes(i.id)).map(i => i.quantity),
-          customerName: `${(order as unknown as { billing?: { first_name?: string; last_name?: string } }).billing?.first_name || ''} ${(order as unknown as { billing?: { last_name?: string } }).billing?.last_name || ''}`.trim(),
-          customerEmail: (order as unknown as { billing?: { email?: string } }).billing?.email || '',
+          customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim(),
+          customerEmail: order.billing?.email || '',
           reason: reason === 'Altro' ? otherText : reason,
           pickup,
           pickupDate: pickup === 'home' ? pickupDate : null,
@@ -1091,16 +1228,17 @@ function ResoModal({ order, onClose }: { order: WCOrder; onClose: () => void }) 
   );
 
   if (done) {
+    const handleDoneClose = () => { if (onSubmitted) { onSubmitted(); } else { onClose(); } };
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="absolute inset-0 bg-black/50" onClick={handleDoneClose} />
         <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-[#e8f4f1] flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
           </div>
           <h3 className="text-[18px] font-bold text-[#1a1a1a] mb-2">Richiesta reso inviata</h3>
           <p className="text-[13px] text-[#888] mb-6">Riceverai una mail di conferma con le istruzioni. Il rimborso verrà elaborato entro 5-7 giorni lavorativi.</p>
-          <button onClick={onClose} className="px-8 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">Chiudi</button>
+          <button onClick={handleDoneClose} className="px-8 py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">Chiudi</button>
         </div>
       </div>
     );
@@ -1990,7 +2128,7 @@ function TrackingSection({ userId }: { userId: number }) {
   };
 
   const getTrackingNumber = (order: WCOrder): string | null => {
-    const meta = (order as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
+    const meta = order.meta_data || [];
     const trackingMeta = meta.find(m =>
       m.key === '_tracking_number' || m.key === 'tracking_number' ||
       m.key === '_wc_shipment_tracking_items' || m.key === 'sp_tracking_number'
@@ -2001,9 +2139,7 @@ function TrackingSection({ userId }: { userId: number }) {
     return null;
   };
 
-  const getZipCode = (order: WCOrder): string => {
-    return (order as unknown as { shipping?: { postcode?: string } }).shipping?.postcode || '';
-  };
+  const getZipCode = (order: WCOrder): string => order.shipping?.postcode || '';
 
   return (
     <SectionCard title="Tracciamento spedizioni">
@@ -2170,8 +2306,8 @@ function PreferencesSection({ userId }: { userId: number }) {
   useEffect(() => {
     if (!user?.email) { setNlLoading(false); return; }
 
-    // Mailchimp status
-    fetch(`/api/mailchimp/status?email=${encodeURIComponent(user.email)}`)
+    // Newsletter status via dedicated endpoint
+    fetch(`/api/account/newsletter?email=${encodeURIComponent(user.email)}`)
       .then(r => r.json())
       .then(d => { setNlSubscribed(d.subscribed); setNlLoading(false); })
       .catch(() => setNlLoading(false));
@@ -2203,24 +2339,27 @@ function PreferencesSection({ userId }: { userId: number }) {
   };
 
   const handleNewsletterToggle = async () => {
+    if (!user?.email || nlActioning) return;
     setNlActioning(true);
+    const newState = !nlSubscribed;
+    setNlSubscribed(newState); // optimistic
     try {
-      if (nlSubscribed) {
-        // Unsubscribe
-        await fetch('/api/mailchimp/status', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user?.email, status: 'unsubscribed' }),
-        });
-        setNlSubscribed(false);
-      } else {
-        // Subscribe
-        await fetch('/api/newsletter', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user?.email, firstName: user?.firstName, lastName: user?.lastName }),
-        });
-        setNlSubscribed(true);
-      }
-    } catch {} finally { setNlActioning(false); }
+      const res = await fetch('/api/account/newsletter', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          subscribe: newState,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        }),
+      });
+      if (!res.ok) setNlSubscribed(!newState); // revert on error
+    } catch {
+      setNlSubscribed(!newState); // revert on error
+    } finally {
+      setNlActioning(false);
+    }
   };
 
   const handleNotifToggle = async (key: string, value: boolean, setter: (v: boolean) => void, tagName: string) => {
@@ -2269,26 +2408,43 @@ function PreferencesSection({ userId }: { userId: number }) {
         </div>
       </SectionCard>
 
-      {/* Newsletter — real Mailchimp status */}
+      {/* Newsletter — dedicated /api/account/newsletter endpoint */}
       <SectionCard title="Newsletter">
         {nlLoading ? (
-          <div className="flex items-center gap-2 py-2"><div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" /><span className="text-[13px] text-[#888]">Verifica iscrizione...</span></div>
+          <div className="flex items-center gap-2 py-2">
+            <div className="w-4 h-4 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+            <span className="text-[13px] text-[#888]">Verifica iscrizione...</span>
+          </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold text-[#1a1a1a]">Offerte e novità dal mondo del vino</p>
-              <p className="text-[12px] text-[#888]">{nlSubscribed ? 'Sei iscritto alla newsletter' : 'Ricevi promozioni esclusive via email'}</p>
+              <p className="text-[12px] text-[#888] mt-0.5">
+                {nlSubscribed
+                  ? '✓ Sei iscritto · ricevi promozioni esclusive, nuovi arrivi e selezioni del sommelier'
+                  : 'Attiva per ricevere promozioni esclusive, nuovi arrivi e selezioni del sommelier'}
+              </p>
             </div>
-            <div className="flex items-center gap-3">
-              {nlSubscribed && (
-                <svg className="w-5 h-5 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-              )}
-              <div
-                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${nlSubscribed ? 'bg-[#005667]' : 'bg-[#e0e0e0]'} ${nlActioning ? 'opacity-50' : ''}`}
-                onClick={() => !nlActioning && handleNewsletterToggle()}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span className={`text-[11px] font-semibold uppercase tracking-wide ${nlSubscribed ? 'text-[#005667]' : 'text-[#aaa]'}`}>
+                {nlActioning ? '...' : nlSubscribed ? 'Attiva' : 'Off'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={nlSubscribed}
+                disabled={nlActioning}
+                onClick={handleNewsletterToggle}
+                className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005667] focus-visible:ring-offset-2 ${
+                  nlSubscribed ? 'bg-[#005667]' : 'bg-[#d0d0d0]'
+                } ${nlActioning ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${nlSubscribed ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-              </div>
+                <span
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                    nlSubscribed ? 'translate-x-[22px]' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
             </div>
           </div>
         )}

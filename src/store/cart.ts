@@ -26,7 +26,7 @@ export interface VendorShipping {
 
 export interface ShippingData {
   firstName: string; lastName: string; email: string;
-  address: string; zip: string; city: string; phone: string;
+  address: string; zip: string; city: string; province?: string; phone: string;
   notes: string;
   needsInvoice?: boolean;
   ragioneSociale?: string;

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getAbbinamentoIcon } from '@/lib/abbinamenti-icons';
 
 /* ── Constants ─────────────────────────────────────────── */
 
@@ -200,7 +201,10 @@ function NuovoProdottoInner() {
           certificazioni: Array.isArray(data.certificazioni) ? data.certificazioni.join(', ') : (data.certificazioni || ''),
           categoriaGoogle: data.categoriaGoogle || '',
           gtin: data.gtin || '',
+          esposizione: data.esposizione || '',
         }));
+        // Normalize taxonomy fields after taxTerms may have loaded
+        setForm(f => normalizeForm({ ...f }));
       })
       .catch(() => {})
       .finally(() => setLoadingDraft(false));
@@ -290,6 +294,56 @@ function NuovoProdottoInner() {
 
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
+  // Fuzzy-match a raw value against a list of taxonomy terms
+  const matchTerm = (raw: string, terms: { name: string }[]): string => {
+    if (!raw || !terms.length) return raw;
+    const r = raw.toLowerCase().trim();
+    const exact = terms.find(t => t.name.toLowerCase() === r);
+    if (exact) return exact.name;
+    const starts = terms.find(t => t.name.toLowerCase().startsWith(r) || r.startsWith(t.name.toLowerCase()));
+    if (starts) return starts.name;
+    const contains = terms.find(t => t.name.toLowerCase().includes(r) || r.includes(t.name.toLowerCase()));
+    if (contains) return contains.name;
+    const words = r.split(/\s+/).filter((w: string) => w.length > 2);
+    if (words.length) {
+      const wordMatch = terms.find(t => words.every((w: string) => t.name.toLowerCase().includes(w)));
+      if (wordMatch) return wordMatch.name;
+    }
+    return raw;
+  };
+
+  const matchPills = (raw: string, terms: { name: string }[]): string => {
+    if (!raw) return raw;
+    return raw.split(',').map(v => matchTerm(v.trim(), terms)).join(', ');
+  };
+
+  const normalizeForm = (data: ProductData): ProductData => {
+    const d = data as unknown as Record<string, string>;
+    const m = (field: keyof ProductData, slug: string) => {
+      const terms = taxTerms[slug] || [];
+      if (!terms.length) return;
+      d[field as string] = matchTerm(d[field as string] || '', terms);
+    };
+    const mp = (field: keyof ProductData, slug: string) => {
+      const terms = taxTerms[slug] || [];
+      if (!terms.length) return;
+      d[field as string] = matchPills(d[field as string] || '', terms);
+    };
+    m('denominazione', 'pa_denominazione');
+    m('gradazione', 'pa_gradazione-alcolica');
+    m('regione', 'pa_regione');
+    m('annata', 'pa_annata');
+    m('formato', 'pa_formato');
+    m('raccolta', 'pa_raccolta');
+    mp('abbinamenti', 'pa_abbinamenti');
+    mp('momentoConsumo', 'pa_momento-di-consumo');
+    mp('allergeni', 'pa_allergeni');
+    mp('terreno', 'pa_terreno');
+    mp('periodoVendemmia', 'pa_periodo-vendemmia');
+    mp('certificazioni', 'pa_filosofia');
+    return data;
+  };
+
   // Toggle a value in a comma-separated form field
   const togglePill = (field: keyof ProductData, value: string) => {
     setForm((prev) => {
@@ -343,7 +397,7 @@ function NuovoProdottoInner() {
           form.zonaProduzione && { slug: 'pa_zona-di-produzione', terms: [form.zonaProduzione] },
           form.resa && { slug: 'pa_resa', terms: [form.resa] },
           form.raccolta && { slug: 'pa_raccolta', terms: [form.raccolta] },
-          form.bottiglieProdotte && { slug: 'pa_bottiglie-prodotte', terms: [form.bottiglieProdotte] },
+          form.bottiglieProdotte && { slug: 'pa_bottiglie-prodotte', terms: st(form.bottiglieProdotte) },
           form.orientamentoVigne && { slug: 'pa_orientamento-delle-vigne', terms: [form.orientamentoVigne] },
           form.tipoVigneto && { slug: 'pa_tipo-di-vigneto', terms: [form.tipoVigneto] },
           form.periodoVendemmia && { slug: 'pa_periodo-vendemmia', terms: st(form.periodoVendemmia) },
@@ -703,13 +757,57 @@ function NuovoProdottoInner() {
               <div>
                 <label className={labelClass}>Abbinamenti</label>
                 <div className="flex flex-wrap gap-1.5 mt-1">
-                  {(taxTerms['pa_abbinamenti'] || []).map((t) => (
+                  {(taxTerms['pa_abbinamenti'] || []).map((t) => {
+                    const icon = getAbbinamentoIcon(t.name);
+                    const selected = isPillSelected('abbinamenti', t.name);
+                    return (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => togglePill('abbinamenti', t.name)}
+                        className={`inline-flex items-center gap-1.5 rounded-full text-[12px] border transition-colors ${
+                          icon ? 'pl-1 pr-3 py-1' : 'px-3 py-1.5'
+                        } ${
+                          selected
+                            ? 'bg-[#005667] text-white border-[#005667]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
+                        }`}
+                      >
+                        {icon && (
+                          <img
+                            src={icon}
+                            alt=""
+                            aria-hidden="true"
+                            className={`w-5 h-5 object-contain rounded-full shrink-0 ${selected ? 'brightness-0 invert' : ''}`}
+                          />
+                        )}
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Temperatura di servizio</label>
+                <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
+                  <option value="">-- Seleziona --</option>
+                  {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
+                    <option key={t.slug} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Momento di consumo</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
                     <button
                       key={t.slug}
                       type="button"
-                      onClick={() => togglePill('abbinamenti', t.name)}
+                      onClick={() => togglePill('momentoConsumo', t.name)}
                       className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                        isPillSelected('abbinamenti', t.name)
+                        isPillSelected('momentoConsumo', t.name)
                           ? 'bg-[#005667] text-white border-[#005667]'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
                       }`}
@@ -717,37 +815,6 @@ function NuovoProdottoInner() {
                       {t.name}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Temperatura di servizio</label>
-                  <select value={form.temperaturaServizio} onChange={updateField('temperaturaServizio')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
-                    {(taxTerms['pa_temperatura-di-servizio'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Momento di consumo</label>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(taxTerms['pa_momento-di-consumo'] || []).map((t) => (
-                      <button
-                        key={t.slug}
-                        type="button"
-                        onClick={() => togglePill('momentoConsumo', t.name)}
-                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${
-                          isPillSelected('momentoConsumo', t.name)
-                            ? 'bg-[#005667] text-white border-[#005667]'
-                            : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'
-                        }`}
-                      >
-                        {t.name}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -873,12 +940,14 @@ function NuovoProdottoInner() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Bottiglie prodotte</label>
-                  <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
-                    <option value="">-- Seleziona --</option>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
-                      <option key={t.slug} value={t.name}>{t.name}</option>
+                      <button key={t.slug} type="button" onClick={() => togglePill('bottiglieProdotte', t.name)}
+                        className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('bottiglieProdotte', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                        {t.name}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>Certificazioni</label>

@@ -23,6 +23,7 @@ export interface WCProduct {
   stock_quantity: number | null;
   average_rating: string;
   rating_count: number;
+  date_created?: string;
   store?: { id: number; name: string; url: string };
   _vendorId?: string;
   _vendorName?: string;

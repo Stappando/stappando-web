@@ -166,6 +166,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       carrierName,
       deliveryEstimate: deliveryEst,
       discount: discount > 0 ? discount.toFixed(2) : undefined,
+      couponCode: discount > 0 && params.couponCode ? params.couponCode.toUpperCase() : undefined,
       pointsEarned: popPoints,
       invoiceData: (params.needsInvoice || customer.needsInvoice) ? {
         companyName: params.invoiceData?.ragioneSociale || customer.ragioneSociale,
@@ -195,6 +196,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       subtotal: subtotal.toFixed(2),
       shippingCost: shippingCost.toFixed(2),
       discount: discount > 0 ? discount.toFixed(2) : undefined,
+      couponCode: discount > 0 && params.couponCode ? params.couponCode.toUpperCase() : undefined,
       total: total.toFixed(2),
       customerNotes: customer.notes || undefined,
       carrierPreference: carrierName,

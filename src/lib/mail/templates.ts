@@ -130,7 +130,7 @@ interface OrderItem {
   vendor?: string;
 }
 
-function orderItemsTable(items: OrderItem[], shipping: string, total: string, discount?: string, carrierName?: string): string {
+function orderItemsTable(items: OrderItem[], shipping: string, total: string, discount?: string, carrierName?: string, couponCode?: string): string {
   const rows = items.map(item => `
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #f0ece4;">
@@ -153,7 +153,7 @@ function orderItemsTable(items: OrderItem[], shipping: string, total: string, di
         <td style="padding:10px 0;text-align:right;font-size:13px;color:#888;">${shipping}</td>
       </tr>
       ${discount ? `<tr>
-        <td style="padding:6px 0;font-size:13px;color:#005667;font-weight:600;">Sconto</td>
+        <td style="padding:6px 0;font-size:13px;color:#005667;font-weight:600;">Sconto${couponCode ? ` <span style="font-size:11px;background:#e8f5f0;border:1px solid #005667;border-radius:4px;padding:1px 6px;letter-spacing:0.5px;">${couponCode}</span>` : ''}</td>
         <td style="padding:6px 0;text-align:right;font-size:13px;color:#005667;font-weight:600;">-${discount} &euro;</td>
       </tr>` : ''}
       <tr>
@@ -212,6 +212,7 @@ export interface OrderConfirmedData {
   carrierName?: string;
   deliveryEstimate?: string;
   discount?: string;
+  couponCode?: string;
   pointsEarned?: number;
   totalPoints?: number;
   invoiceData?: { vatNumber?: string; companyName?: string; pec?: string; sdi?: string };
@@ -228,7 +229,7 @@ export function orderConfirmed(data: OrderConfirmedData): { subject: string; htm
       ${heading('Ordine confermato')}
       ${subheading(`Grazie ${data.customerName}, stiamo preparando il tuo pacco con cura.`)}
       ${goldBadge(`Ordine #${data.orderNumber}`)}
-      ${orderItemsTable(data.items, data.shipping, data.total, data.discount, data.carrierName)}
+      ${orderItemsTable(data.items, data.shipping, data.total, data.discount, data.carrierName, data.couponCode)}
 
       ${data.carrierName ? `
       ${infoBox(`
@@ -295,6 +296,7 @@ export interface AdminNewOrderData {
   subtotal: string;
   shippingCost: string;
   discount?: string;
+  couponCode?: string;
   total: string;
   customerNotes?: string;
   carrierPreference?: string;
@@ -357,7 +359,7 @@ export function adminNewOrder(data: AdminNewOrderData): { subject: string; html:
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr><td style="font-size:13px;color:#444;padding:3px 0;">Subtotale prodotti</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.subtotal} &euro;</td></tr>
           <tr><td style="font-size:13px;color:#444;padding:3px 0;">Spedizione</td><td style="text-align:right;font-size:13px;font-weight:600;">${data.shippingCost} &euro;</td></tr>
-          ${data.discount ? `<tr><td style="font-size:13px;color:#005667;padding:3px 0;font-weight:600;">Sconto</td><td style="text-align:right;font-size:13px;color:#005667;font-weight:600;">-${data.discount} &euro;</td></tr>` : ''}
+          ${data.discount ? `<tr><td style="font-size:13px;color:#005667;padding:3px 0;font-weight:600;">Sconto${data.couponCode ? ` <span style="font-size:11px;background:#e8f5f0;border:1px solid #005667;border-radius:4px;padding:1px 5px;letter-spacing:0.5px;">${data.couponCode}</span>` : ''}</td><td style="text-align:right;font-size:13px;color:#005667;font-weight:600;">-${data.discount} &euro;</td></tr>` : ''}
           <tr><td style="font-size:16px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">Totale</td><td style="text-align:right;font-size:16px;color:#005667;font-weight:700;padding:8px 0;border-top:2px solid #005667;">${data.total} &euro;</td></tr>
         </table>
       `)}

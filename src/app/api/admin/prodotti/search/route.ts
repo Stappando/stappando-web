@@ -31,6 +31,8 @@ interface ProductData {
   zonaProduzione?: string;
   resa?: string;
   vendemmia?: string;
+  raccolta?: string;
+  periodoVendemmia?: string;
   bottiglieProdotte?: string;
   certificazioni?: string;
   metodoSpumantizzazione?: string;
@@ -116,6 +118,161 @@ const DENOMINATION_MAP: Record<string, { type: string; region: string; grapes?: 
   'aglianico del vulture': { type: 'DOC', region: 'Basilicata', grapes: 'Aglianico', color: 'rosso' },
 };
 
+/* Produttore slug → regione — usato per auto-compilare la regione */
+const PRODUCER_REGION: Record<string, string> = {
+  // Abruzzo
+  'di-cicco': 'Abruzzo', 'cantina-pietrantonj': 'Abruzzo', 'scuppoz': 'Abruzzo',
+  'castelsimoni-cantina-vini-montagna-abruzzo': 'Abruzzo', 'cutina-liquori': 'Abruzzo',
+  'masciarelli': 'Abruzzo', 'camilla-montori': 'Abruzzo', 'diubaldo': 'Abruzzo',
+  'lidia-amato': 'Abruzzo', 'cataldi-madonna-cantina-biologica-abruzzo': 'Abruzzo',
+  'pasetti': 'Abruzzo', 'zaccagnini': 'Abruzzo',
+  // Aragona
+  'la-sastreria': 'Aragona',
+  // Basilicata
+  'cantina-del-notaio': 'Basilicata', 'petracastalda': 'Basilicata', 'amaro-lucano': 'Basilicata',
+  // Borgogna
+  'albert-pic': 'Borgogna',
+  // Calabria
+  'caffo': 'Calabria', 'statti': 'Calabria', 'cantine-vincenzo-ippolito': 'Calabria',
+  'casale-cappellieri': 'Calabria', 'maddalona-del-casato': 'Calabria',
+  'vecchio-magazzino-doganale': 'Calabria', 'essentia-mediterranea': 'Calabria',
+  // Campania
+  'cantina-moio': 'Campania', 'mastroberardino': 'Campania', 'petra-marzia': 'Campania',
+  'torricino': 'Campania', 'amphoreus': 'Campania', 'vinicola-del-sannio': 'Campania',
+  'casa-dambra': 'Campania', 'di-meo': 'Campania', 'montevetrano': 'Campania',
+  'tenuta-le-lune-del-vesuvio': 'Campania', 'alberti': 'Campania',
+  // Champagne
+  'veuve-cliquot': 'Champagne', 'perrier-jouet': 'Champagne', 'moet-chandon': 'Champagne',
+  'ruinart': 'Champagne', 'bollinger': 'Champagne', 'veuve-pelletier': 'Champagne',
+  'billecart-salmon': 'Champagne', 'dalamotte': 'Champagne', 'laurent-perrier': 'Champagne',
+  'louis-roederer': 'Champagne', 'tattinger': 'Champagne', 'ayala': 'Champagne',
+  // Charente
+  'courvoisier': 'Charente', 'francois-peyrot': 'Charente',
+  // Emilia-Romagna
+  'merlotta': 'Emilia - Romagna', 'cantina-divinja': 'Emilia - Romagna',
+  'gruppo-montenegro': 'Emilia - Romagna', 'tenuta-forcirola': 'Emilia - Romagna',
+  'biancosarti': 'Emilia - Romagna',
+  // Friuli Venezia Giulia
+  'corte-della-contea': 'Friuli Venezia Giulia', 'jermann': 'Friuli Venezia Giulia',
+  'marco-felluga': 'Friuli Venezia Giulia', 'livio-felluga': 'Friuli Venezia Giulia',
+  'candolini': 'Friuli Venezia Giulia', 'nonino': 'Friuli Venezia Giulia',
+  // Jura
+  'francois-montand': 'Jura',
+  // Languedoc-Roussillon
+  'jp-chenet': 'Languedoc - Roussillon',
+  // Lazio
+  'villa-gianna': 'Lazio', 'casale-del-giglio': 'Lazio', 'pallini': 'Lazio',
+  'poggio-le-volpi': 'Lazio', 'antonella-pacchiarotti': 'Lazio', 'casale-mattia': 'Lazio',
+  'proietti': 'Lazio', 'cantina-bacco': 'Lazio', 'cantina-di-montefiascone': 'Lazio',
+  'de-marco': 'Lazio', 'federici': 'Lazio', 'sergio-mottura': 'Lazio',
+  'cincinnato': 'Lazio', 'falesco': 'Lazio', 'molinari': 'Lazio', 'tarchna': 'Lazio',
+  'distilleria-numa': 'Lazio', 'famiglia-cotarella': 'Lazio', 'gabriele-magno': 'Lazio',
+  'lolivella': 'Lazio', 'logindry': 'Lazio', 'san-giovenale': 'Lazio',
+  'stefanoni': 'Lazio', 'tenuta-le-quinte': 'Lazio',
+  // Liguria
+  'cinqueterre': 'Liguria', 'terenzuola': 'Liguria', 'bisson': 'Liguria', 'portofino': 'Liguria',
+  // Lombardia
+  'dune-premium-cocktails': 'Lombardia', 'castel-faglia': 'Lombardia', 'barbalonga': 'Lombardia',
+  'berlucchi': 'Lombardia', 'campari': 'Lombardia', 'bellavista': 'Lombardia',
+  'fratelli-branca': 'Lombardia', 'contadi-castaldi': 'Lombardia', 'quaquarini-2': 'Lombardia',
+  'bisleri': 'Lombardia', 'la-poggiolo': 'Lombardia', 'tumbler-srl': 'Lombardia',
+  // Marche
+  'piersanti': 'Marche', 'umani-e-ronchi': 'Marche', 'varnelli': 'Marche',
+  'le-cime-basse-s-s': 'Marche', 'belisario': 'Marche', 'velenosi': 'Marche',
+  '120montebianco': 'Marche', 'borghetti': 'Marche', 'fazi-battaglia': 'Marche',
+  'ottavio-piersanti': 'Marche', 'tenute-polini': 'Marche',
+  // Normandia
+  'chateau-du-breil': 'Normandia',
+  // Piemonte
+  'marolo': 'Piemonte', 'balbi-soprani': 'Piemonte', 'fratelli-giacosa': 'Piemonte',
+  'berta': 'Piemonte', 'ceretto-cantina-langhe-vini-biologici': 'Piemonte',
+  'martini': 'Piemonte', 'azienda-agricola-alciati-giancarlo': 'Piemonte',
+  'bosca': 'Piemonte', 'duchessa-lia': 'Piemonte', 'claudio-alario': 'Piemonte',
+  'distillerie-quaglia': 'Piemonte', 'toselli': 'Piemonte', 'antica-torino': 'Piemonte',
+  'carpano': 'Piemonte', 'engine': 'Piemonte', 'travaglini': 'Piemonte',
+  'vigne-marina-coppi': 'Piemonte', 'villa-ascenti': 'Piemonte',
+  // Provenza
+  'chateau-desclans': 'Provenza',
+  // Puglia
+  'san-marzano': 'Puglia', 'teanum': 'Puglia', 'apollonio-1870': 'Puglia',
+  'scarpello': 'Puglia', 'marzodd': 'Puglia', 'mottura': 'Puglia',
+  'terre-aprica': 'Puglia', 'conte-di-campiano': 'Puglia', 'leone-de-castris': 'Puglia',
+  'tormaresca': 'Puglia',
+  // Sardegna
+  'cantina-santa-maria-la-palma-alghero': 'Sardegna', 'argiolas': 'Sardegna',
+  'agricola-giacu': 'Sardegna', 'cantina-li-seddi': 'Sardegna', 'capichera': 'Sardegna',
+  'piero-mancini': 'Sardegna', 'sella-mosca': 'Sardegna', 'zedda-piras': 'Sardegna',
+  'ichnusa': 'Sardegna', 'cantina-gallura': 'Sardegna', 'contini': 'Sardegna',
+  'tenute-centu-e-prusu': 'Sardegna',
+  // Sicilia
+  'azienda-vitivinicola-tola': 'Sicilia', 'quattrocieli': 'Sicilia', 'madaudo': 'Sicilia',
+  'cusumano': 'Sicilia', 'rossa': 'Sicilia', 'tenuta-le-palme': 'Sicilia',
+  'donnafugata': 'Sicilia', 'terre-dellisola': 'Sicilia', 'giovinco': 'Sicilia',
+  'panarea': 'Sicilia', 'tasca-dalmerita': 'Sicilia', 'averna': 'Sicilia',
+  'hauner': 'Sicilia', 'palmento-costanzo': 'Sicilia', 'planeta': 'Sicilia',
+  // Toscana
+  'banfi': 'Toscana', 'marchesi-antinori': 'Toscana', 'carpineto': 'Toscana',
+  'luteraia': 'Toscana', 'sensi': 'Toscana', 'cantina-di-pitigliano': 'Toscana',
+  'barbanera': 'Toscana', 'birrificio-san-quirico': 'Toscana',
+  'casagrande-della-quercia': 'Toscana', 'terre-del-marchesato': 'Toscana',
+  'erik-banti': 'Toscana', 'san-felice': 'Toscana', 'tenuta-dellornellaia': 'Toscana',
+  'tenuta-san-guido': 'Toscana', 'borghi-fioriti': 'Toscana',
+  'castelli-del-grevepesa': 'Toscana', 'duca-di-saragnano': 'Toscana',
+  'fattoria-di-calappiano': 'Toscana', 'gualdo-del-re': 'Toscana',
+  'il-puledro': 'Toscana', 'san-zenone': 'Toscana',
+  // Trentino-Alto Adige
+  'colterenzio': 'Trentino - Alto Adige', 'san-michele-appiano': 'Trentino - Alto Adige',
+  'k-martini-sohn': 'Trentino - Alto Adige', 'elena-walch': 'Trentino - Alto Adige',
+  'ferrari': 'Trentino - Alto Adige', 'altemasi': 'Trentino - Alto Adige',
+  // Umbria
+  'lungarotti': 'Umbria', 'pomario': 'Umbria', 'azienda-agricola-il-poggiolo': 'Umbria',
+  'favaroni': 'Umbria', 'casale-triocco': 'Umbria', 'leonucci': 'Umbria',
+  'pizzogallo': 'Umbria', 'cantina-dei-colli-amerini': 'Umbria',
+  // Valle d'Aosta
+  'crotta-de-vigneron': "Valle d'Aosta", 'savio': "Valle d'Aosta",
+  // Valle della Loira
+  'cointreau': 'Valle della Loira',
+  // Veneto
+  'montagner': 'Veneto', 'mazzolada': 'Veneto', 'casa-defra': 'Veneto',
+  'distillerie-poli': 'Veneto', 'cielo-e-terra': 'Veneto', 'barbieri': 'Veneto',
+  'borgo-antico': 'Veneto', 'bonollo': 'Veneto', 'luxardo': 'Veneto',
+  'monte-tondo': 'Veneto', 'contessa-carola': 'Veneto', 'zenato': 'Veneto',
+  'bonaventura-maschio': 'Veneto', 'contri-spumanti': 'Veneto', 'gambrinus': 'Veneto',
+};
+
+/* Also build a name→slug map for matching producer names from text */
+const PRODUCER_NAME_TO_SLUG: Record<string, string> = {
+  'di cicco': 'di-cicco', 'pietrantonj': 'cantina-pietrantonj', 'scuppoz': 'scuppoz',
+  'masciarelli': 'masciarelli', 'camilla montori': 'camilla-montori', 'diubaldo': 'diubaldo',
+  'lidia amato': 'lidia-amato', 'cataldi madonna': 'cataldi-madonna-cantina-biologica-abruzzo',
+  'pasetti': 'pasetti', 'zaccagnini': 'zaccagnini', 'cantina del notaio': 'cantina-del-notaio',
+  'mastroberardino': 'mastroberardino', 'moio': 'cantina-moio', 'montevetrano': 'montevetrano',
+  'veuve cliquot': 'veuve-cliquot', 'perrier jouet': 'perrier-jouet',
+  'moet chandon': 'moet-chandon', 'moet & chandon': 'moet-chandon',
+  'ruinart': 'ruinart', 'bollinger': 'bollinger', 'billecart salmon': 'billecart-salmon',
+  'laurent perrier': 'laurent-perrier', 'louis roederer': 'louis-roederer',
+  'taittinger': 'tattinger', 'ayala': 'ayala', 'courvoisier': 'courvoisier',
+  'jermann': 'jermann', 'marco felluga': 'marco-felluga', 'livio felluga': 'livio-felluga',
+  'nonino': 'nonino', 'casale del giglio': 'casale-del-giglio', 'pallini': 'pallini',
+  'poggio le volpi': 'poggio-le-volpi', 'cincinnato': 'cincinnato', 'falesco': 'falesco',
+  'molinari': 'molinari', 'terenzuola': 'terenzuola', 'berlucchi': 'berlucchi',
+  'campari': 'campari', 'bellavista': 'bellavista', 'contadi castaldi': 'contadi-castaldi',
+  'umani ronchi': 'umani-e-ronchi', 'varnelli': 'varnelli', 'velenosi': 'velenosi',
+  'fazi battaglia': 'fazi-battaglia', 'ceretto': 'ceretto-cantina-langhe-vini-biologici',
+  'martini': 'martini', 'travaglini': 'travaglini', 'banfi': 'banfi',
+  'antinori': 'marchesi-antinori', 'marchesi antinori': 'marchesi-antinori',
+  'carpineto': 'carpineto', 'san felice': 'san-felice', 'ornellaia': 'tenuta-dellornellaia',
+  'san guido': 'tenuta-san-guido', 'colterenzio': 'colterenzio',
+  'san michele appiano': 'san-michele-appiano', 'elena walch': 'elena-walch',
+  'ferrari': 'ferrari', 'lungarotti': 'lungarotti', 'argiolas': 'argiolas',
+  'capichera': 'capichera', 'sella mosca': 'sella-mosca', 'sella & mosca': 'sella-mosca',
+  'donnafugata': 'donnafugata', 'tasca dalmerita': 'tasca-dalmerita',
+  'tasca d\'almerita': 'tasca-dalmerita', 'planeta': 'planeta', 'cusumano': 'cusumano',
+  'san marzano': 'san-marzano', 'leone de castris': 'leone-de-castris',
+  'tormaresca': 'tormaresca', 'zenato': 'zenato', 'luxardo': 'luxardo',
+  'distillerie poli': 'distillerie-poli', 'cielo e terra': 'cielo-e-terra',
+};
+
 const COLOR_TO_CATEGORY: Record<string, string> = {
   'rosso': 'Vini Rossi',
   'bianco': 'Vini Bianchi',
@@ -139,6 +296,27 @@ const GRAPE_REGIONS: Record<string, string> = {
   'gaglioppo': 'Calabria',
   'chardonnay': '', 'pinot grigio': '', 'pinot nero': '', 'cabernet sauvignon': '', 'merlot': '', 'sauvignon blanc': '',
 };
+
+/* ── Producer → regione lookup ─────────────────────────── */
+
+/** Given a producer name (free text), return { slug, regione } if found in map */
+function lookupProducer(name: string): { slug: string; regione: string } | null {
+  if (!name) return null;
+  const lower = name.toLowerCase().trim();
+  // Try name→slug map first
+  const slug = PRODUCER_NAME_TO_SLUG[lower];
+  if (slug && PRODUCER_REGION[slug]) return { slug, regione: PRODUCER_REGION[slug] };
+  // Partial match on name
+  for (const [n, s] of Object.entries(PRODUCER_NAME_TO_SLUG)) {
+    if (lower.includes(n) || n.includes(lower)) {
+      if (PRODUCER_REGION[s]) return { slug: s, regione: PRODUCER_REGION[s] };
+    }
+  }
+  // Direct slug match
+  const slugified = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (PRODUCER_REGION[slugified]) return { slug: slugified, regione: PRODUCER_REGION[slugified] };
+  return null;
+}
 
 /* ── Search logic ──────────────────────────────────────── */
 
@@ -191,6 +369,15 @@ function searchWineInfo(name: string): { data: Partial<ProductData>; foundFields
     }
   }
 
+  // Try to identify producer from product name → auto-fill regione
+  if (!data.regione) {
+    const producer = lookupProducer(lower);
+    if (producer) {
+      data.regione = producer.regione;
+      found.push('regione');
+    }
+  }
+
   // Detect color from keywords
   if (!data.categoria) {
     if (lower.includes('rosso') || lower.includes('riserva')) { data.categoria = 'Vini Rossi'; found.push('categoria'); }
@@ -232,45 +419,70 @@ function searchWineInfo(name: string): { data: Partial<ProductData>; foundFields
 
 function parseText(text: string, data: Partial<ProductData>, found: string[]): void {
 
+  // Normalize helpers
+  const normalizeCategoria = (raw: string): string => {
+    const l = raw.toLowerCase().trim();
+    if (/rosso|rossi|red/.test(l)) return 'Vini Rossi';
+    if (/bianco|bianchi|white/.test(l)) return 'Vini Bianchi';
+    if (/rosato|rosé|rose/.test(l)) return 'Vini Rosati';
+    if (/bollicin|spumant|frizzant|brut|metodo classico|charmat|champagne|prosecco|franciacorta/.test(l)) return 'Bollicine';
+    if (/distillat|grappa|whisky|rum|gin|vodka/.test(l)) return 'Distillati';
+    if (/liquor/.test(l)) return 'Liquori';
+    if (/birr/.test(l)) return 'Birre';
+    return raw.trim();
+  };
+
+  const normalizeGradazione = (raw: string): string => {
+    // Extract number with optional comma/dot decimal
+    const m = raw.match(/(\d{1,2}[,.]?\d{0,2})\s*%/);
+    if (m) {
+      const num = m[1].replace('.', ',');
+      return `${num}%`;
+    }
+    return raw.trim();
+  };
+
   // Direct field matchers: "Label: value" or "Label:\nvalue"
-  const fieldPatterns: { field: keyof ProductData; patterns: RegExp[] }[] = [
-    { field: 'produttore', patterns: [/(?:produttore|cantina|azienda)[:\s]+([^\n]+)/i] },
-    { field: 'categoria', patterns: [/(?:categoria|tipologia)[:\s]+([^\n]+)/i] },
-    { field: 'denominazione', patterns: [/(?:denominazione|doc|docg)[:\s]+([^\n]+)/i] },
+  const fieldPatterns: { field: keyof ProductData; patterns: RegExp[]; normalize?: (v: string) => string }[] = [
+    { field: 'produttore', patterns: [/(?:produttore|cantina|azienda(?:\s+agricola)?)[:\s]+([^\n]+)/i] },
+    { field: 'categoria', patterns: [/(?:categoria|tipologia|tipo di vino|tipo vino)[:\s]+([^\n]+)/i], normalize: normalizeCategoria },
+    { field: 'denominazione', patterns: [/(?:denominazione(?:\s+di\s+origine)?|doc(?:g)?|igt)[:\s]+([^\n,]+)/i] },
     { field: 'regione', patterns: [/(?:regione)[:\s]+([^\n]+)/i] },
-    { field: 'nazione', patterns: [/(?:nazione|paese)[:\s]+([^\n]+)/i] },
-    { field: 'uvaggio', patterns: [/(?:uvaggio|uva|vitigno|vitigni)[:\s]+([^\n]+)/i] },
-    { field: 'gradazione', patterns: [/(?:gradazione|alcol|gradazione alcolica)[:\s]+([^\n]+)/i] },
-    { field: 'annata', patterns: [/(?:annata)[:\s]+([^\n]+)/i] },
-    { field: 'formato', patterns: [/(?:formato|bottiglia)[:\s]+([^\n]+)/i] },
+    { field: 'nazione', patterns: [/(?:nazione|paese|country)[:\s]+([^\n]+)/i] },
+    { field: 'uvaggio', patterns: [/(?:uvaggio|uve|vitigno(?:i)?|uva(?:\s+utilizzata)?)[:\s]+([^\n]+)/i] },
+    { field: 'gradazione', patterns: [/(?:gradazione\s*alcolica|alcol(?:icità)?|alcohol)[:\s]+([^\n]+)/i], normalize: normalizeGradazione },
+    { field: 'annata', patterns: [/(?:annata|vendemmia\s+\d{4}|vintage)[:\s]+([^\n]+)/i] },
+    { field: 'formato', patterns: [/(?:formato|capacità|bottiglia|volume)[:\s]+([^\n]+)/i] },
     { field: 'descBreve', patterns: [/(?:descrizione breve)[:\s]*\n?([^\n]+)/i] },
-    { field: 'descLunga', patterns: [/(?:descrizione lunga)[:\s]*\n?([\s\S]+?)(?=\n(?:alla vista|al naso|al palato|abbinamenti|temperatura|momento|vinificazione|affinamento|terreno|esposizione|altitudine|zona|resa|vendemmia|bottiglie|certificazioni|allergeni|tag)[:\s]|\n\n|$)/i] },
-    { field: 'allaVista', patterns: [/(?:alla vista)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
-    { field: 'alNaso', patterns: [/(?:al naso)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
-    { field: 'alPalato', patterns: [/(?:al palato)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'descLunga', patterns: [/(?:descrizione(?:\s+lunga)?|note)[:\s]*\n?([\s\S]+?)(?=\n(?:alla vista|al naso|al palato|abbinamenti|temperatura|momento|vinificazione|affinamento|terreno|esposizione|altitudine|zona|resa|vendemmia|bottiglie|certificazioni|allergeni|tag)[:\s]|\n\n|$)/i] },
+    { field: 'allaVista', patterns: [/(?:alla vista|visiva)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'alNaso', patterns: [/(?:al naso|olfattiva)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'alPalato', patterns: [/(?:al palato|gustativa)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
     { field: 'abbinamenti', patterns: [/(?:abbinamenti|abbinamento)[:\s]*\n?([^\n]+)/i] },
-    { field: 'temperaturaServizio', patterns: [/(?:temperatura(?:\s+di)?\s*servizio|temperatura\s*servizio|temperatura)[:\s]+([^\n]+)/i] },
-    { field: 'momentoConsumo', patterns: [/(?:momento(?:\s+di)?\s*consumo|beva|quando bere)[:\s]+([^\n]+)/i] },
-    { field: 'vinificazione', patterns: [/(?:vinificazione|vinicazione)[:\s]*\n?([\s\S]+?)(?=\n(?:affinamento|terreno|esposizione|altitudine|zona|resa|vendemmia|bottiglie|certificazioni|allergeni|tag|alla vista|al naso|al palato|abbinamenti|temperatura|momento)[:\s]|\n\n|$)/i] },
-    { field: 'affinamento', patterns: [/(?:affinamento|invecchiamento|maturazione)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
-    { field: 'terreno', patterns: [/(?:terreno|suolo|tipo di terreno)[:\s]+([^\n]+)/i] },
+    { field: 'temperaturaServizio', patterns: [/(?:temperatura(?:\s+di)?\s*servizio|servire\s+a|temp[.\s]+servizio)[:\s]+([^\n]+)/i] },
+    { field: 'momentoConsumo', patterns: [/(?:momento(?:\s+di)?\s*consumo|pronto|beva|quando bere|potenziale)[:\s]+([^\n]+)/i] },
+    { field: 'vinificazione', patterns: [/(?:vinificazione|metodo(?:\s+di)?\s*vinificazione)[:\s]*\n?([\s\S]+?)(?=\n(?:affinamento|terreno|esposizione|altitudine|zona|resa|raccolta|bottiglie|certificazioni|allergeni|tag|alla vista|al naso|al palato|abbinamenti|temperatura|momento)[:\s]|\n\n|$)/i] },
+    { field: 'affinamento', patterns: [/(?:affinamento|invecchiamento|maturazione|élevage)[:\s]*\n?([^\n]+(?:\n(?![A-Z])[^\n]+)*)/i] },
+    { field: 'terreno', patterns: [/(?:terreno|suolo|tipo\s+di\s+terreno|composizione\s+(?:del\s+)?suolo)[:\s]+([^\n]+)/i] },
     { field: 'esposizione', patterns: [/(?:esposizione)[:\s]+([^\n]+)/i] },
-    { field: 'altitudine', patterns: [/(?:altitudine|quota)[:\s]+([^\n]+)/i] },
-    { field: 'zonaProduzione', patterns: [/(?:zona di produzione|zona|localit[àa])[:\s]+([^\n]+)/i] },
-    { field: 'resa', patterns: [/(?:resa)[:\s]+([^\n]+)/i] },
-    { field: 'vendemmia', patterns: [/(?:vendemmia|raccolta)[:\s]+([^\n]+)/i] },
-    { field: 'bottiglieProdotte', patterns: [/(?:bottiglie(?:\s+prodotte)?|produzione)[:\s]+([^\n]+)/i] },
-    { field: 'certificazioni', patterns: [/(?:certificazioni|certificazione|bio|biodinamico)[:\s]+([^\n]+)/i] },
-    { field: 'allergeni', patterns: [/(?:allergeni)[:\s]+([^\n]+)/i] },
+    { field: 'altitudine', patterns: [/(?:altitudine|quota|alt\.)[:\s]+([^\n]+)/i] },
+    { field: 'zonaProduzione', patterns: [/(?:zona\s+di\s+produzione|zona|localit[àa]|contrada|cru)[:\s]+([^\n]+)/i] },
+    { field: 'resa', patterns: [/(?:resa(?:\s+per\s+ettaro)?)[:\s]+([^\n]+)/i] },
+    { field: 'raccolta', patterns: [/(?:raccolta|tipo\s+di\s+raccolta|vendemmia(?:\s+manuale|\s+meccanica|\s+selettiva)?)\s*[:\s]+([^\n]+)/i] },
+    { field: 'periodoVendemmia', patterns: [/(?:periodo\s+(?:di\s+)?vendemmia|periodo\s+di\s+raccolta|epoca\s+(?:di\s+)?raccolta)[:\s]+([^\n]+)/i] },
+    { field: 'bottiglieProdotte', patterns: [/(?:bottiglie\s+prodotte|n[°º]\s*bottiglie|produzione\s+annua)[:\s]+([^\n]+)/i] },
+    { field: 'certificazioni', patterns: [/(?:certificazioni?|filosofia|metodo\s+produttivo|biodinamico|biologico)[:\s]+([^\n]+)/i] },
+    { field: 'allergeni', patterns: [/(?:allergeni|contiene)[:\s]+([^\n]+)/i] },
     { field: 'tags', patterns: [/(?:tag|tags)[:\s]+([^\n]+)/i] },
   ];
 
-  for (const { field, patterns } of fieldPatterns) {
+  for (const { field, patterns, normalize } of fieldPatterns) {
     if (data[field]) continue; // Don't overwrite existing
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match) {
-        const value = match[1].trim().replace(/\s+/g, ' ');
+        let value = match[1].trim().replace(/\s+/g, ' ');
+        if (normalize) value = normalize(value);
         if (value && value.toLowerCase() !== 'n/d' && value !== '-' && value !== '') {
           (data as Record<string, string>)[field] = value;
           if (!found.includes(field)) found.push(field);
@@ -280,10 +492,50 @@ function parseText(text: string, data: Partial<ProductData>, found: string[]): v
     }
   }
 
+  // Auto-fill regione from produttore lookup
+  if (data.produttore && !data.regione) {
+    const producer = lookupProducer(data.produttore);
+    if (producer) {
+      data.regione = producer.regione;
+      if (!found.includes('regione')) found.push('regione');
+    }
+  }
+
   // Fallback: extract alcohol from anywhere in text
   if (!data.gradazione) {
-    const alcMatch = text.match(/(\d{1,2}[.,]\d{1,2})\s*%\s*(?:vol)?/i);
-    if (alcMatch) { data.gradazione = alcMatch[1].replace(',', '.') + '% vol'; found.push('gradazione'); }
+    const alcMatch = text.match(/(\d{1,2}[.,]\d{0,2})\s*%\s*(?:vol(?:\s*alc)?)?/i);
+    if (alcMatch) { data.gradazione = normalizeGradazione(alcMatch[0]); found.push('gradazione'); }
+  }
+
+  // Fallback: detect allergeni (solfiti) anywhere if not explicitly labeled
+  if (!data.allergeni) {
+    const lower = text.toLowerCase();
+    if (lower.includes('solfiti') || lower.includes('so2') || lower.includes('contiene solfiti')) {
+      data.allergeni = 'Contiene solfiti';
+      found.push('allergeni');
+    }
+  }
+
+  // Fallback: detect raccolta type from keywords
+  if (!data.raccolta) {
+    const lower = text.toLowerCase();
+    if (lower.includes('vendemmia manuale') || lower.includes('raccolta manuale') || lower.includes('raccolta a mano')) {
+      data.raccolta = 'Manuale';
+      found.push('raccolta');
+    } else if (lower.includes('vendemmia meccanica') || lower.includes('raccolta meccanica')) {
+      data.raccolta = 'Meccanica';
+      found.push('raccolta');
+    }
+  }
+
+  // Fallback: detect periodo vendemmia from harvest month mentions
+  if (!data.periodoVendemmia) {
+    const mesiMatch = text.match(/(?:fine|inizio|metà)\s+(?:agosto|settembre|ottobre|novembre)/i);
+    if (mesiMatch) {
+      const val = mesiMatch[0].trim();
+      data.periodoVendemmia = val.charAt(0).toUpperCase() + val.slice(1);
+      found.push('periodoVendemmia');
+    }
   }
 
   // Fallback: extract region from known names in text
@@ -299,11 +551,7 @@ function parseText(text: string, data: Partial<ProductData>, found: string[]): v
     if (charMatch) { data.descLunga = charMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' '); found.push('descLunga'); }
   }
 
-  // Vendemmia
-  if (!data.momentoConsumo) {
-    const vendMatch = text.match(/(?:vendemmia)[:\s]+([^\n;]+)/i);
-    if (vendMatch) { data.momentoConsumo = vendMatch[1].trim(); }
-  }
+  // Do not use vendemmia fallback for momentoConsumo — they are different fields
 }
 
 /* ── POST handler ──────────────────────────────────────── */
@@ -379,7 +627,7 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
   "denominazione": "es. Colli Maceratesi DOC",
   "regione": "regione italiana",
   "uvaggio": "vitigni separati da virgola",
-  "gradazione": "es. 13.5%",
+  "gradazione": "solo numero e %, es. 13,5%",
   "formato": "es. 75 cl, 1.5 L",
   "descBreve": "max 155 caratteri, accattivante, SEO. Menziona vitigno e territorio. Stile enoteca premium.",
   "descLunga": "3-4 frasi eleganti. Racconta il vino, il territorio, il carattere. Usa parole sensoriali evocative. Stile da sommelier.",
@@ -396,7 +644,8 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
   "altitudine": "altitudine del vigneto in metri s.l.m.",
   "zonaProduzione": "zona specifica di produzione",
   "resa": "resa per ettaro es. 60-70 ql/ha",
-  "vendemmia": "periodo e modalità di vendemmia",
+  "raccolta": "Manuale|Meccanica|Selettiva — solo una di queste parole",
+  "periodoVendemmia": "es. Inizio ottobre, Fine settembre, Metà ottobre",
   "bottiglieProdotte": "numero bottiglie prodotte se noto",
   "certificazioni": "Bio, Biodinamico, Vegan, SQNPI se applicabile",
   "allergeni": "Contiene solfiti (obbligatorio) + eventuali altri",
@@ -427,7 +676,7 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
           // Capitalize first letter of each value
           const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
           // Only fill fields that are empty
-          const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'annata', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'formato', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'momentoConsumo', 'vinificazione', 'affinamento', 'terreno', 'esposizione', 'altitudine', 'zonaProduzione', 'resa', 'vendemmia', 'bottiglieProdotte', 'certificazioni', 'allergeni', 'tags'];
+          const fieldMap: (keyof ProductData)[] = ['produttore', 'categoria', 'annata', 'denominazione', 'regione', 'uvaggio', 'gradazione', 'formato', 'descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'abbinamenti', 'temperaturaServizio', 'momentoConsumo', 'vinificazione', 'affinamento', 'terreno', 'esposizione', 'altitudine', 'zonaProduzione', 'resa', 'raccolta', 'periodoVendemmia', 'bottiglieProdotte', 'certificazioni', 'allergeni', 'tags'];
           for (const field of fieldMap) {
             if (ai[field] && !result.data[field]) {
               result.data[field] = capitalize(ai[field]);
@@ -446,8 +695,17 @@ Rispondi SOLO in JSON valido con questi campi (lascia vuoto "" se non hai info s
     }
   }
 
+  // Final pass: if produttore is known but regione still missing, look it up
+  if (result.data.produttore && !result.data.regione) {
+    const producer = lookupProducer(result.data.produttore);
+    if (producer) {
+      result.data.regione = producer.regione;
+      if (!result.foundFields.includes('regione')) result.foundFields.push('regione');
+    }
+  }
+
   // Capitalize first letter of all text fields
-  const textFields: (keyof ProductData)[] = ['descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'vinificazione', 'affinamento', 'abbinamenti', 'terreno', 'esposizione', 'zonaProduzione', 'vendemmia'];
+  const textFields: (keyof ProductData)[] = ['descBreve', 'descLunga', 'allaVista', 'alNaso', 'alPalato', 'vinificazione', 'affinamento', 'abbinamenti', 'terreno', 'esposizione', 'zonaProduzione', 'periodoVendemmia', 'raccolta'];
   for (const f of textFields) {
     if (result.data[f]) {
       result.data[f] = result.data[f]!.charAt(0).toUpperCase() + result.data[f]!.slice(1);

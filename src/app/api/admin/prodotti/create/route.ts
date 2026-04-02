@@ -84,8 +84,8 @@ function wcUrl(path: string, params?: Record<string, string | number>): string {
 
 /* ── Build WC product payload ──────────────────────────── */
 
-// WC attribute IDs — MUST match WooCommerce exactly
-const ATTR_IDS: Record<string, number> = {
+// Fallback hardcoded IDs (used only when WC fetch fails or returns fewer attributes)
+const FALLBACK_ATTR_IDS: Record<string, number> = {
   'pa_produttore': 10,
   'pa_denominazione': 33,
   'pa_regione': 4,
@@ -95,11 +95,11 @@ const ATTR_IDS: Record<string, number> = {
   'pa_annata': 11,
   'pa_formato': 6,
   'pa_abbinamenti': 7,
-  'pa_temperatura-di-servizio': 41,   // Servire a
+  'pa_temperatura-di-servizio': 41,
   'pa_momento-di-consumo': 93,
   'pa_allergeni': 87,
   'pa_terreno': 40,
-  'pa_filosofia': 15,                 // Certificazioni
+  'pa_filosofia': 15,
   'pa_resa': 45,
   'pa_raccolta': 46,
   'pa_bottiglie-prodotte': 92,
@@ -107,8 +107,8 @@ const ATTR_IDS: Record<string, number> = {
   'pa_dosaggio': 29,
   'pa_categoria-google': 69,
   'pa_per-adulti': 75,
-  'pa_metodo-produttivo': 38,         // Spumantizzazione
-  'pa_spumantizzazione': 37,          // Categoria spumanti
+  'pa_metodo-produttivo': 38,
+  'pa_spumantizzazione': 37,
   'pa_orientamento-delle-vigne': 47,
   'pa_altitudine-dei-vigneti': 49,
   'pa_tipo-di-vigneto': 44,
@@ -118,7 +118,10 @@ const ATTR_IDS: Record<string, number> = {
   'pa_periodo-vendemmia': 95,
 };
 
-function buildWCProduct(body: ProductBody) {
+function buildWCProduct(body: ProductBody, liveAttrIds: Record<string, number> = {}) {
+  // Merge: live WC IDs take priority over fallback
+  const ATTR_IDS = { ...FALLBACK_ATTR_IDS, ...liveAttrIds };
+
   // Build attributes array with IDs for proper WC mapping
   const attributes: {
     id?: number;
@@ -153,7 +156,7 @@ function buildWCProduct(body: ProductBody) {
   if (body.certificazioni) addAttr('pa_filosofia', 'Certificazioni', body.certificazioni.split(',').map(c => c.trim()).filter(Boolean));
   if (body.resa) addAttr('pa_resa', 'Resa', [body.resa]);
   if (body.raccolta) addAttr('pa_raccolta', 'Raccolta', [body.raccolta]);
-  if (body.bottiglieProdotte) addAttr('pa_bottiglie-prodotte', 'Bottiglie prodotte', [body.bottiglieProdotte]);
+  if (body.bottiglieProdotte) addAttr('pa_bottiglie-prodotte', 'Bottiglie prodotte', body.bottiglieProdotte.split(',').map(s => s.trim()).filter(Boolean));
   if (body.zonaProduzione) addAttr('pa_zona-di-produzione', 'Zona di produzione', [body.zonaProduzione]);
   if (body.spumantizzazione) addAttr('pa_metodo-produttivo', 'Spumantizzazione', [body.spumantizzazione]);
   if (body.categoriaSpumanti) addAttr('pa_spumantizzazione', 'Categoria spumanti', [body.categoriaSpumanti]);
@@ -228,6 +231,27 @@ function buildWCProduct(body: ProductBody) {
   };
 }
 
+/* ── Ensure WC taxonomy term exists ───────────────────── */
+
+async function ensureTermExists(baseUrl: string, auth: string, attrSlug: string, attrId: number, termName: string) {
+  try {
+    const searchRes = await fetch(
+      `${baseUrl}/wp-json/wc/v3/products/attributes/${attrId}/terms?search=${encodeURIComponent(termName)}&${auth}`,
+    );
+    if (searchRes.ok) {
+      const existing: { name: string }[] = await searchRes.json();
+      if (existing.some(t => t.name.toLowerCase() === termName.toLowerCase())) return;
+    }
+    await fetch(`${baseUrl}/wp-json/wc/v3/products/attributes/${attrId}/terms?${auth}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: termName }),
+    });
+  } catch (err) {
+    console.error(`ensureTermExists failed for ${attrSlug}:${termName}`, err);
+  }
+}
+
 /* ── POST handler ──────────────────────────────────────── */
 
 export async function POST(req: NextRequest) {
@@ -245,8 +269,32 @@ export async function POST(req: NextRequest) {
   const isUpdate = !!body.updateId;
 
   try {
-    const wcProduct = buildWCProduct(body);
     const wc = getWCSecrets();
+
+    // Fetch live attribute IDs from WC (per_page=100 to get all, default is only 10)
+    const liveAttrIds: Record<string, number> = {};
+    try {
+      const attrsRes = await fetch(
+        `${wcUrl('/products/attributes', { per_page: 100 })}`,
+      );
+      if (attrsRes.ok) {
+        const attrs: { id: number; slug: string }[] = await attrsRes.json();
+        for (const a of attrs) {
+          liveAttrIds[`pa_${a.slug}`] = a.id;
+        }
+      }
+    } catch { /* use fallback hardcoded IDs */ }
+
+    // Ensure free-text taxonomy terms exist before saving product
+    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+    if (body.zonaProduzione?.trim()) {
+      const zonaAttrId = liveAttrIds['pa_zona-di-produzione'] || FALLBACK_ATTR_IDS['pa_zona-di-produzione'];
+      if (zonaAttrId) {
+        await ensureTermExists(wc.baseUrl, wcAuth, 'pa_zona-di-produzione', zonaAttrId, body.zonaProduzione.trim());
+      }
+    }
+
+    const wcProduct = buildWCProduct(body, liveAttrIds);
 
     // If updating, use PUT; if creating, use POST
     const url = isUpdate ? wcUrl(`/products/${body.updateId}`) : wcUrl('/products');
@@ -266,12 +314,45 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const errorText = await res.text();
       console.error('WC create product error:', res.status, errorText);
-      throw new Error(`Errore WooCommerce: ${res.status}`);
+      // Parse WC error for a user-friendly message
+      let userMessage = `Errore WooCommerce (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        const wcMsg: string = errJson.message || errJson.code || '';
+        if (wcMsg.toLowerCase().includes('sku') || errJson.code === 'woocommerce_rest_product_sku_already_exists') {
+          userMessage = `SKU già esistente: "${body.sku}" è già usato da un altro prodotto. Usa uno SKU diverso o lascia il campo vuoto.`;
+        } else if (wcMsg) {
+          userMessage = wcMsg;
+        }
+      } catch { /* errorText non è JSON, usa il messaggio generico */ }
+      throw new Error(userMessage);
     }
 
     const product = await res.json();
     const productId = product.id as number;
     const editUrl = `${wc.baseUrl}/wp-admin/post.php?post=${productId}&action=edit`;
+
+    // Set post_author to vendorId via WordPress REST API (required by WCFM to assign store)
+    if (body.vendorId) {
+      const wpUser = process.env.WP_USER;
+      const wpAppPassword = process.env.WP_APP_PASSWORD;
+      if (wpUser && wpAppPassword) {
+        const wpAuth = Buffer.from(`${wpUser}:${wpAppPassword}`).toString('base64');
+        try {
+          await fetch(`${wc.baseUrl}/wp-json/wp/v2/product/${productId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${wpAuth}`,
+            },
+            body: JSON.stringify({ author: parseInt(body.vendorId) }),
+          });
+        } catch (authorErr) {
+          console.error('Failed to set post_author:', authorErr);
+          // Non-blocking
+        }
+      }
+    }
 
     // Save to Google Sheets (elenco prodotti)
     try {

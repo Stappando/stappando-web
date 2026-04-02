@@ -159,16 +159,18 @@ export async function POST(req: NextRequest) {
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
   try {
-    // Fetch all attributes to resolve IDs for produttore term creation
+    // Fetch ALL attributes from WC (per_page=100 to avoid the default 10 limit)
     const attrsRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products/attributes?${auth}`,
+      `${wc.baseUrl}/wp-json/wc/v3/products/attributes?per_page=100&${auth}`,
     );
-    const allAttributes: { id: number; slug: string }[] = attrsRes.ok
+    const allAttributes: { id: number; name: string; slug: string }[] = attrsRes.ok
       ? await attrsRes.json()
       : [];
 
-    // WC attribute IDs — must match WooCommerce exactly
+    // Build a live ID map from WC — pa_<slug> → id
+    // This overrides any hardcoded values, ensuring correctness
     const ATTR_IDS: Record<string, number> = {
+      // Fallback hardcoded values (used only when WC fetch fails)
       'pa_produttore': 10, 'pa_denominazione': 33, 'pa_regione': 4, 'pa_nazione': 5,
       'pa_uvaggio': 17, 'pa_gradazione-alcolica': 24, 'pa_annata': 11, 'pa_formato': 6,
       'pa_abbinamenti': 7, 'pa_temperatura-di-servizio': 41, 'pa_momento-di-consumo': 93,
@@ -180,6 +182,13 @@ export async function POST(req: NextRequest) {
       'pa_densita-dimpianto': 94, 'pa_periodo-vendemmia': 95, 'pa_identificazione-esistente': 73,
       'pa_categoria-google': 69,
     };
+    // Override with live WC values
+    for (const attr of allAttributes) {
+      ATTR_IDS[`pa_${attr.slug}`] = attr.id;
+    }
+
+    // Only create new terms for these attributes — all others must use existing terms
+    const CREATE_TERMS_SLUGS = ['pa_produttore', 'pa_uvaggio', 'pa_zona-di-produzione'];
 
     // Map attributes to WC format with IDs
     const wcAttributes = [];
@@ -187,10 +196,8 @@ export async function POST(req: NextRequest) {
       const slug = attr.slug.startsWith('pa_') ? attr.slug : `pa_${attr.slug}`;
       const attrId = ATTR_IDS[slug];
 
-      // Only create new terms for produttore and uvaggio — all others must use existing terms
-      const CREATE_TERMS_SLUGS = ['pa_produttore', 'pa_uvaggio'];
       if (CREATE_TERMS_SLUGS.includes(slug)) {
-        const wcAttr = allAttributes.find(a => a.slug === slug.replace('pa_', ''));
+        const wcAttr = allAttributes.find(a => `pa_${a.slug}` === slug);
         if (wcAttr && attr.terms.length > 0) {
           for (const term of attr.terms) {
             await ensureTermExists(wc.baseUrl, auth, wcAttr.id, term);
@@ -205,7 +212,8 @@ export async function POST(req: NextRequest) {
       }
     }
     // Always add Per adulti
-    wcAttributes.push({ id: 75, name: 'Per adulti', options: ['Sì'], visible: true, variation: false });
+    const perAdultiId = ATTR_IDS['pa_per-adulti'] || 75;
+    wcAttributes.push({ id: perAdultiId, name: 'Per adulti', options: ['Sì'], visible: true, variation: false });
 
     // Build meta_data from ACF fields + vendor metadata
     const metaData: { key: string; value: string | boolean }[] = [
@@ -288,10 +296,17 @@ export async function POST(req: NextRequest) {
       const errText = await createRes.text();
       console.error('WC product save failed:', createRes.status, errText);
       console.error('Payload sent:', JSON.stringify(productPayload).slice(0, 500));
-      return NextResponse.json(
-        { error: `Errore WC (${createRes.status}): ${errText.slice(0, 200)}` },
-        { status: 502 },
-      );
+      let userError = `Errore WC (${createRes.status})`;
+      try {
+        const errJson = JSON.parse(errText);
+        const wcMsg: string = errJson.message || errJson.code || '';
+        if (wcMsg.toLowerCase().includes('sku') || errJson.code === 'woocommerce_rest_product_sku_already_exists') {
+          userError = `SKU già esistente: "${body.sku || ''}" è già usato da un altro prodotto. Usa uno SKU diverso o lascia il campo vuoto.`;
+        } else if (wcMsg) {
+          userError = wcMsg;
+        }
+      } catch { /* not JSON */ }
+      return NextResponse.json({ error: userError }, { status: 502 });
     }
 
     const created: { id: number; name: string } = await createRes.json();

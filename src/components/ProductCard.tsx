@@ -33,6 +33,12 @@ export default function ProductCard({ product }: Props) {
   const isOutOfStock = product.stock_status === 'outofstock' || stockQty === 0;
   const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 3;
 
+  const isNew = (() => {
+    if (!product.date_created) return false;
+    const created = new Date(product.date_created).getTime();
+    return !isNaN(created) && Date.now() - created < 14 * 24 * 60 * 60 * 1000;
+  })();
+
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -80,6 +86,13 @@ export default function ProductCard({ product }: Props) {
         {circuito && (
           <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-[#d9c39a]/90 backdrop-blur-sm text-[#5a4200] text-[9px] font-semibold px-2 py-1 rounded-md">
             <span className="text-[#d4a017]">★</span> {circuito.badge}
+          </span>
+        )}
+
+        {/* Novità pill — top-right, visible for 14 days after publication */}
+        {isNew && (
+          <span className="absolute top-2 right-2 bg-[#005667] text-white text-[9px] font-bold px-2 py-1 rounded-md tracking-wide uppercase">
+            Novità
           </span>
         )}
       </Link>

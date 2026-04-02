@@ -38,6 +38,24 @@ export interface WCCustomer {
   avatar_url: string;
 }
 
+export interface WCSubOrder {
+  id: number;
+  number: string;
+  status: string;
+  line_items: {
+    id?: number;
+    product_id: number;
+    name: string;
+    quantity: number;
+    price?: string;
+    total: string;
+    image?: { src: string };
+  }[];
+  meta_data?: { key: string; value: string }[];
+  shipping?: Address;
+  _vendor_name?: string;
+}
+
 export interface WCOrder {
   id: number;
   number: string;
@@ -45,6 +63,12 @@ export interface WCOrder {
   date_created: string;
   total: string;
   currency: string;
+  customer_note?: string;
+  payment_method_title?: string;
+  discount_total?: string;
+  shipping_total?: string;
+  coupon_lines?: { code: string; discount: string }[];
+  meta_data?: { key: string; value: string }[];
   line_items: {
     id: number;
     product_id: number;
@@ -56,6 +80,7 @@ export interface WCOrder {
   }[];
   billing: Address;
   shipping: Address;
+  _sub_orders?: WCSubOrder[];
 }
 
 interface AuthState {

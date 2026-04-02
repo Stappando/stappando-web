@@ -2,13 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { isPositiveInt } from '@/lib/validation';
 
+interface WCOrderMeta { key: string; value: string }
+
+interface WCSubOrder {
+  id: number;
+  number: string;
+  status: string;
+  line_items: { id: number; product_id: number; name: string; quantity: number; price: string; total: string; image?: { src: string } }[];
+  meta_data: WCOrderMeta[];
+  shipping?: { postcode?: string };
+  _vendor_name?: string;
+}
+
 interface WCOrder {
   id: number;
+  number: string;
   status: string;
   total: string;
   date_created: string;
-  meta_data: { key: string; value: string }[];
-  line_items: { product_id: number; name: string; quantity: number; total: string; image?: { src: string } }[];
+  meta_data: WCOrderMeta[];
+  line_items: { id?: number; product_id: number; name: string; quantity: number; price?: string; total: string; image?: { src: string } }[];
+  billing?: { first_name?: string; last_name?: string; address_1?: string; city?: string; state?: string; postcode?: string; email?: string; phone?: string };
+  shipping?: { first_name?: string; last_name?: string; address_1?: string; city?: string; state?: string; postcode?: string };
+  customer_note?: string;
+  payment_method_title?: string;
+  discount_total?: string;
+  shipping_total?: string;
+  coupon_lines?: { code: string; discount: string }[];
+  _sub_orders?: WCSubOrder[];
   [key: string]: unknown;
 }
 
@@ -28,35 +49,31 @@ export async function GET(req: NextRequest) {
 
     const orders: WCOrder[] = await res.json();
 
-    // For orders with sub-orders: fetch sub-orders and replace parent
     const result: WCOrder[] = [];
 
     for (const order of orders) {
       const hasSubs = order.meta_data?.find(m => m.key === '_has_sub_orders')?.value === 'true';
       const isSubOrder = order.meta_data?.find(m => m.key === '_is_sub_order')?.value === 'true';
 
-      // Skip sub-orders that appear in the main list (they'll be fetched via parent)
+      // Skip sub-orders that appear in the main list — they'll be embedded in the parent
       if (isSubOrder) continue;
 
       if (hasSubs) {
-        // Fetch sub-orders for this parent
         try {
           const subUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?parent=${order.id}&${auth}`;
           const subRes = await fetch(subUrl);
           if (subRes.ok) {
-            const subOrders: WCOrder[] = await subRes.json();
+            const subOrders: WCSubOrder[] = await subRes.json();
             if (subOrders.length > 0) {
-              // Add sub-orders with vendor info, don't show parent
-              for (const sub of subOrders) {
-                const vendorName = sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando Enoteca';
-                result.push({
+              // Embed sub-orders inside the parent — show ONE row per parent order
+              result.push({
+                ...order,
+                _sub_orders: subOrders.map(sub => ({
                   ...sub,
-                  _vendor_name: vendorName,
-                  _parent_order_id: order.id,
-                  _is_sub_order: true,
-                } as WCOrder & { _vendor_name: string; _parent_order_id: number; _is_sub_order: boolean });
-              }
-              continue; // Don't add parent to result
+                  _vendor_name: sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando Enoteca',
+                })),
+              });
+              continue;
             }
           }
         } catch (err) {

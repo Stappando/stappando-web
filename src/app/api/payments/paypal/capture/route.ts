@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       shippingCost: body.shipping || 0,
       preferences: body.carrier ? { carrier: body.carrier } : undefined,
       couponCode: body.couponCode || undefined,
+      couponDiscount: body.couponDiscount || 0,
     });
 
     return NextResponse.json({ success: true, captureId: capture.captureId });

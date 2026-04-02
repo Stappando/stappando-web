@@ -2,6 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { sanitize } from '@/lib/validation';
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8217;/g, '\u2019')
+    .replace(/&#8220;/g, '\u201C')
+    .replace(/&#8221;/g, '\u201D')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&agrave;/g, 'à')
+    .replace(/&egrave;/g, 'è')
+    .replace(/&igrave;/g, 'ì')
+    .replace(/&ograve;/g, 'ò')
+    .replace(/&ugrave;/g, 'ù')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&ecirc;/g, 'ê')
+    .replace(/&ccedil;/g, 'ç')
+    .replace(/&lsquo;/g, '\u2018')
+    .replace(/&rsquo;/g, '\u2019')
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
+}
+
 export const dynamic = 'force-dynamic';
 
 interface WCTerm {
@@ -45,7 +72,7 @@ export async function GET(req: NextRequest) {
       }
       const categories: WCTerm[] = await res.json();
       return NextResponse.json(
-        categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+        categories.map((c) => ({ id: c.id, name: decodeHtmlEntities(c.name), slug: c.slug })),
         {
           headers: {
             'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -94,7 +121,7 @@ export async function GET(req: NextRequest) {
     const terms = allTerms;
 
     return NextResponse.json(
-      terms.map((t) => ({ id: t.id, name: t.name, slug: t.slug })),
+      terms.map((t) => ({ id: t.id, name: decodeHtmlEntities(t.name), slug: t.slug })),
       {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',

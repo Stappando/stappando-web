@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
     const password = sanitize(body.password, 128);
     const firstName = sanitize(body.firstName, 100);
     const lastName = sanitize(body.lastName, 100);
-    const newsletter = body.newsletter === true; // Explicit opt-in only (GDPR)
 
     if (!isValidEmail(email)) {
       return NextResponse.json({ message: 'Email non valida' }, { status: 400 });
@@ -78,15 +77,13 @@ export async function POST(req: NextRequest) {
         console.error('Welcome coupon/mail failed:', err);
       }
 
-      // 3. Mailchimp (GDPR)
-      if (newsletter) {
-        subscribeToMailchimp({
-          email,
-          firstName,
-          lastName,
-          tags: ['registrazione-web'],
-        }).catch((err) => console.error('Mailchimp subscribe failed:', err));
-      }
+      // 3. Newsletter — auto-subscribe tutti i nuovi iscritti (disattivabile da account)
+      subscribeToMailchimp({
+        email,
+        firstName,
+        lastName,
+        tags: ['registrazione-web'],
+      }).catch((err) => console.error('Mailchimp auto-subscribe failed:', err));
     })();
 
     return NextResponse.json({ success: true, customerId });

@@ -60,10 +60,11 @@ export default async function ProductPage({ params }: Props) {
   const denominazione = getAttr('Denominazione');
   const abbinamenti = (product.attributes?.find((a: { name: string }) => a.name === 'Abbinamento')?.options || []).map((o: string) => decodeHtml(o));
 
-  // Filter attributes for specs table
+  // Filter attributes for specs table — skip empty/missing values
   const specs = (product.attributes || [])
-    .filter((a: { name: string }) => ALLOWED_ATTRS.has(a.name) && a.name !== 'Abbinamento')
-    .map((a: { name: string; options: string[] }) => ({ key: a.name, value: a.options.map(o => decodeHtml(o)).join(', ') }));
+    .filter((a: { name: string; options: string[] }) => ALLOWED_ATTRS.has(a.name) && a.name !== 'Abbinamento' && a.options?.length > 0)
+    .map((a: { name: string; options: string[] }) => ({ key: a.name, value: a.options.map((o: string) => decodeHtml(o)).join(', ') }))
+    .filter((s: { key: string; value: string }) => s.value.trim() !== '');
 
   // Get tasting notes from meta
   const getMeta = (key: string) => product.meta_data?.find((m: { key: string; value: string }) => m.key === key)?.value || '';

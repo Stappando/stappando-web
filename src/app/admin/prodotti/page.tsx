@@ -180,6 +180,7 @@ export default function ProdottiPage() {
 
   // Taxonomy terms state
   const [taxTerms, setTaxTerms] = useState<Record<string, { name: string; slug: string }[]>>({});
+  const [cleanupMsg, setCleanupMsg] = useState('');
 
   // Fetch vendors + producers on mount
   useEffect(() => {
@@ -312,7 +313,7 @@ export default function ProdottiPage() {
       }
 
       const result: SearchResult = await res.json();
-      const merged = { ...emptyProduct, ...result.data, nome: result.data.nome || searchName.trim() };
+      const merged = normalizeMerged({ ...emptyProduct, ...result.data, nome: result.data.nome || searchName.trim() });
       setForm(merged);
       setFoundFields(result.foundFields || []);
       setSubStep(1);
@@ -350,6 +351,93 @@ export default function ProdottiPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpdateProducerRegions = async () => {
+    setCleanupMsg('Aggiornamento regioni produttori in corso...');
+    try {
+      const res = await fetch('/api/admin/prodotti/update-producer-regions', { method: 'POST' });
+      const data = await res.json();
+      setCleanupMsg(`Aggiornati: ${data.updated} | Già ok: ${data.skipped} | Non trovati in mappa: ${data.notFound}`);
+    } catch {
+      setCleanupMsg('Errore durante aggiornamento regioni.');
+    }
+  };
+
+  const handleCleanupTerms = async () => {
+    setCleanupMsg('Pulizia in corso...');
+    try {
+      const res = await fetch('/api/admin/prodotti/cleanup-terms', { method: 'POST' });
+      const data = await res.json();
+      if (data.deleted?.length) {
+        setCleanupMsg(`Eliminati: ${data.deleted.join(', ')}`);
+        // Refresh pa_bottiglie-prodotte terms
+        fetch('/api/vendor/taxonomies?slug=pa_bottiglie-prodotte&per_page=200')
+          .then(r => r.ok ? r.json() : [])
+          .then(d => setTaxTerms(prev => ({ ...prev, 'pa_bottiglie-prodotte': d.map((t: { name: string; slug: string }) => ({ name: t.name, slug: t.slug })) })));
+      } else {
+        setCleanupMsg('Nessun termine da eliminare.');
+      }
+    } catch {
+      setCleanupMsg('Errore durante la pulizia.');
+    }
+  };
+
+  /* ── Taxonomy matcher ──────────────────────────────── */
+
+  // Find the best matching term name from a list for a given raw value
+  const matchTerm = (raw: string, terms: { name: string }[]): string => {
+    if (!raw || !terms.length) return raw;
+    const r = raw.toLowerCase().trim();
+    // 1. Exact match
+    const exact = terms.find(t => t.name.toLowerCase() === r);
+    if (exact) return exact.name;
+    // 2. Starts-with match
+    const starts = terms.find(t => t.name.toLowerCase().startsWith(r) || r.startsWith(t.name.toLowerCase()));
+    if (starts) return starts.name;
+    // 3. Contains match (raw inside term name, or term name inside raw)
+    const contains = terms.find(t => t.name.toLowerCase().includes(r) || r.includes(t.name.toLowerCase()));
+    if (contains) return contains.name;
+    // 4. All words in raw appear in term name
+    const words = r.split(/\s+/).filter(w => w.length > 2);
+    if (words.length) {
+      const wordMatch = terms.find(t => words.every(w => t.name.toLowerCase().includes(w)));
+      if (wordMatch) return wordMatch.name;
+    }
+    return raw; // no match, keep original
+  };
+
+  // Match a comma-separated pill value against taxonomy terms
+  const matchPills = (raw: string, terms: { name: string }[]): string => {
+    if (!raw) return raw;
+    return raw.split(',').map(v => matchTerm(v.trim(), terms)).join(', ');
+  };
+
+  // Normalize AI result fields to match loaded taxonomy terms
+  const normalizeMerged = (data: ProductData): ProductData => {
+    const m = (field: keyof ProductData, slug: string) => {
+      const terms = taxTerms[slug] || [];
+      if (!terms.length) return;
+      data[field] = matchTerm(data[field] as string, terms) as never;
+    };
+    const mp = (field: keyof ProductData, slug: string) => {
+      const terms = taxTerms[slug] || [];
+      if (!terms.length) return;
+      data[field] = matchPills(data[field] as string, terms) as never;
+    };
+    m('denominazione', 'pa_denominazione');
+    m('gradazione', 'pa_gradazione-alcolica');
+    m('regione', 'pa_regione');
+    m('annata', 'pa_annata');
+    m('formato', 'pa_formato');
+    m('raccolta', 'pa_raccolta');
+    mp('abbinamenti', 'pa_abbinamenti');
+    mp('momentoConsumo', 'pa_momento-di-consumo');
+    mp('allergeni', 'pa_allergeni');
+    mp('terreno', 'pa_terreno');
+    mp('periodoVendemmia', 'pa_periodo-vendemmia');
+    mp('certificazioni', 'pa_filosofia');
+    return data;
   };
 
   /* ── Taxonomy helpers ───────────────────────────────── */
@@ -887,13 +975,22 @@ export default function ProdottiPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
-                    <select value={form.bottiglieProdotte} onChange={updateField('bottiglieProdotte')} className={inputClass}>
-                      <option value="">-- Seleziona --</option>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className={labelClass}>Bottiglie prodotte {dot('bottiglieProdotte')}</label>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={handleUpdateProducerRegions} className="text-[10px] text-blue-600 hover:text-blue-800 underline">Aggiorna regioni produttori</button>
+                        <button type="button" onClick={handleCleanupTerms} className="text-[10px] text-red-500 hover:text-red-700 underline">Pulisci termini errati</button>
+                      </div>
+                    </div>
+                    {cleanupMsg && <p className="text-[10px] text-green-700 mb-1">{cleanupMsg}</p>}
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       {(taxTerms['pa_bottiglie-prodotte'] || []).map((t) => (
-                        <option key={t.slug} value={t.name}>{t.name}</option>
+                        <button key={t.slug} type="button" onClick={() => togglePill('bottiglieProdotte', t.name)}
+                          className={`rounded-full px-3 py-1.5 text-[12px] border transition-colors ${isPillSelected('bottiglieProdotte', t.name) ? 'bg-[#005667] text-white border-[#005667]' : 'bg-white border-gray-200 text-gray-700 hover:border-[#005667]'}`}>
+                          {t.name}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
                   <div>
                     <label className={labelClass}>Certificazioni {dot('certificazioni')}</label>

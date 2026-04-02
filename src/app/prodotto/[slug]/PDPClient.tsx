@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
 import { useAnalyticsStore } from '@/store/analytics';
+import { getAbbinamentoIcon } from '@/lib/abbinamenti-icons';
 
 interface GalleryImage { id: number; src: string; alt: string; }
 interface Spec { key: string; value: string; }
@@ -45,6 +46,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const openCheckout = useCartStore((s) => s.openCheckout);
   const trackView = useCartStore((s) => s.trackView);
@@ -54,6 +56,19 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
     trackView(p.id, p.slug);
     useAnalyticsStore.getState().trackProductView(p.id, p.name, 'direct');
   }, [p.id, p.slug, p.name, trackView]);
+
+  // Close lightbox on ESC
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') setActiveImg(i => (i - 1 + p.galleryImages.length) % p.galleryImages.length);
+      if (e.key === 'ArrowRight') setActiveImg(i => (i + 1) % p.galleryImages.length);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxOpen, closeLightbox, p.galleryImages.length]);
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) {
@@ -82,7 +97,18 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           {/* Gallery */}
           <div className="relative bg-white border border-[#e8e4dc] rounded-2xl p-5 overflow-hidden" style={{ height: 'clamp(320px, 45vw, 460px)' }}>
             {p.galleryImages[activeImg]?.src ? (
-              <Image src={p.galleryImages[activeImg].src} alt={p.galleryImages[activeImg].alt} fill className="object-contain p-2" priority sizes="(max-width: 1024px) 100vw, 50vw" />
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="absolute inset-0 w-full h-full cursor-zoom-in focus:outline-none group"
+                aria-label="Ingrandisci immagine"
+              >
+                <Image src={p.galleryImages[activeImg].src} alt={p.galleryImages[activeImg].alt} fill className="object-contain p-2" priority sizes="(max-width: 1024px) 100vw, 50vw" />
+                {/* Zoom hint */}
+                <span className="absolute bottom-3 right-3 w-7 h-7 bg-white/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  <svg className="w-4 h-4 text-[#666]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0zm-3-1H8m3-3v6" /></svg>
+                </span>
+              </button>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#ccc]">
                 <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -146,9 +172,15 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             <div className="hidden lg:block mb-6">
               <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
-                {p.abbinamenti.map((a, i) => (
-                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[15px] font-medium">{a}</span>
-                ))}
+                {p.abbinamenti.map((a, i) => {
+                  const icon = getAbbinamentoIcon(a);
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1.5 bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full pl-1.5 pr-3 py-1 text-[13px] font-medium">
+                      {icon && <img src={icon} alt="" aria-hidden="true" className="w-5 h-5 object-contain rounded-full shrink-0" />}
+                      {a}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -316,9 +348,15 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             <div className="lg:hidden mb-5">
               <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
-                {p.abbinamenti.map((a, i) => (
-                  <span key={i} className="bg-[#f0f7f5] text-[#005667] border border-[#005667] rounded-full px-3 py-1 text-[15px] font-medium">{a}</span>
-                ))}
+                {p.abbinamenti.map((a, i) => {
+                  const icon = getAbbinamentoIcon(a);
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1.5 bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full pl-1.5 pr-3 py-1 text-[13px] font-medium">
+                      {icon && <img src={icon} alt="" aria-hidden="true" className="w-5 h-5 object-contain rounded-full shrink-0" />}
+                      {a}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -366,6 +404,65 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
       )}
       {/* Spacer for sticky bar on mobile */}
       {inStock && <div className="lg:hidden h-16" />}
+
+      {/* ═══ LIGHTBOX ═══ */}
+      {lightboxOpen && p.galleryImages[activeImg]?.src && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Image container — stop propagation so clicking image doesn't close */}
+          <div
+            className="relative w-full h-full max-w-4xl max-h-[90vh] m-auto flex items-center justify-center p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <Image
+              src={p.galleryImages[activeImg].src}
+              alt={p.galleryImages[activeImg].alt}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </div>
+
+          {/* Close */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+            aria-label="Chiudi"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+
+          {/* Counter */}
+          {p.galleryImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-[13px] font-medium tabular-nums z-10">
+              {activeImg + 1} / {p.galleryImages.length}
+            </div>
+          )}
+
+          {/* Prev / Next */}
+          {p.galleryImages.length > 1 && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); setActiveImg(i => (i - 1 + p.galleryImages.length) % p.galleryImages.length); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+                aria-label="Precedente"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); setActiveImg(i => (i + 1) % p.galleryImages.length); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+                aria-label="Successiva"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 }

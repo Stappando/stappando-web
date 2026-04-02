@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
+import { validateStock } from '@/lib/payments/validate-stock';
 
 interface LineItem {
   id: number;
@@ -61,6 +62,14 @@ export async function POST(req: NextRequest) {
     }
     if (!isNonEmptyString(c.address) || !isNonEmptyString(c.city) || !isNonEmptyString(c.zip)) {
       return NextResponse.json({ error: 'Indirizzo completo obbligatorio' }, { status: 400 });
+    }
+
+    // Stock validation — check availability before charging the card
+    const stockCheck = await validateStock(
+      body.items.map((i) => ({ id: i.id, name: i.name || '', quantity: i.quantity })),
+    );
+    if (!stockCheck.ok) {
+      return NextResponse.json({ error: stockCheck.error }, { status: 409 });
     }
 
     // Calculate total in cents (subtract coupon discount if any)

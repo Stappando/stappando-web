@@ -26,7 +26,7 @@ function getStripePromise() {
 
 interface ShippingForm {
   firstName: string; lastName: string; email: string;
-  address: string; zip: string; city: string; phone: string;
+  address: string; zip: string; city: string; province: string; phone: string;
   notes: string; needsInvoice: boolean;
   ragioneSociale: string; piva: string; codFiscale: string; sdi: string;
 }
@@ -443,6 +443,7 @@ function Step2Shipping() {
     firstName: savedShipping?.firstName || '', lastName: savedShipping?.lastName || '',
     email: savedShipping?.email || '', address: savedShipping?.address || '',
     zip: savedShipping?.zip || '', city: savedShipping?.city || '',
+    province: savedShipping?.province || '',
     phone: savedShipping?.phone || '', notes: savedShipping?.notes || '',
     needsInvoice: false, ragioneSociale: '', piva: '', codFiscale: '', sdi: '',
   }));
@@ -474,6 +475,7 @@ function Step2Shipping() {
               address: f.address || b.address_1 || '',
               zip: f.zip || b.postcode || '',
               city: f.city || b.city || '',
+              province: f.province || b.state || '',
             }));
           })
           .catch(() => {});
@@ -523,9 +525,10 @@ function Step2Shipping() {
             </div>
             <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email *" className={`w-full ${inputClass}`} />
             <input name="address" value={form.address} onChange={handleChange} placeholder="Indirizzo *" className={`w-full ${inputClass}`} />
-            <div className="grid grid-cols-2 gap-3.5">
-              <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} className={`${inputClass}`} />
-              <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" className={`${inputClass}`} />
+            <div className="grid grid-cols-[90px_1fr_80px] gap-3.5">
+              <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} className={inputClass} />
+              <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" className={inputClass} />
+              <input name="province" value={form.province} onChange={e => setForm({ ...form, province: e.target.value.toUpperCase().slice(0, 2) })} placeholder="Prov." maxLength={2} className={`${inputClass} text-center uppercase`} />
             </div>
             <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
 
@@ -567,7 +570,7 @@ function Step2Shipping() {
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
             <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
             <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, province: form.province, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Continua →
             </button>
             <button onClick={() => setCheckoutStep(1)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-1.5">← Torna al carrello</button>
@@ -577,7 +580,7 @@ function Step2Shipping() {
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, province: form.province, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Continua →
         </button>
       </div>
@@ -705,7 +708,7 @@ function Step3Payment() {
       phone: sd?.phone || '',
       address: sd?.address || '',
       city: sd?.city || '',
-      province: '',
+      province: sd?.province || '',
       zip: sd?.zip || '',
       notes: sd?.notes || '',
       needsInvoice: sd?.needsInvoice || false,
@@ -797,6 +800,7 @@ function Step3Payment() {
               shipping: getTotalShipping(),
               carrier: savedCarrier,
               couponCode: useCartStore.getState().appliedCoupon?.code || '',
+              couponDiscount: useCartStore.getState().appliedCoupon?.discount || 0,
             }),
           });
 
