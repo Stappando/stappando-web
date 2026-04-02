@@ -25,57 +25,82 @@ interface ShopData {
   indirizzo: string;
 }
 
+interface VendorCustomer {
+  id: number;
+  first_name: string;
+  shipping?: { company?: string };
+  billing?: { address_2?: string };
+  meta_data?: { key: string; value: string }[];
+}
+
+function getCantinaKey(c: VendorCustomer): string {
+  // _vendor_cantina meta is the authoritative cantina name
+  const metaCantina = (c.meta_data || []).find(m => m.key === '_vendor_cantina')?.value;
+  return (metaCantina || c.first_name || '').toLowerCase();
+}
+
+function getTermId(c: VendorCustomer): string | null {
+  try {
+    const addr2 = c.billing?.address_2 || '';
+    if (!addr2.startsWith('{')) return null;
+    return (JSON.parse(addr2) as Record<string, string>)._producer_term_id || null;
+  } catch { return null; }
+}
+
+function parseShop(c: VendorCustomer): ShopData | null {
+  const company = c.shipping?.company || '';
+  if (!company.startsWith('{')) return null;
+  try {
+    const shop = JSON.parse(company) as Partial<ShopData>;
+    if (!shop.logo && !shop.banner && !shop.regione && !shop.indirizzo && !shop.descrizione) return null;
+    return {
+      logo: shop.logo || '',
+      banner: shop.banner || '',
+      descrizione: shop.descrizione || '',
+      regione: shop.regione || '',
+      indirizzo: shop.indirizzo || '',
+    };
+  } catch { return null; }
+}
+
 /**
- * Build a map of cantinaName.toLowerCase() → ShopData
- * by fetching all vendor customers (WC customers with wcfm_vendor role or _is_vendor meta).
- * This is the authoritative source: vendor saved logo/banner here.
+ * Build two maps from vendor customers:
+ * - byName: cantinaName.toLowerCase() → ShopData
+ * - byTermId: termId → ShopData
  */
 async function buildVendorShopMap(
   baseUrl: string,
   auth: string,
-): Promise<Map<string, ShopData>> {
-  const map = new Map<string, ShopData>();
+): Promise<{ byName: Map<string, ShopData>; byTermId: Map<string, ShopData> }> {
+  const byName = new Map<string, ShopData>();
+  const byTermId = new Map<string, ShopData>();
+
   try {
-    // Try role=wcfm_vendor first; if empty, fall back to all customers (filter by meta)
-    let customers: { first_name: string; shipping?: { company?: string }; meta_data?: { key: string; value: string }[] }[] = [];
+    // Fetch all customers and filter for vendors
+    const res = await fetch(`${baseUrl}/wp-json/wc/v3/customers?per_page=100&${auth}`);
+    if (!res.ok) return { byName, byTermId };
 
-    const res = await fetch(`${baseUrl}/wp-json/wc/v3/customers?role=wcfm_vendor&per_page=100&${auth}`);
-    if (res.ok) {
-      customers = await res.json();
-    }
+    const all: VendorCustomer[] = await res.json();
+    const vendors = all.filter(c =>
+      (c.meta_data || []).some(m => m.key === '_is_vendor' && m.value === 'true'),
+    );
 
-    // Also try customers with _is_vendor meta if we got 0 results
-    if (customers.length === 0) {
-      const res2 = await fetch(`${baseUrl}/wp-json/wc/v3/customers?per_page=100&${auth}`);
-      if (res2.ok) {
-        const all: typeof customers = await res2.json();
-        customers = all.filter(c =>
-          (c.meta_data || []).some(m => m.key === '_is_vendor' && m.value === 'true'),
-        );
-      }
-    }
+    console.log(`[Cantine] Found ${vendors.length} vendor customers`);
 
-    for (const c of customers) {
-      if (!c.first_name) continue;
-      const company = c.shipping?.company || '';
-      if (!company.startsWith('{')) continue;
-      try {
-        const shop = JSON.parse(company) as Partial<ShopData>;
-        if (shop.logo || shop.banner || shop.regione) {
-          map.set(c.first_name.toLowerCase(), {
-            logo: shop.logo || '',
-            banner: shop.banner || '',
-            descrizione: shop.descrizione || '',
-            regione: shop.regione || '',
-            indirizzo: shop.indirizzo || '',
-          });
-        }
-      } catch { /* skip malformed JSON */ }
+    for (const c of vendors) {
+      const shop = parseShop(c);
+      if (!shop) continue;
+
+      const key = getCantinaKey(c);
+      if (key) byName.set(key, shop);
+
+      const tid = getTermId(c);
+      if (tid) byTermId.set(tid, shop);
     }
   } catch (e) {
     console.error('[Cantine] buildVendorShopMap error:', e);
   }
-  return map;
+  return { byName, byTermId };
 }
 
 /** GET /api/cantine — lists all cantine with logo/banner */
@@ -92,8 +117,10 @@ export async function GET(req: NextRequest) {
       fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`, { cache: 'no-store' }),
     ]);
 
-    const shopMap = vendorShopMap.status === 'fulfilled' ? vendorShopMap.value : new Map<string, ShopData>();
-    console.log(`[Cantine] Vendor shop map loaded: ${shopMap.size} vendors`);
+    const { byName: shopByName, byTermId: shopByTermId } = vendorShopMap.status === 'fulfilled'
+      ? vendorShopMap.value
+      : { byName: new Map<string, ShopData>(), byTermId: new Map<string, ShopData>() };
+    console.log(`[Cantine] Vendor shop map: ${shopByName.size} by name, ${shopByTermId.size} by termId`);
 
     let allCantine: { name: string; slug: string; description: string; count: number; image: string | null; region: string; banner?: string | null }[] = [];
 
@@ -105,24 +132,23 @@ export async function GET(req: NextRequest) {
       allCantine = entries
         .filter(t => t.name)
         .map(t => {
-          const vendorKey = t.name.toLowerCase();
-          const vendorShop = shopMap.get(vendorKey);
+          // Match vendor by name (from _vendor_cantina meta) OR by slug match
+          const vendorShop = shopByName.get(t.name.toLowerCase()) || shopByName.get(t.slug.replace(/-/g, ' ').toLowerCase());
           return {
             name: t.name,
             slug: t.slug,
-            description: stripHtml(t.description || vendorShop?.descrizione || '').slice(0, 160),
+            description: stripHtml(vendorShop?.descrizione || t.description || '').slice(0, 160),
             count: t.count || 0,
-            // Vendor shipping.company is authoritative; producer-logos as fallback
             image: vendorShop?.logo || t.image || null,
             region: vendorShop?.regione || t.region || '',
-            banner: vendorShop?.banner || t.banner || null,
+            banner: vendorShop?.banner || (t as ProducerLogo & { banner?: string }).banner || null,
           };
         })
         .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name));
     }
 
     // Fallback: build entirely from WC attribute terms + vendor shop map
-    if (allCantine.length === 0 && shopMap.size > 0) {
+    if (allCantine.length === 0 && shopByName.size > 0) {
       console.log('[Cantine] producer-logos endpoint unavailable — falling back to WC attribute terms');
       try {
         const termsRes = await fetch(
@@ -133,7 +159,7 @@ export async function GET(req: NextRequest) {
           allCantine = terms
             .filter(t => t.name && t.count > 0)
             .map(t => {
-              const vendorShop = shopMap.get(t.name.toLowerCase());
+              const vendorShop = shopByName.get(t.name.toLowerCase()) || shopByTermId.get(String(t.id));
               return {
                 name: t.name,
                 slug: t.slug,

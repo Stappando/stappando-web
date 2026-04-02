@@ -11,47 +11,124 @@ interface ShopData {
   indirizzo: string;
 }
 
+interface WCCustomer {
+  id: number;
+  first_name: string;
+  shipping?: { company?: string };
+  billing?: { address_2?: string };
+  meta_data?: { key: string; value: string }[];
+}
+
 /**
- * Find the vendor customer whose cantina (first_name) matches the given term name.
- * Returns their shop data from shipping.company JSON, or null if not found.
+ * Parse shop data from WC customer's shipping.company JSON.
+ * Returns null if not present or malformed.
  */
-async function getVendorShopByCantinaName(
-  baseUrl: string,
-  auth: string,
-  cantinaName: string,
-): Promise<ShopData | null> {
+function parseShopData(customer: WCCustomer): ShopData | null {
+  const company = customer.shipping?.company || '';
+  if (!company.startsWith('{')) return null;
   try {
-    // Search WC customers by cantina name — WC `search` queries first_name, last_name, email
-    const res = await fetch(
-      `${baseUrl}/wp-json/wc/v3/customers?search=${encodeURIComponent(cantinaName)}&per_page=10&${auth}`,
-    );
-    if (!res.ok) return null;
-    const customers: { first_name: string; shipping?: { company?: string } }[] = await res.json();
-
-    // Find exact match on first_name (cantina name)
-    const vendor = customers.find(
-      (c) => c.first_name?.toLowerCase() === cantinaName.toLowerCase(),
-    );
-    if (!vendor) return null;
-
-    const company = vendor.shipping?.company || '';
-    if (!company.startsWith('{')) return null;
-
-    try {
-      const shop = JSON.parse(company) as Partial<ShopData>;
-      return {
-        logo: shop.logo || '',
-        banner: shop.banner || '',
-        descrizione: shop.descrizione || '',
-        regione: shop.regione || '',
-        indirizzo: shop.indirizzo || '',
-      };
-    } catch {
-      return null;
-    }
+    const shop = JSON.parse(company) as Partial<ShopData>;
+    if (!shop.logo && !shop.banner && !shop.regione && !shop.indirizzo && !shop.descrizione) return null;
+    return {
+      logo: shop.logo || '',
+      banner: shop.banner || '',
+      descrizione: shop.descrizione || '',
+      regione: shop.regione || '',
+      indirizzo: shop.indirizzo || '',
+    };
   } catch {
     return null;
   }
+}
+
+/**
+ * Get producer term ID stored in billing.address_2 JSON.
+ */
+function getTermIdFromCustomer(customer: WCCustomer): string | null {
+  try {
+    const addr2 = customer.billing?.address_2 || '';
+    if (!addr2.startsWith('{')) return null;
+    const extra = JSON.parse(addr2) as Record<string, string>;
+    return extra._producer_term_id || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get cantina name from meta_data._vendor_cantina or first_name.
+ */
+function getCantinaName(customer: WCCustomer): string {
+  const meta = customer.meta_data || [];
+  return meta.find(m => m.key === '_vendor_cantina')?.value || customer.first_name || '';
+}
+
+/**
+ * Find vendor customer whose shop data matches the given term.
+ * Matches by: _producer_term_id (most reliable) > _vendor_cantina meta > first_name.
+ */
+async function findVendorShop(
+  baseUrl: string,
+  auth: string,
+  termId: number,
+  termName: string,
+): Promise<ShopData | null> {
+  // 1. Search by cantina name — WC searches first_name, last_name, email
+  try {
+    const searchRes = await fetch(
+      `${baseUrl}/wp-json/wc/v3/customers?search=${encodeURIComponent(termName)}&per_page=20&${auth}`,
+    );
+    if (searchRes.ok) {
+      const customers: WCCustomer[] = await searchRes.json();
+      // Match on term_id, _vendor_cantina meta, or first_name
+      const match = customers.find(c => {
+        const tid = getTermIdFromCustomer(c);
+        if (tid && parseInt(tid) === termId) return true;
+        const cantina = getCantinaName(c);
+        return cantina.toLowerCase() === termName.toLowerCase();
+      });
+      if (match) {
+        const shop = parseShopData(match);
+        if (shop) {
+          console.log(`[Cantine/${termName}] Found vendor ${match.id} via name search`);
+          return shop;
+        }
+      }
+    }
+  } catch { /* continue to fallback */ }
+
+  // 2. Fetch all vendor customers and match by _producer_term_id
+  try {
+    const allRes = await fetch(
+      `${baseUrl}/wp-json/wc/v3/customers?per_page=100&${auth}`,
+    );
+    if (allRes.ok) {
+      const all: WCCustomer[] = await allRes.json();
+      const vendors = all.filter(c =>
+        (c.meta_data || []).some(m => m.key === '_is_vendor' && m.value === 'true'),
+      );
+      const match = vendors.find(c => {
+        const tid = getTermIdFromCustomer(c);
+        if (tid && parseInt(tid) === termId) return true;
+        const cantina = getCantinaName(c);
+        return cantina.toLowerCase() === termName.toLowerCase();
+      });
+      if (match) {
+        const shop = parseShopData(match);
+        if (shop) {
+          console.log(`[Cantine/${termName}] Found vendor ${match.id} via full scan (term_id=${termId})`);
+          return shop;
+        }
+        console.log(`[Cantine/${termName}] Vendor ${match.id} found but shipping.company empty`);
+      } else {
+        console.log(`[Cantine/${termName}] No vendor match found for term_id=${termId}`);
+      }
+    }
+  } catch (e) {
+    console.error(`[Cantine/${termName}] Vendor search failed:`, e);
+  }
+
+  return null;
 }
 
 /** GET /api/cantine/[slug] — fetch single cantina with products */
@@ -72,7 +149,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       const terms = await termsRes.json();
       term = terms[0] || null;
     }
-    // Fallback: search by name
     if (!term) {
       const allRes = await fetch(
         `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&search=${encodeURIComponent(slug.replace(/-/g, ' '))}&${auth}`,
@@ -84,33 +160,34 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     }
     if (!term) return NextResponse.json({ error: 'Cantina non trovata' }, { status: 404 });
 
-    // ── Resolve logo/banner/region/address ──────────────────
-    // Priority: vendor's shipping.company JSON (direct WC storage) > WC term image > producer-logos custom endpoint
+    // ── Resolve logo/banner/region/address ──────────────────────────────
+    // Priority 1: vendor customer's shipping.company (authoritative)
+    // Priority 2: WC native term image (for logo only)
+    // Priority 3: producer-logos custom endpoint (fallback)
+
     let producerLogo = '';
     let producerBanner = '';
     let producerRegion = '';
     let producerAddress = '';
     let producerDescription = '';
 
-    // 1. Read directly from vendor customer's shipping.company — most reliable source
-    const vendorShop = await getVendorShopByCantinaName(wc.baseUrl, auth, term.name);
+    // 1. Find vendor customer by term_id or cantina name
+    const vendorShop = await findVendorShop(wc.baseUrl, auth, term.id, term.name);
     if (vendorShop) {
       producerLogo = vendorShop.logo;
       producerBanner = vendorShop.banner;
       producerRegion = vendorShop.regione;
       producerAddress = vendorShop.indirizzo;
       producerDescription = vendorShop.descrizione;
-      console.log(`[Cantine/${slug}] Loaded shop from vendor customer (logo=${!!producerLogo}, banner=${!!producerBanner})`);
     }
 
-    // 2. Fall back to WC native term image for logo (set when vendor/admin saves shop)
+    // 2. WC term image as logo fallback
     if (!producerLogo && term.image?.src) {
       producerLogo = term.image.src;
-      console.log(`[Cantine/${slug}] Using WC term image as logo fallback`);
     }
 
-    // 3. Try custom endpoint for any still-missing data (banner, region, address)
-    if (!producerBanner || !producerRegion) {
+    // 3. Custom endpoint for any missing data
+    if (!producerBanner || !producerRegion || !producerLogo) {
       try {
         const logosRes = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/producer-logos?nocache=1`, { cache: 'no-store' });
         if (logosRes.ok) {
@@ -126,14 +203,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       } catch { /* not fatal */ }
     }
 
-    // ── Fetch products ──────────────────────────────────────
+    // ── Fetch products ──────────────────────────────────────────────────
     const productsRes = await fetch(
       `${wc.baseUrl}/wp-json/wc/v3/products?attribute=pa_produttore&attribute_term=${term.id}&per_page=50&status=publish&${auth}`,
     );
     let products: Record<string, unknown>[] = [];
-    if (productsRes.ok) {
-      products = await productsRes.json();
-    }
+    if (productsRes.ok) products = await productsRes.json();
 
     const firstImage = products[0] && (products[0] as { images?: { src: string }[] }).images?.[0]?.src || null;
 
@@ -149,20 +224,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
         description: string; short_description: string; status: string;
       };
       return {
-        id: pi.id,
-        slug: pi.slug,
-        name: pi.name,
-        price: pi.price,
-        regular_price: pi.regular_price,
-        sale_price: pi.sale_price,
-        on_sale: pi.on_sale,
-        images: pi.images || [],
-        attributes: pi.attributes || [],
-        tags: pi.tags || [],
-        meta_data: pi.meta_data || [],
-        categories: pi.categories || [],
-        description: pi.description || '',
-        short_description: pi.short_description || '',
+        id: pi.id, slug: pi.slug, name: pi.name, price: pi.price,
+        regular_price: pi.regular_price, sale_price: pi.sale_price, on_sale: pi.on_sale,
+        images: pi.images || [], attributes: pi.attributes || [], tags: pi.tags || [],
+        meta_data: pi.meta_data || [], categories: pi.categories || [],
+        description: pi.description || '', short_description: pi.short_description || '',
         status: pi.status || 'publish',
         _vendorName: term!.name,
         store: { id: 0, name: term!.name, url: '' },
@@ -180,7 +246,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       address: producerAddress || null,
       products: mappedProducts,
     }, {
-      headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
     });
   } catch (err) {
     console.error('Cantina detail error:', err);
