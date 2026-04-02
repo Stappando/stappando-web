@@ -1,3 +1,21 @@
+/**
+ * POST /api/admin/fiere/batch
+ *
+ * Invia la presentazione email a un array di cantine in batch.
+ * Per ogni cantina: controlla duplicati nel foglio, invia email, salva riga.
+ * Rate limit: max 10 email/secondo (delay 100ms tra ogni invio).
+ *
+ * Body: {
+ *   cantine: Array<{ azienda: string; email: string; regione?: string; provincia?: string; contatto?: string }>;
+ *   conosciutoA?: string;
+ *   contattatoDa?: string;
+ * }
+ *
+ * Auth: x-admin-password header
+ *
+ * Response: { sent, duplicates, errors, details: Array<{ email, status: 'sent'|'duplicate'|'error', message?: string }> }
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/mail/mandrill';
 import {
@@ -8,30 +26,33 @@ import {
   FIERE_SHEET_NAME,
 } from '@/lib/google-sheets';
 
-/* ── Config ────────────────────────────────────────────────── */
-
 const ADMIN_PASSWORD = 'stappando2026';
 
-/* ── Types ─────────────────────────────────────────────────── */
+const PDF_URLS = [
+  { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Vendi-su-stappando.it-Vendor.pdf', name: 'Presentazione Vendi su Stappando.pdf' },
+  { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Prenota-su-vineis.eu-Partner.pdf', name: 'Presentazione Ospita con Vineis.pdf' },
+  { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Spedisci-con-Anbrekabol-non-rompere-piu-le-scatole.pdf', name: 'Presentazione Spedisci con Anbrekabol.pdf' },
+];
 
-interface FiereBody {
-  nome: string;
-  cognome: string;
-  email: string;
-  telefono: string;
+interface CantinaBatch {
   azienda: string;
-  indirizzo: string;
-  cap: string;
-  citta: string;
-  provincia: string;
-  regione: string;
-  partitaIva: string;
-  conosciutoA: string;
-  contattatoDa: string;
-  note: string;
+  email: string;
+  regione?: string;
+  provincia?: string;
+  contatto?: string;
 }
 
-/* ── Email HTML builder ────────────────────────────────────── */
+interface BatchBody {
+  cantine: CantinaBatch[];
+  conosciutoA?: string;
+  contattatoDa?: string;
+}
+
+interface DetailEntry {
+  email: string;
+  status: 'sent' | 'duplicate' | 'error';
+  message?: string;
+}
 
 /**
  * Builds the opening paragraph based on what fields are filled.
@@ -49,10 +70,14 @@ function buildOpeningParagraph(conosciutoA: string, contattatoDa: string): strin
   return `Sono Roberto di stappando.it, un gruppo che lavora nel mondo del vino. Vorrei capire se può nascere una collaborazione con voi. Chi siamo?`;
 }
 
-function buildEmailHtml(body: FiereBody): string {
-  const saluto = `${body.nome} ${body.cognome}`.trim() || body.azienda || body.email;
-  const openingParagraph = buildOpeningParagraph(body.conosciutoA, body.contattatoDa);
-  const firma = body.contattatoDa || 'Roberto';
+function buildBatchEmailHtml(
+  cantina: CantinaBatch,
+  conosciutoA: string,
+  contattatoDa: string,
+): string {
+  const saluto = cantina.contatto || cantina.azienda || cantina.email;
+  const openingParagraph = buildOpeningParagraph(conosciutoA, contattatoDa);
+  const firma = contattatoDa || 'Roberto';
   return `<!DOCTYPE html>
 <html lang="it">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stappando</title></head>
@@ -61,7 +86,7 @@ function buildEmailHtml(body: FiereBody): string {
 <tr><td align="center" style="padding:32px 16px;">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dc;">
 
-<!-- Header — logo + stelline -->
+<!-- Header -->
 <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0ece4;">
   <a href="https://shop.stappando.it" style="text-decoration:none;">
     <img src="https://stappando.it/wp-content/uploads/2022/11/logo-stappando-500W.png" alt="Stappando" width="150" style="display:inline-block;max-width:150px;height:auto;" />
@@ -189,57 +214,52 @@ Un saluto,<br>
 </html>`;
 }
 
-/* ── POST handler ──────────────────────────────────────────── */
-
 export async function POST(req: NextRequest) {
-  // Auth check
+  // 1. Auth
   const pwd = req.headers.get('x-admin-password');
   if (pwd !== ADMIN_PASSWORD) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
   }
 
-  let body: FiereBody;
+  // 2. Parse body
+  let body: BatchBody;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'JSON non valido' }, { status: 400 });
   }
 
-  // Default all fields to empty string to prevent .trim() errors
-  body.nome = body.nome || '';
-  body.cognome = body.cognome || '';
-  body.azienda = body.azienda || '';
-  body.indirizzo = body.indirizzo || '';
-  body.cap = body.cap || '';
-  body.citta = body.citta || '';
-  body.provincia = body.provincia || '';
-  body.regione = body.regione || '';
-  body.telefono = body.telefono || '';
-  body.partitaIva = body.partitaIva || '';
-  body.conosciutoA = body.conosciutoA || '';
-  body.contattatoDa = body.contattatoDa || '';
-  body.note = body.note || '';
-
-  // Only email is required
-  if (!body.email?.trim()) {
-    return NextResponse.json({ error: 'Email obbligatoria' }, { status: 400 });
+  if (!Array.isArray(body.cantine) || body.cantine.length === 0) {
+    return NextResponse.json({ error: 'cantine array obbligatorio e non vuoto' }, { status: 400 });
   }
 
-  // Basic email validation
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-    return NextResponse.json({ error: 'Email non valida' }, { status: 400 });
-  }
+  const conosciutoA = body.conosciutoA || '';
+  const contattatoDa = body.contattatoDa || '';
 
+  // 3. Get Google Sheets token
+  const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!saJson) {
+    return NextResponse.json({ error: 'Missing GOOGLE_SERVICE_ACCOUNT_JSON' }, { status: 500 });
+  }
+  let token: string;
   try {
-    // 1. Fetch PDF attachments in parallel
-    const pdfUrls = [
-      { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Vendi-su-stappando.it-Vendor.pdf', name: 'Presentazione Vendi su Stappando.pdf' },
-      { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Prenota-su-vineis.eu-Partner.pdf', name: 'Presentazione Ospita con Vineis.pdf' },
-      { url: 'https://stappando.it/wp-content/uploads/2026/03/Presentazione-Spedisci-con-Anbrekabol-non-rompere-piu-le-scatole.pdf', name: 'Presentazione Spedisci con Anbrekabol.pdf' },
-    ];
+    const serviceAccount = JSON.parse(saJson);
+    token = await getGSheetsToken(serviceAccount);
+  } catch (err) {
+    return NextResponse.json({ error: `Google auth failed: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
+  }
 
-    const attachments: { type: string; name: string; content: string }[] = [];
-    await Promise.all(pdfUrls.map(async (pdf) => {
+  // 4. Read existing emails from column D (single read up front)
+  const emailRows = await sheetsGet(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!D:D`);
+  // Build mutable set of known emails (lowercase)
+  const knownEmails = new Set<string>(
+    emailRows.map((r) => (r[0] || '').trim().toLowerCase()).filter(Boolean),
+  );
+
+  // 5. Fetch PDFs once (reused for all emails)
+  const attachments: { type: string; name: string; content: string }[] = [];
+  await Promise.all(
+    PDF_URLS.map(async (pdf) => {
       try {
         const res = await fetch(pdf.url);
         if (res.ok) {
@@ -247,98 +267,100 @@ export async function POST(req: NextRequest) {
           const base64 = Buffer.from(buffer).toString('base64');
           attachments.push({ type: 'application/pdf', name: pdf.name, content: base64 });
         }
-      } catch { /* skip if PDF not reachable */ }
-    }));
+      } catch { /* skip if not reachable */ }
+    }),
+  );
 
-    // 2. Send email via Mandrill with attachments
-    await sendEmail({
-      to: [
-        { email: body.email, name: body.nome ? `${body.nome} ${body.cognome || ''}`.trim() : body.email, type: 'to' as const },
-        { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' as const },
-      ],
-      from_email: 'ordini@stappando.it',
-      from_name: 'Stappando',
-      subject: 'Presentazione Stappando, Vineis e Anbrekabol',
-      html: buildEmailHtml(body),
-      tags: ['fiere', 'crm'],
-      ...(attachments.length > 0 ? { attachments } : {}),
-    });
-    console.log('[CRM Fiere] Email sent to:', body.email, '| Attachments:', attachments.length, '| BCC: info@stappando.it');
+  // 6. Process each cantina
+  let sent = 0;
+  let duplicates = 0;
+  let errors = 0;
+  const details: DetailEntry[] = [];
 
-    // 3. Save to Google Sheets
-    const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    if (!saJson) {
-      throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_JSON env var');
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${pad(now.getMonth() + 1)}/${pad(now.getDate())}/${now.getFullYear()}`;
+
+  for (const cantina of body.cantine) {
+    const email = (cantina.email || '').trim();
+
+    // a. Validate email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      details.push({ email: email || '(vuota)', status: 'error', message: 'Email non valida' });
+      errors++;
+      continue;
     }
-    const serviceAccount = JSON.parse(saJson);
-    const token = await getGSheetsToken(serviceAccount);
 
-    // Check for duplicate email (column D) and if already "Iscritto" (column S = index 18)
-    const existingRows = await sheetsGet(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!A:U`);
-    const emailLower = body.email.trim().toLowerCase();
-    const duplicateRow = existingRows.find(
-      (row) => row[3] && row[3].trim().toLowerCase() === emailLower,
-    );
-    const isDuplicate = !!duplicateRow;
-    const isIscritto = isDuplicate && duplicateRow[18]?.trim().toLowerCase() === 'iscritto';
+    const emailLower = email.toLowerCase();
 
-    // If already "Iscritto" — don't send mail, just mark duplicate
-    if (isIscritto) {
-      // Add row with DUPLICATO and skip email
-      const now2 = new Date();
-      const pad2 = (n: number) => String(n).padStart(2, '0');
-      const dateStr2 = `${pad2(now2.getMonth() + 1)}/${pad2(now2.getDate())}/${now2.getFullYear()}`;
-      const dupRow = [
-        body.azienda.trim(), body.conosciutoA.trim(), body.contattatoDa.trim(), body.email.trim(),
-        '', body.indirizzo.trim(), body.cap.trim(), body.citta.trim(), body.provincia.trim().toUpperCase(),
-        body.regione, `${body.nome.trim()} ${body.cognome.trim()}`.trim(), body.telefono.trim(),
-        body.partitaIva.trim(), '', '', body.note.trim(), '', '', '', dateStr2, 'DUPLICATO ⚠️ (già iscritto)',
+    // b. Duplicate check (case-insensitive)
+    if (knownEmails.has(emailLower)) {
+      details.push({ email, status: 'duplicate' });
+      duplicates++;
+      await new Promise<void>((r) => setTimeout(r, 100));
+      continue;
+    }
+
+    // c. Send email
+    try {
+      const html = buildBatchEmailHtml(cantina, conosciutoA, contattatoDa);
+      const recipientName = cantina.contatto || cantina.azienda || email;
+
+      await sendEmail({
+        to: [
+          { email, name: recipientName, type: 'to' as const },
+          { email: 'info@stappando.it', name: 'Stappando', type: 'bcc' as const },
+        ],
+        from_email: 'ordini@stappando.it',
+        from_name: 'Stappando',
+        subject: 'Presentazione Stappando, Vineis e Anbrekabol',
+        html,
+        tags: ['fiere', 'crm', 'batch'],
+        ...(attachments.length > 0 ? { attachments } : {}),
+      });
+
+      // d. Build row and append to sheet
+      const row = [
+        (cantina.azienda || '').trim(),              // A: Azienda
+        conosciutoA,                                  // B: Conosciuti a / Fonte
+        contattatoDa,                                 // C: Contacting (Contattato da)
+        email,                                        // D: Email
+        '',                                           // E
+        '',                                           // F
+        '',                                           // G
+        '',                                           // H
+        (cantina.provincia || '').trim().toUpperCase(), // I: provincia
+        (cantina.regione || '').trim(),               // J: regione
+        (cantina.contatto || '').trim(),              // K: contatto
+        '',                                           // L
+        '',                                           // M
+        '',                                           // N
+        '',                                           // O
+        '',                                           // P
+        '',                                           // Q: shop online
+        '',                                           // R: Closing
+        '0',                                          // S: Presentazione
+        dateStr,                                      // T: Ultimo contatto
+        '',                                           // U: Duplicato
       ];
-      await sheetsAppend(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!A:U`, [dupRow]);
-      return NextResponse.json({ success: true, duplicate: true, iscritto: true });
+      await sheetsAppend(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!A:U`, [row]);
+
+      // e. Add to local set for intra-batch dedup
+      knownEmails.add(emailLower);
+
+      details.push({ email, status: 'sent' });
+      sent++;
+      console.log(`[fiere-batch] Sent to ${email}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      details.push({ email, status: 'error', message });
+      errors++;
+      console.error(`[fiere-batch] Error for ${email}:`, err);
     }
 
-    // Format date MM/DD/YYYY
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${pad(now.getMonth() + 1)}/${pad(now.getDate())}/${now.getFullYear()}`;
-
-    // Map to spreadsheet columns:
-    // A: Azienda | B: Conosciuti a / Fonte | C: Contacting | D: Email
-    // E: Sitoweb | F: Indirizzo | G: cap | H: città | I: provincia
-    // J: regione | K: contatto | L: Telefono | M: P.Iva | N: CODICE FISCALE
-    // O: CODICE UNIVOCO | P: Annotazioni | Q: shop on line | R: Closing
-    // S: Presentazione | T: Ultimo contatto | U: Duplicato
-    const row = [
-      body.azienda.trim(),                           // A: Azienda
-      body.conosciutoA.trim(),                       // B: Conosciuti a / Fonte
-      body.contattatoDa.trim(),                      // C: Contacting
-      body.email.trim(),                             // D: Email
-      '',                                            // E: Sitoweb
-      body.indirizzo.trim(),                         // F: Indirizzo
-      body.cap.trim(),                               // G: cap
-      body.citta.trim(),                             // H: città
-      body.provincia.trim().toUpperCase(),            // I: provincia
-      body.regione,                                  // J: regione
-      `${body.nome.trim()} ${body.cognome.trim()}`.trim(),  // K: contatto
-      body.telefono.trim(),                          // L: Telefono
-      body.partitaIva.trim(),                        // M: P.Iva
-      '',                                            // N: CODICE FISCALE
-      '',                                            // O: CODICE UNIVOCO
-      body.note.trim(),                              // P: Annotazioni
-      '',                                            // Q: shop on line
-      '',                                            // R: Closing
-      '0',                                           // S: Presentazione
-      dateStr,                                       // T: Ultimo contatto
-      isDuplicate ? 'DUPLICATO ⚠️' : '',            // U: Duplicato
-    ];
-
-    await sheetsAppend(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!A:U`, [row]);
-
-    return NextResponse.json({ success: true, duplicate: isDuplicate });
-  } catch (err) {
-    console.error('Fiere API error:', err);
-    const message = err instanceof Error ? err.message : 'Errore interno';
-    return NextResponse.json({ error: message }, { status: 500 });
+    // f. Rate limit: max 10 email/sec
+    await new Promise<void>((r) => setTimeout(r, 100));
   }
+
+  return NextResponse.json({ sent, duplicates, errors, details });
 }

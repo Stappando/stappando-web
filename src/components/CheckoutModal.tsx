@@ -519,6 +519,12 @@ function Step2Shipping() {
               </div>
             )}
 
+            {/* Italy-only notice */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+              <span className="text-base">🇮🇹</span>
+              <span className="text-[12px] font-semibold text-green-700">Spediamo solo in Italia</span>
+            </div>
+
             <div className="grid grid-cols-2 gap-3.5">
               <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Nome *" className={`${inputClass}`} />
               <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Cognome *" className={`${inputClass}`} />

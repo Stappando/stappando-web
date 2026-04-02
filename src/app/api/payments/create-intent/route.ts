@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
+import { getWCSecrets } from '@/lib/config';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
 import { validateStock } from '@/lib/payments/validate-stock';
 import { buildItemsMetadata } from '@/lib/payments/items-meta';
@@ -17,6 +18,8 @@ interface CreateIntentBody {
   carrier?: string;
   couponCode?: string;
   couponDiscount?: number;
+  customerId?: number;
+  paymentMethodId?: string;
   customer: {
     email: string;
     firstName: string;
@@ -65,6 +68,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Indirizzo completo obbligatorio' }, { status: 400 });
     }
 
+    // Italy-only shipping — CAP italiano = esattamente 5 cifre numeriche
+    const zipClean = c.zip.trim().replace(/\s/g, '');
+    if (!/^\d{5}$/.test(zipClean)) {
+      return NextResponse.json({
+        error: 'Spediamo solo in Italia. Inserisci un CAP italiano valido (5 cifre).',
+      }, { status: 400 });
+    }
+
     // Stock validation — check availability before charging the card
     const stockCheck = await validateStock(
       body.items.map((i) => ({ id: i.id, name: i.name || '', quantity: i.quantity })),
@@ -85,10 +96,34 @@ export async function POST(req: NextRequest) {
 
     const stripe = getStripe();
 
+    // Resolve Stripe customer + payment method if using saved card
+    let stripeCustomerId: string | undefined;
+    if (body.paymentMethodId && body.customerId) {
+      try {
+        const wc = getWCSecrets();
+        const auth = Buffer.from(`${wc.consumerKey}:${wc.consumerSecret}`).toString('base64');
+        const wcRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${body.customerId}`, {
+          headers: { Authorization: `Basic ${auth}` },
+        });
+        if (wcRes.ok) {
+          const wcCustomer = await wcRes.json();
+          const meta: { key: string; value: string }[] = wcCustomer.meta_data || [];
+          stripeCustomerId = meta.find((m) => m.key === '_stripe_customer_id')?.value || undefined;
+        }
+      } catch {
+        // Non-fatal — proceed without customer attachment
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: 'eur',
-      automatic_payment_methods: { enabled: true },
+      ...(body.paymentMethodId
+        ? {
+            payment_method: body.paymentMethodId,
+            ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
+          }
+        : { automatic_payment_methods: { enabled: true } }),
       metadata: {
         customer_email: sanitize(c.email, 254),
         customer_name: sanitize(`${c.firstName} ${c.lastName}`, 200),

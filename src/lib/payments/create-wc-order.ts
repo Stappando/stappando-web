@@ -138,6 +138,33 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     }
   }
 
+  // ── Fetch full WC order to get real product names from catalogue ──
+  // Stripe metadata compact format ({i,q,p}) doesn't include product names;
+  // the WC order line_items have the real names from the product catalogue.
+  let parentOrderFull: {
+    line_items?: { name: string; quantity: number; total: string; price?: string | number; image?: { src: string }; meta_data?: { key: string; value: string }[] }[];
+  } = {};
+  try {
+    parentOrderFull = await fetch(`${wc.baseUrl}/wp-json/wc/v3/orders/${order.id}?${auth}`).then(r => r.json());
+  } catch (err) {
+    console.error(`Failed to fetch full order #${order.id}:`, err);
+  }
+
+  // Build email items: prefer real names from WC line_items, fall back to metadata names
+  const wcLineItems = parentOrderFull.line_items || [];
+  const emailItems = wcLineItems.length > 0
+    ? wcLineItems.map(li => ({
+        name: li.name,
+        quantity: li.quantity,
+        total: parseFloat(li.total || '0').toFixed(2),
+        image: li.image?.src,
+      }))
+    : items.map(i => ({
+        name: i.name || `Prodotto #${i.id}`,
+        quantity: i.quantity,
+        total: (i.price * i.quantity).toFixed(2),
+      }));
+
   // ── Computed values for emails ──
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const discount = params.couponDiscount || 0;
@@ -154,11 +181,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     data: {
       customerName: customer.firstName,
       orderNumber: String(order.id),
-      items: items.map(i => ({
-        name: i.name,
-        quantity: i.quantity,
-        total: `${(i.price * i.quantity).toFixed(2)}`,
-      })),
+      items: emailItems,
       shipping: shippingCost > 0 ? `${shippingCost.toFixed(2)}` : 'Gratuita',
       total: `${total.toFixed(2)}`,
       orderUrl: `${siteUrl}/account`,
@@ -187,7 +210,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       customerName: `${customer.firstName} ${customer.lastName}`,
       customerEmail: customer.email,
       customerPhone: customer.phone || '',
-      vendorGroups: [{ vendorName: 'Tutti i prodotti', items: items.map(i => ({ name: i.name, quantity: i.quantity, total: (i.price * i.quantity).toFixed(2) })), subtotal: subtotal.toFixed(2) }],
+      vendorGroups: [{ vendorName: 'Tutti i prodotti', items: emailItems.map(i => ({ name: i.name, quantity: i.quantity, total: i.total })), subtotal: subtotal.toFixed(2) }],
       carrierName,
       shippingAddress: shippingAddr,
       billingAddress: shippingAddr,
@@ -210,8 +233,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
 
   // ── Split into vendor sub-orders ──
   try {
-    const parentOrderFull = await fetch(`${wc.baseUrl}/wp-json/wc/v3/orders/${order.id}?${auth}`).then(r => r.json());
-    const subResults = await splitOrderIntoSubOrders(parentOrderFull);
+    const subResults = await splitOrderIntoSubOrders(parentOrderFull as Parameters<typeof splitOrderIntoSubOrders>[0]);
     if (subResults.length > 0) {
       console.log(`Order #${order.id} split into ${subResults.length} sub-orders: ${subResults.map(r => `#${r.subOrderId}`).join(', ')}`);
     }

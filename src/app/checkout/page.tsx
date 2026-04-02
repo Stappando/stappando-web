@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore, type VendorShipping } from '@/store/cart';
+import { useAuthStore, fetchCustomer } from '@/store/auth';
 import { formatPrice } from '@/lib/api';
 
 /* ── Stripe singleton ─────────────────────────────────── */
@@ -32,8 +33,17 @@ interface ShippingForm {
 
 /* ── Checkout Page ────────────────────────────────────── */
 
+interface SavedCard {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+}
+
 export default function CheckoutPage() {
   const { items, getSubtotal, getVendorShipping, getTotalShipping, getTotal } = useCartStore();
+  const { user } = useAuthStore();
   const [form, setForm] = useState<ShippingForm>({
     firstName: '', lastName: '', email: '', phone: '',
     address: '', city: '', province: '', zip: '', notes: '',
@@ -42,6 +52,46 @@ export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const prefillDone = useRef(false);
+
+  // Saved cards state
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [cardsLoading, setCardsLoading] = useState(false);
+
+  // Pre-fill address from logged-in user account
+  useEffect(() => {
+    if (!user?.id || prefillDone.current) return;
+    prefillDone.current = true;
+    fetchCustomer(user.id).then((customer) => {
+      setForm((prev) => ({
+        ...prev,
+        firstName: customer.shipping?.first_name || customer.billing?.first_name || user.firstName || prev.firstName,
+        lastName: customer.shipping?.last_name || customer.billing?.last_name || user.lastName || prev.lastName,
+        email: customer.billing?.email || user.email || prev.email,
+        phone: customer.billing?.phone || customer.shipping?.phone || prev.phone,
+        address: customer.shipping?.address_1 || prev.address,
+        city: customer.shipping?.city || prev.city,
+        province: customer.shipping?.state || prev.province,
+        zip: customer.shipping?.postcode || prev.zip,
+      }));
+    }).catch(() => {
+      // Non-fatal — pre-fill not available
+    });
+  }, [user]);
+
+  // Load saved cards for logged-in user
+  useEffect(() => {
+    if (!user?.id) return;
+    setCardsLoading(true);
+    fetch(`/api/payments/saved-cards?customerId=${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setSavedCards(data.cards || []);
+      })
+      .catch(() => setSavedCards([]))
+      .finally(() => setCardsLoading(false));
+  }, [user?.id]);
 
   const subtotal = getSubtotal();
   const vendorShipping = getVendorShipping();
@@ -98,10 +148,15 @@ export default function CheckoutPage() {
       const payload = buildPayload();
 
       if (paymentMethod === 'stripe') {
+        const stripePayload = {
+          ...payload,
+          ...(selectedCardId ? { paymentMethodId: selectedCardId } : {}),
+          ...(user?.id ? { customerId: user.id } : {}),
+        };
         const res = await fetch('/api/payments/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(stripePayload),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Errore server');
@@ -125,7 +180,7 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
-  }, [form, items, totalShipping, paymentMethod, isFormValid, buildPayload]);
+  }, [form, items, totalShipping, paymentMethod, isFormValid, buildPayload, selectedCardId, user]);
 
   /* Empty cart */
   if (items.length === 0) {
@@ -175,7 +230,12 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Shipping address */}
           <div className="bg-white rounded-2xl border border-brand-border p-6">
-            <h2 className="text-lg font-bold text-brand-text mb-4">Indirizzo di spedizione</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-brand-text">Indirizzo di spedizione</h2>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-semibold text-green-700">
+                🇮🇹 Solo Italia
+              </span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-brand-text mb-1">Nome *</label>
@@ -289,6 +349,67 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
+                {/* Saved cards — shown when stripe is selected and user has saved cards */}
+                {paymentMethod === 'stripe' && !cardsLoading && savedCards.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <p className="text-sm font-semibold text-brand-text">Carte salvate</p>
+                    {savedCards.map((card) => (
+                      <label
+                        key={card.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${
+                          selectedCardId === card.id
+                            ? 'border-brand-primary bg-brand-primary/5'
+                            : 'border-brand-border'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          checked={selectedCardId === card.id}
+                          onChange={() => setSelectedCardId(card.id)}
+                        />
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            selectedCardId === card.id ? 'border-brand-primary' : 'border-brand-border'
+                          }`}
+                        >
+                          {selectedCardId === card.id && (
+                            <div className="w-2 h-2 rounded-full bg-brand-primary" />
+                          )}
+                        </div>
+                        <span className="text-sm">
+                          <span className="font-medium capitalize">{card.brand}</span>{' '}
+                          •••• {card.last4} — scad. {String(card.expMonth).padStart(2, '0')}/{card.expYear}
+                        </span>
+                      </label>
+                    ))}
+                    <label
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${
+                        selectedCardId === null
+                          ? 'border-brand-primary bg-brand-primary/5'
+                          : 'border-brand-border'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="sr-only"
+                        checked={selectedCardId === null}
+                        onChange={() => setSelectedCardId(null)}
+                      />
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          selectedCardId === null ? 'border-brand-primary' : 'border-brand-border'
+                        }`}
+                      >
+                        {selectedCardId === null && (
+                          <div className="w-2 h-2 rounded-full bg-brand-primary" />
+                        )}
+                      </div>
+                      <span className="text-sm text-brand-muted">Inserisci nuova carta</span>
+                    </label>
+                  </div>
+                )}
+
                 {/* Security badge */}
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-brand-border bg-brand-bg mb-4">
                   <svg className="w-4 h-4 text-brand-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -337,7 +458,16 @@ export default function CheckoutPage() {
                   locale: 'it',
                 }}
               >
-                <StripePaymentForm total={total} onBack={() => setClientSecret(null)} />
+                <StripePaymentForm
+                  total={total}
+                  onBack={() => setClientSecret(null)}
+                  clientSecret={clientSecret}
+                  savedCard={
+                    selectedCardId
+                      ? (savedCards.find((c) => c.id === selectedCardId) ?? null)
+                      : null
+                  }
+                />
               </Elements>
             )}
           </div>
@@ -419,7 +549,17 @@ export default function CheckoutPage() {
 
 /* ── Stripe Payment Form ──────────────────────────────── */
 
-function StripePaymentForm({ total, onBack }: { total: number; onBack: () => void }) {
+function StripePaymentForm({
+  total,
+  onBack,
+  savedCard,
+  clientSecret,
+}: {
+  total: number;
+  onBack: () => void;
+  savedCard?: { id: string; last4: string } | null;
+  clientSecret?: string;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -427,11 +567,25 @@ function StripePaymentForm({ total, onBack }: { total: number; onBack: () => voi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe) return;
 
     setPaying(true);
     setError(null);
 
+    if (savedCard && clientSecret) {
+      // PaymentIntent was created with payment_method already set — just confirm it
+      const result = await stripe.confirmCardPayment(clientSecret);
+      if (result.error) {
+        setError(result.error.message || 'Errore durante il pagamento');
+        setPaying(false);
+      } else {
+        window.location.href = `${window.location.origin}/checkout/conferma?provider=stripe`;
+      }
+      return;
+    }
+
+    // Standard flow with PaymentElement
+    if (!elements) return;
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
@@ -458,12 +612,23 @@ function StripePaymentForm({ total, onBack }: { total: number; onBack: () => voi
         Cambia metodo di pagamento
       </button>
 
-      <PaymentElement
-        options={{
-          layout: 'tabs',
-          wallets: { applePay: 'auto', googlePay: 'auto' },
-        }}
-      />
+      {savedCard ? (
+        <div className="p-4 rounded-xl border border-brand-border bg-brand-bg mb-4 flex items-center gap-3">
+          <svg className="w-5 h-5 text-brand-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+          </svg>
+          <p className="text-sm text-brand-text">
+            Stai pagando con <span className="font-semibold">•••• {savedCard.last4}</span>
+          </p>
+        </div>
+      ) : (
+        <PaymentElement
+          options={{
+            layout: 'tabs',
+            wallets: { applePay: 'auto', googlePay: 'auto' },
+          }}
+        />
+      )}
 
       {error && (
         <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">

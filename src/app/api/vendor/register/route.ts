@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWCSecrets } from '@/lib/config';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
 import { sendEmail } from '@/lib/mail/mandrill';
+import { getGSheetsToken, sheetsGet, sheetsUpdate, FIERE_SPREADSHEET_ID, FIERE_SHEET_NAME } from '@/lib/google-sheets';
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,6 +56,27 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       return NextResponse.json({ message: data.message || 'Errore registrazione' }, { status: res.status });
     }
+
+    // Mark in fiere sheet if this email was a CRM contact
+    (async () => {
+      try {
+        const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+        if (!saJson) return;
+        const serviceAccount = JSON.parse(saJson);
+        const token = await getGSheetsToken(serviceAccount);
+
+        const emailCol = await sheetsGet(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!D:D`);
+        const emailLower = email.toLowerCase();
+        const rowIdx = emailCol.findIndex((r) => (r[0] || '').trim().toLowerCase() === emailLower);
+        if (rowIdx < 0) return;
+
+        const sheetRowNum = rowIdx + 1;
+        await sheetsUpdate(token, FIERE_SPREADSHEET_ID, `${FIERE_SHEET_NAME}!R${sheetRowNum}`, [['Registrato']]);
+        console.log(`[vendor-register] Marked Registrato in fiere sheet row ${sheetRowNum} for ${email}`);
+      } catch (err) {
+        console.error('[vendor-register] Sheets update error:', err);
+      }
+    })();
 
     // Send welcome email to vendor
     sendEmail({
