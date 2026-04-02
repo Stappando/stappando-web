@@ -612,7 +612,7 @@ Scatole progettate apposta per le bottiglie di vino. Protezione totale, spedizio
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
 <tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:8px;">
   <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
-    &bull; Disponibili da 1 a 12 bottiglie<br>
+    &bull; Disponibili da 1 a 6 bottiglie<br>
     &bull; Spedizione assicurata inclusa<br>
     &bull; Design professionale &mdash; il cliente riceve un pacco curato<br>
     &bull; Acquisto diretto su <a href="https://anbrekabol.com" style="color:#c0792a;font-weight:600;">anbrekabol.com</a>
