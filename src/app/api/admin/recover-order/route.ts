@@ -58,16 +58,24 @@ export async function POST(req: NextRequest) {
   const wc = getWCSecrets();
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
   try {
-    const existingRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}&transaction_id=${pi.id}&per_page=1&_fields=id,transaction_id`,
-    );
-    if (existingRes.ok) {
-      const existing = await existingRes.json();
-      if (Array.isArray(existing) && existing.length > 0) {
-        return NextResponse.json({
-          error: `Ordine WC già esistente: #${existing[0].id}`,
-          orderId: existing[0].id,
-        }, { status: 409 });
+    // WC REST API doesn't support transaction_id as a filter param — search by email
+    // then check each order's transaction_id field
+    const customerEmail = meta.customer_email || '';
+    if (customerEmail) {
+      const existingRes = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}&search=${encodeURIComponent(customerEmail)}&per_page=20&_fields=id,transaction_id&status=processing,completed,on-hold`,
+      );
+      if (existingRes.ok) {
+        const candidates = await existingRes.json();
+        if (Array.isArray(candidates)) {
+          const match = candidates.find((o: { id: number; transaction_id: string }) => o.transaction_id === pi.id);
+          if (match) {
+            return NextResponse.json({
+              error: `Ordine WC già esistente: #${match.id}`,
+              orderId: match.id,
+            }, { status: 409 });
+          }
+        }
       }
     }
   } catch { /* proceed */ }
