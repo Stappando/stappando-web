@@ -66,9 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://i1.wp.com" />
         <link rel="dns-prefetch" href="https://i2.wp.com" />
       </head>
-      <body className="min-h-screen flex flex-col overflow-x-hidden">
+      <body className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-x-hidden">{children}</main>
         <Footer />
         <CartDrawer />
         <CheckoutModal />
