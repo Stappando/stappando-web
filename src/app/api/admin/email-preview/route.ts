@@ -276,18 +276,43 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'followup-1',
-      title: '19. Follow-up giorno 3 — Non dimenticarti di registrarti',
+      title: '19. Follow-up +5gg — 50.000 visite al mese',
       html: buildFollowUp1(),
     },
     {
       id: 'followup-2',
-      title: '20. Follow-up giorno 7 — Sei ancora in tempo',
+      title: '20. Follow-up +12gg — Enoturismo in crescita',
       html: buildFollowUp2(),
     },
     {
       id: 'followup-3',
-      title: '21. Follow-up giorno 14 — Ultima chiamata',
+      title: '21. Follow-up +20gg — I numeri parlano',
       html: buildFollowUp3(),
+    },
+    {
+      id: 'followup-4',
+      title: '22. Follow-up +28gg — Spedire vino senza pensieri',
+      html: buildFollowUp4(),
+    },
+    {
+      id: 'followup-5',
+      title: '23. Follow-up +35gg — La vostra vetrina sempre attiva',
+      html: buildFollowUp5(),
+    },
+    {
+      id: 'followup-6',
+      title: '24. Follow-up +42gg — Estate = enoturismo',
+      html: buildFollowUp6(),
+    },
+    {
+      id: 'followup-7',
+      title: '25. Follow-up +50gg — Cosa si stanno perdendo',
+      html: buildFollowUp7(),
+    },
+    {
+      id: 'followup-8',
+      title: '26. Follow-up +58gg — Porta sempre aperta',
+      html: buildFollowUp8(),
     },
   ];
 }
@@ -446,116 +471,328 @@ ${content}
 </html>`;
 }
 
+/* ── Follow-up 1  (+5 gg) — 50.000 visite al mese ───────────────────── */
 function buildFollowUp1(): string {
   return followUpLayout(`
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Ci siamo conosciuti qualche giorno fa e ti abbiamo presentato <strong>Stappando</strong>. Non dimenticarti di registrarti!
+Mi sono reso conto che nell&rsquo;ultima mail vi ho mandato tante informazioni tutte insieme. Volevo soffermarmi su un dato che forse &egrave; passato in secondo piano.
 </p>
-<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Perch&eacute; vendere su Stappando?</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
-  <p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
-    <strong style="color:#005667;">\u2713 Zero costi di iscrizione</strong> &mdash; nessun canone mensile, solo una commissione del 15% sulle vendite<br>
-    <strong style="color:#005667;">\u2713 Spedizioni gestite da noi</strong> &mdash; quando l&rsquo;ordine arriva, voi preparate il pacco. Il ritiro del corriere lo organizziamo noi<br>
-    <strong style="color:#005667;">\u2713 Visibilit&agrave; immediata</strong> &mdash; i vostri vini davanti a migliaia di appassionati che cercano qualit&agrave;, 50.000 visitatori al mese<br>
-    <strong style="color:#005667;">\u2713 Pagamenti sicuri</strong> &mdash; il 10 di ogni mese incassate il vostro 85%
-  </p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="padding:24px;background:#f0f7f9;border-radius:12px;text-align:center;">
+  <p style="margin:0 0 4px;font-size:36px;font-weight:800;color:#005667;">50.000</p>
+  <p style="margin:0 0 10px;font-size:15px;font-weight:600;color:#005667;">visite al mese su Stappando.it</p>
+  <p style="margin:0;font-size:13px;color:#666;">Persone che cercano vino di qualit&agrave;, pronte ad acquistare</p>
 </td></tr>
 </table>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Sono wine lover da tutta Italia che ogni giorno navigano il nostro catalogo. Quando una cantina si registra, i suoi vini finiscono davanti a questo pubblico <strong>dal giorno stesso</strong>.
+</p>
 <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
-La registrazione richiede <strong>meno di 5 minuti</strong>. Basta andare sul sito e cliccare &laquo;Vendi con noi&raquo;.
+Nessun canone, nessun costo fisso. Pagate solo una commissione del 15% quando vendete. Il restante 85% &egrave; vostro, accreditato il 10 di ogni mese.
 </p>
 <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
 <tr><td style="background:#005667;border-radius:8px;">
-  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati ora &rarr;</a>
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Scopri come funziona &rarr;</a>
 </td></tr>
 </table>
-<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
-Per qualsiasi domanda rispondi a questa mail o scrivici a <a href="mailto:info@stappando.it" style="color:#005667;font-weight:600;">info@stappando.it</a>
-</p>
-<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
-A presto,<br><strong>Il team Stappando</strong>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Buon lavoro,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
 </p>
 `);
 }
 
+/* ── Follow-up 2  (+12 gg) — Enoturismo in crescita ────────────────── */
 function buildFollowUp2(): string {
   return followUpLayout(`
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-&Egrave; passata una settimana dal nostro incontro. Volevo ricordarti che puoi ancora registrarti su Stappando e iniziare a vendere i tuoi vini online.
+Lo sapevate che l&rsquo;enoturismo in Italia &egrave; cresciuto del 18% nell&rsquo;ultimo anno? Sempre pi&ugrave; persone cercano esperienze autentiche in cantina &mdash; degustazioni, visite, pranzi tra i filari.
 </p>
-<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Chi vende gi&agrave; con noi dice:</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:14px 16px;background:#f0f7f9;border-left:4px solid #005667;border-radius:0 8px 8px 0;">
-  <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#444;font-style:italic;">
-    &ldquo;Abbiamo iniziato a vendere su Stappando e in un mese abbiamo ricevuto ordini da tutta Italia. Il sistema &egrave; semplicissimo.&rdquo;
-  </p>
-  <p style="margin:0;font-size:12px;color:#888;">&mdash; Vendor partner</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-left:4px solid #4a8c3f;">
+<tr><td style="padding:16px 20px;background:#f0f9f2;border-radius:0 8px 8px 0;">
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#4a8c3f;">Vineis.eu &mdash; il portale delle esperienze in cantina</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Noi ci occupiamo di tutto: <strong>creiamo la vostra pagina</strong>, gestiamo le prenotazioni, i pagamenti e il supporto clienti. Voi fate quello che sapete fare meglio &mdash; accogliere chi viene a trovarvi.
+</p>
 </td></tr>
 </table>
-<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#005667;">Come funziona in 3 passi:</p>
+<p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#333;">Cosa ottiene la vostra cantina:</p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:10px 14px;background:#f8f9fa;border-radius:8px;">
+<tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:8px;">
   <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
-    <strong style="color:#005667;">1.</strong> Ti registri su stappando.it &rarr; &laquo;Vendi con noi&raquo;<br>
-    <strong style="color:#005667;">2.</strong> Carichi i tuoi prodotti (se servono foto le facciamo noi)<br>
-    <strong style="color:#005667;">3.</strong> Quando arriva un ordine, prepari il pacco. Il corriere lo mandiamo noi
+    &bull; Una pagina dedicata con foto, descrizioni e calendario disponibilit&agrave;<br>
+    &bull; Prenotazioni automatiche &mdash; il cliente prenota e paga online<br>
+    &bull; Visibilit&agrave; su Google e sui social tramite le nostre campagne<br>
+    &bull; Iscrizione gratuita, commissione 15% solo sulle prenotazioni
   </p>
 </td></tr>
 </table>
-<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
-<tr><td style="background:#005667;border-radius:8px;">
-  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Inizia a vendere &rarr;</a>
-</td></tr>
-</table>
-<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
-Non hai le foto dei prodotti? <strong>Possiamo farle noi per te.</strong> Spedisci i campioni a: Stappando Srl &ndash; Via Pomonte 67, Roma (Scarico 7&ndash;12)
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Se vi interessa, la registrazione &egrave; su <a href="https://vineis.eu" style="color:#4a8c3f;font-weight:600;">vineis.eu</a> &rarr; &laquo;Ospita con noi&raquo;.
 </p>
-<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
-A presto,<br><strong>Il team Stappando</strong>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+A presto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
 </p>
 `);
 }
 
+/* ── Follow-up 3  (+20 gg) — I numeri parlano ──────────────────────── */
 function buildFollowUp3(): string {
   return followUpLayout(`
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Sono passate due settimane dal nostro incontro. Questa &egrave; l&rsquo;ultima mail che ti invio, ma abbiamo pensato a qualcosa di speciale per te.
+Vi condivido qualche numero del gruppo Stappando. Penso che possano darvi un&rsquo;idea concreta di quello che stiamo costruendo.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr>
+<td width="33%" style="padding:16px 8px;text-align:center;background:#f0f7f9;border-radius:12px 0 0 12px;">
+  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">50K</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">visite/mese</p>
+</td>
+<td width="34%" style="padding:16px 8px;text-align:center;background:#f0f7f9;">
+  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">200+</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">cantine attive</p>
+</td>
+<td width="33%" style="padding:16px 8px;text-align:center;background:#f0f7f9;border-radius:0 12px 12px 0;">
+  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">20</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">regioni coperte</p>
+</td>
+</tr>
+</table>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ogni cantina che si aggiunge arricchisce il catalogo e attira nuovi clienti. &Egrave; un circolo virtuoso: pi&ugrave; vini, pi&ugrave; visitatori, pi&ugrave; ordini per tutti.
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-<tr><td style="padding:20px;background:linear-gradient(135deg,#005667,#007a8f);border-radius:12px;text-align:center;">
-  <p style="margin:0 0 6px;font-size:11px;color:#d9c39a;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Offerta esclusiva fiere</p>
-  <p style="margin:0 0 10px;font-size:20px;color:#ffffff;font-weight:800;line-height:1.3;">1 Circuito Visibilit&agrave; Gratuito</p>
-  <p style="margin:0 0 6px;font-size:15px;color:#ffffff;font-weight:600;">1 Storia + 1 Reel</p>
-  <p style="margin:0;font-size:13px;color:#ffffff;opacity:0.85;">se ci invii le tue bottiglie &mdash; <strong>+15.000 follower</strong></p>
+<tr><td style="padding:14px 18px;background:#f8f9fa;border-left:4px solid #005667;border-radius:0 8px 8px 0;">
+  <p style="margin:0;font-size:14px;line-height:1.6;color:#444;font-style:italic;">
+    &ldquo;In tre mesi su Stappando abbiamo raggiunto clienti in regioni dove non avevamo mai venduto una bottiglia.&rdquo;
+  </p>
 </td></tr>
 </table>
-<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;font-weight:600;">
-Registrati entro domani alle 24 e ti inseriamo nel nostro calendario editoriale.
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+La registrazione &egrave; gratuita e richiede pochi minuti: <a href="https://shop.stappando.it" style="color:#005667;font-weight:600;">shop.stappando.it</a> &rarr; &laquo;Vendi con noi&raquo;
+</p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Buona giornata,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
+</p>
+`);
+}
+
+/* ── Follow-up 4  (+28 gg) — Spedire vino senza pensieri ───────────── */
+function buildFollowUp4(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Un tema che torna spesso quando parliamo con le cantine: <strong>le bottiglie che si rompono durante la spedizione</strong>. &Egrave; un problema reale, costa soldi e fa perdere clienti.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-left:4px solid #c0792a;">
+<tr><td style="padding:16px 20px;background:#fdf6ee;border-radius:0 8px 8px 0;">
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#c0792a;">Anbrekabol.com &mdash; la soluzione definitiva</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#444;">
+Scatole progettate apposta per le bottiglie di vino. Protezione totale, spedizioni <strong>assicurate</strong>. Se si rompe qualcosa (ma non succede), siete coperti.
+</p>
+</td></tr>
+</table>
+<p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#333;">Perch&eacute; le cantine le scelgono:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+<tr><td style="padding:12px 16px;background:#f8f9fa;border-radius:8px;">
+  <p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
+    &bull; Disponibili da 1 a 12 bottiglie<br>
+    &bull; Spedizione assicurata inclusa<br>
+    &bull; Design professionale &mdash; il cliente riceve un pacco curato<br>
+    &bull; Acquisto diretto su <a href="https://anbrekabol.com" style="color:#c0792a;font-weight:600;">anbrekabol.com</a>
+  </p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Potete usarle sia per le vostre spedizioni dirette che per gli ordini su Stappando.
+</p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+A presto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
+</p>
+`);
+}
+
+/* ── Follow-up 5  (+35 gg) — La vostra vetrina sempre attiva ────────── */
+function buildFollowUp5(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Vi siete mai chiesti come appare una cantina su Stappando? Ve lo mostro.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1px solid #e8e4dc;border-radius:12px;overflow:hidden;">
+<tr><td style="padding:20px 24px;background:#fafaf8;">
+<p style="margin:0 0 6px;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">La vostra pagina includerebbe</p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.8;color:#444;">
+  <strong style="color:#005667;">&#10003;</strong> Logo e copertina della cantina<br>
+  <strong style="color:#005667;">&#10003;</strong> Descrizione della vostra storia e filosofia<br>
+  <strong style="color:#005667;">&#10003;</strong> Catalogo completo con foto professionali<br>
+  <strong style="color:#005667;">&#10003;</strong> Schede prodotto dettagliate (vitigno, annata, abbinamenti)<br>
+  <strong style="color:#005667;">&#10003;</strong> Recensioni dei clienti che acquistano<br>
+  <strong style="color:#005667;">&#10003;</strong> Posizionamento SEO su Google per i vostri vini
+</p>
+<p style="margin:0;font-size:13px;color:#888;font-style:italic;">
+Tutto questo visibile 24 ore su 24, 365 giorni l&rsquo;anno, davanti a 50.000 visitatori al mese.
+</p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Non dovete fare quasi nulla: ci mandate le bottiglie e le foto le facciamo noi. In pochi giorni la vostra pagina &egrave; online.
 </p>
 <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
 <tr><td style="background:#005667;border-radius:8px;">
-  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati ora &rarr;</a>
+  <a href="https://shop.stappando.it" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati e crea la tua pagina &rarr;</a>
 </td></tr>
 </table>
-<p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#005667;">Invio bottiglie a:</p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Un saluto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
+</p>
+`);
+}
+
+/* ── Follow-up 6  (+42 gg) — Estate = enoturismo ───────────────────── */
+function buildFollowUp6(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Tra poco arriva l&rsquo;estate e le ricerche di esperienze in cantina esplodono. Vi condivido un dato che ci ha colpito:
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="padding:24px;background:linear-gradient(135deg,#4a8c3f,#5da04e);border-radius:12px;text-align:center;">
+  <p style="margin:0 0 4px;font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px;">da giugno a settembre</p>
+  <p style="margin:0 0 8px;font-size:30px;font-weight:800;color:#ffffff;">+40%</p>
+  <p style="margin:0;font-size:14px;color:#ffffff;">di ricerche per &ldquo;visita cantina&rdquo; e &ldquo;degustazione vini&rdquo;</p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Le cantine su <strong style="color:#4a8c3f;">Vineis.eu</strong> ricevono prenotazioni durante tutto l&rsquo;anno, ma in estate il volume cresce in modo significativo. Turisti italiani e stranieri che cercano dove andare e prenotano direttamente online.
+</p>
 <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
-Stappando Srl &ndash; Via Pomonte 67, Roma (Scarico 7&ndash;12)
+Se volete essere visibili per la stagione estiva, il momento per registrarsi &egrave; adesso. Noi ci occupiamo di creare la pagina, voi dovete solo essere pronti ad accogliere.
 </p>
-<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#444;">
-Per qualsiasi domanda rispondi a questa mail o chiamaci al <strong>06 92915330</strong>.
+<table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="background:#4a8c3f;border-radius:8px;">
+  <a href="https://vineis.eu" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Registrati su Vineis &rarr;</a>
+</td></tr>
+</table>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Buon lavoro,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
 </p>
-<p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#333;">
-Un caro saluto,<br><strong>Il team Stappando</strong>
+`);
+}
+
+/* ── Follow-up 7  (+50 gg) — Cosa si stanno perdendo ───────────────── */
+function buildFollowUp7(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Vi faccio un riepilogo veloce di quello che il gruppo Stappando offre alle cantine partner. A volte &egrave; utile avere tutto in un colpo d&rsquo;occhio.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+<tr><td style="padding:14px 18px;background:#f0f7f9;border-radius:8px 8px 0 0;border-bottom:1px solid #e0edf0;">
+  <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#005667;">Stappando.it &mdash; Vendita online</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#444;">50.000 visite/mese, catalogo con foto professionali, logistica gestita, pagamenti automatici. Commissione 15%.</p>
+</td></tr>
+<tr><td style="padding:14px 18px;background:#f0f9f2;border-bottom:1px solid #dceede;">
+  <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#4a8c3f;">Vineis.eu &mdash; Enoturismo</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#444;">Pagina dedicata, prenotazioni online, gestione clienti. Visibilit&agrave; turisti italiani e internazionali. Commissione 15%.</p>
+</td></tr>
+<tr><td style="padding:14px 18px;background:#fdf6ee;border-radius:0 0 8px 8px;">
+  <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#c0792a;">Anbrekabol.com &mdash; Spedizioni sicure</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#444;">Scatole per bottiglie, spedizioni assicurate, zero rotture. Acquisto diretto online.</p>
+</td></tr>
+</table>
+<p style="margin:16px 0 18px;font-size:13px;line-height:1.6;color:#888;text-align:center;">
+Iscrizione gratuita a tutti i servizi &mdash; nessun costo fisso, mai.
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ogni settimana nuove cantine si registrano. Se volete far parte del network, i link sono sempre gli stessi:
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr>
+<td width="50%" style="padding:0 4px 0 0;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="background:#005667;border-radius:8px;text-align:center;">
+    <a href="https://shop.stappando.it" style="display:inline-block;padding:12px 16px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Vendi con noi</a>
+  </td></tr>
+  </table>
+</td>
+<td width="50%" style="padding:0 0 0 4px;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+  <tr><td style="background:#4a8c3f;border-radius:8px;text-align:center;">
+    <a href="https://vineis.eu" style="display:inline-block;padding:12px 16px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Ospita con noi</a>
+  </td></tr>
+  </table>
+</td>
+</tr>
+</table>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Un saluto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
+</p>
+`);
+}
+
+/* ── Follow-up 8  (+58 gg) — Porta sempre aperta ───────────────────── */
+function buildFollowUp8(): string {
+  return followUpLayout(`
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Ciao <strong>Mario</strong>,
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+&Egrave; un po&rsquo; che non ci sentiamo. Questa &egrave; l&rsquo;ultima mail della serie, non voglio essere invadente.
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Volevo solo dirvi che <strong>la porta &egrave; sempre aperta</strong>. Se in futuro vorrete dare visibilit&agrave; ai vostri vini o alle esperienze in cantina, ci trovate qui.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="padding:20px 24px;background:#f8f9fa;border-radius:12px;">
+<p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#005667;">Per registrarvi, quando vorrete:</p>
+<p style="margin:0;font-size:14px;line-height:1.8;color:#444;">
+  Vendita vini online &rarr; <a href="https://shop.stappando.it" style="color:#005667;font-weight:600;">shop.stappando.it</a><br>
+  Esperienze in cantina &rarr; <a href="https://vineis.eu" style="color:#4a8c3f;font-weight:600;">vineis.eu</a><br>
+  Spedizioni sicure &rarr; <a href="https://anbrekabol.com" style="color:#c0792a;font-weight:600;">anbrekabol.com</a>
+</p>
+</td></tr>
+</table>
+<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
+Se avete domande su come funziona, rispondete pure a questa mail in qualsiasi momento.
+</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
+Vi auguro una splendida stagione e tanti brindisi.
+</p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#333;">
+Un caro saluto,<br>
+<strong>Roberto</strong><br>
+<span style="color:#005667;">Stappando</span>
 </p>
 `);
 }
