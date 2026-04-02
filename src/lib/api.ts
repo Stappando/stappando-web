@@ -200,6 +200,11 @@ async function enrichProductsWithVendors(products: WCProduct[]): Promise<WCProdu
       if (p.store?.id) {
         return { ...p, _vendorId: String(p.store.id), _vendorName: p.store.name };
       }
+      // Fallback: use pa_produttore attribute as vendor name (always present on products)
+      const produttore = getProduttore(p);
+      if (produttore) {
+        return { ...p, _vendorId: 'produttore', _vendorName: produttore };
+      }
       return { ...p, _vendorId: 'stappando', _vendorName: DEFAULT_VENDOR_NAME };
     });
   } catch {
