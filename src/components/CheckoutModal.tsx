@@ -833,7 +833,6 @@ function Step3Payment() {
   // Also try Stripe as secondary option
   const [stripeSecret, setStripeSecret] = useState<string | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
-  const [showStripe, setShowStripe] = useState(false);
 
   const loadStripeIntent = useCallback(async () => {
     if (!STRIPE_VALID || stripeSecret) return;
@@ -857,6 +856,10 @@ function Step3Payment() {
     } catch { /* ignore stripe errors */ }
     setStripeLoading(false);
   }, [items, getTotalShipping, getCustomerData, stripeSecret]);
+
+  useEffect(() => {
+    loadStripeIntent();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -886,46 +889,27 @@ function Step3Payment() {
               <div ref={paypalContainerRef} className="min-h-[50px]" />
             </div>
 
-            {/* Stripe — secondary option */}
+            {/* Stripe — shown immediately, no click required */}
             {STRIPE_VALID && (
-              <div className="border-t border-[#f0f0f0] pt-5">
-                {!showStripe ? (
-                  <button
-                    onClick={() => { setShowStripe(true); loadStripeIntent(); }}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border border-[#e5e5e5] hover:border-[#005667] transition-colors"
+              <div className="border-t border-[#f0f0f0] pt-5 mt-1">
+                <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-3">Carta di credito</p>
+                {stripeLoading && (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
+                    <span className="ml-3 text-[13px] text-[#888]">Caricamento metodi di pagamento...</span>
+                  </div>
+                )}
+                {stripeSecret && (
+                  <Elements
+                    stripe={getStripePromise()}
+                    options={{
+                      clientSecret: stripeSecret,
+                      appearance: { theme: 'stripe', variables: { colorPrimary: '#005667', borderRadius: '10px' } },
+                      locale: 'it',
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
-                      <div className="text-left">
-                        <p className="text-[13px] font-semibold text-[#1a1a1a]">Carta di credito</p>
-                        <p className="text-[11px] text-[#999]">Visa, Mastercard, Amex</p>
-                      </div>
-                    </div>
-                    <svg className="w-4 h-4 text-[#bbb]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                ) : (
-                  <>
-                    <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-3">Carta di credito</p>
-                    {stripeLoading && (
-                      <div className="flex items-center justify-center py-6">
-                        <div className="w-5 h-5 border-2 border-[#005667]/20 border-t-[#005667] rounded-full animate-spin" />
-                        <span className="ml-3 text-[13px] text-[#888]">Caricamento...</span>
-                      </div>
-                    )}
-                    {stripeSecret && (
-                      <Elements
-                        stripe={getStripePromise()}
-                        options={{
-                          clientSecret: stripeSecret,
-                          appearance: { theme: 'stripe', variables: { colorPrimary: '#005667', borderRadius: '10px' } },
-                          locale: 'it',
-                        }}
-                      >
-                        <StripeForm total={total} popPoints={popPoints} clientSecret={stripeSecret} />
-                      </Elements>
-                    )}
-                    <button onClick={() => setShowStripe(false)} className="text-[12px] text-[#aaa] hover:text-[#666] mt-3">← Altre opzioni</button>
-                  </>
+                    <StripeForm total={total} popPoints={popPoints} clientSecret={stripeSecret} />
+                  </Elements>
                 )}
               </div>
             )}

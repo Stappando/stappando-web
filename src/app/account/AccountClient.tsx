@@ -8,7 +8,6 @@ import {
   fetchOrders,
   fetchPoints,
   changePassword,
-  sendSupportTicket,
   type WCCustomer,
   type WCOrder,
   type WCSubOrder,
@@ -19,6 +18,7 @@ import { useCartStore } from '@/store/cart';
 import { DEFAULT_VENDOR_NAME } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
+import type { Ticket as TicketItem } from '@/lib/tickets';
 
 /* ── Status badge colors ───────────────────────────────── */
 
@@ -637,7 +637,7 @@ function Dashboard({ user, onLogout }: { user: { id: number; email: string; firs
           {activeSection === 'indirizzi' && <AddressesSection userId={user.id} />}
           {activeSection === 'pagamenti' && <PaymentMethodsSection />}
           {activeSection === 'preferenze' && <PreferencesSection userId={user.id} />}
-          {activeSection === 'assistenza' && <SupportSection user={user} />}
+          {activeSection === 'assistenza' && <SupportSection userId={user.id} user={{ firstName: user.firstName, lastName: user.lastName, email: user.email }} />}
           {activeSection === 'recensioni' && <ReviewsSection userId={user.id} />}
         </div>
       </div>
@@ -1998,108 +1998,226 @@ function GiftCardsSection() {
 
 /* ── Support Ticket ────────────────────────────────────── */
 
-function SupportSection({ user }: { user: { id: number; email: string; firstName: string; lastName: string } }) {
-  const [orderId, setOrderId] = useState('');
-  const [issue, setIssue] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+function SupportSection({ userId, user }: { userId: number; user: { firstName: string; lastName: string; email: string } }) {
+  const [tab, setTab] = useState<'list' | 'new'>('list');
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [selected, setSelected] = useState<TicketItem | null>(null);
+  const [reply, setReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSending(true);
-    try {
-      await sendSupportTicket({
-        orderId,
-        issue,
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-      });
-      setSent(true);
-    } catch {
-      // sendSupportTicket falls back to mailto
-      setSent(true);
-    } finally {
-      setSending(false);
-    }
+  // New ticket form
+  const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState('altro');
+  const [orderId, setOrderId] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const loadTickets = () => {
+    setLoadingTickets(true);
+    fetch(`/api/tickets?customerId=${userId}`)
+      .then(r => r.json())
+      .then(data => { setTickets(Array.isArray(data) ? data : []); setLoadingTickets(false); })
+      .catch(() => setLoadingTickets(false));
   };
 
-  if (sent) {
-    return (
-      <SectionCard title="Ticket assistenza">
-        <div className="text-center py-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-brand-text">Richiesta inviata</h3>
-          <p className="text-sm text-brand-muted mt-2">
-            Il nostro team di assistenza ti risponderà il prima possibile a <strong>{user.email}</strong>.
-          </p>
-          <button
-            type="button"
-            onClick={() => { setSent(false); setOrderId(''); setIssue(''); }}
-            className="mt-4 text-sm text-brand-primary font-semibold hover:underline"
-          >
-            Invia un altro ticket
-          </button>
-        </div>
-      </SectionCard>
-    );
+  useEffect(() => { loadTickets(); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSubmitTicket = async () => {
+    if (!subject.trim() || !message.trim()) return;
+    setSubmitting(true);
+    try {
+      await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: userId,
+          customerEmail: user.email,
+          customerName: `${user.firstName} ${user.lastName}`,
+          subject: subject.trim(),
+          category,
+          orderId: orderId.trim() || undefined,
+          message: message.trim(),
+        }),
+      });
+      setSubmitted(true);
+      setSubject(''); setMessage(''); setOrderId(''); setCategory('altro');
+      setTimeout(() => { setSubmitted(false); setTab('list'); loadTickets(); }, 2000);
+    } catch { /* ignore */ }
+    setSubmitting(false);
+  };
+
+  const handleReply = async () => {
+    if (!selected || !reply.trim()) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/tickets/${selected.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: 'customer', authorName: `${user.firstName} ${user.lastName}`, content: reply.trim() }),
+      });
+      const updated = await res.json();
+      setSelected(updated);
+      setTickets(prev => prev.map((t: TicketItem) => t.id === updated.id ? updated : t));
+      setReply('');
+    } catch { /* ignore */ }
+    setSendingReply(false);
+  };
+
+  const statusColors: Record<string, string> = {
+    open: 'bg-red-100 text-red-700',
+    in_progress: 'bg-yellow-100 text-yellow-700',
+    closed: 'bg-green-100 text-green-700',
+  };
+  const statusLabelsTicket: Record<string, string> = {
+    open: 'Aperto',
+    in_progress: 'In lavorazione',
+    closed: 'Chiuso',
+  };
+  const categoryLabels: Record<string, string> = {
+    ordine: 'Ordine', prodotto: 'Prodotto', pagamento: 'Pagamento',
+    spedizione: 'Spedizione', reso: 'Reso', altro: 'Altro',
+  };
+
+  function fmtDate(iso: string) {
+    try { return new Date(iso).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    catch { return iso; }
   }
 
   return (
-    <SectionCard title="Ticket assistenza">
-      <p className="text-sm text-brand-muted mb-4">
-        Hai bisogno di aiuto con un ordine? Compila il modulo e il nostro team ti risponderà al più presto.
-      </p>
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
-        <div>
-          <label htmlFor="ticket-order" className="block text-sm font-medium text-brand-text mb-1">
-            Numero ordine
-          </label>
-          <input
-            id="ticket-order"
-            type="text"
-            value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-brand-border bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
-            placeholder="Es. 12345"
-          />
+    <div className="bg-white rounded-2xl border border-[#e8e4dc] shadow-sm overflow-hidden">
+      {/* Header + tabs */}
+      <div className="px-6 py-4 border-b border-[#e8e4dc] flex items-center justify-between gap-4">
+        <h2 className="text-[17px] font-bold text-[#005667]">Assistenza <span className="text-[13px] font-normal text-[#888]">({tickets.length})</span></h2>
+        <div className="flex gap-2">
+          <button onClick={() => { setTab('list'); setSelected(null); }}
+            className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${tab === 'list' ? 'bg-[#005667] text-white' : 'border border-[#e8e4dc] text-[#888] hover:border-[#005667] hover:text-[#005667]'}`}>
+            I miei ticket
+          </button>
+          <button onClick={() => { setTab('new'); setSelected(null); }}
+            className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${tab === 'new' ? 'bg-[#005667] text-white' : 'border border-[#e8e4dc] text-[#888] hover:border-[#005667] hover:text-[#005667]'}`}>
+            + Nuovo ticket
+          </button>
         </div>
-        <div>
-          <label htmlFor="ticket-issue" className="block text-sm font-medium text-brand-text mb-1">
-            Descrivi la problematica *
-          </label>
-          <textarea
-            id="ticket-issue"
-            required
-            rows={5}
-            value={issue}
-            onChange={(e) => setIssue(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-brand-border bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors resize-none"
-            placeholder="Descrivi il problema riscontrato..."
-          />
-        </div>
-        <div className="bg-brand-bg rounded-lg p-3 text-sm text-brand-muted">
-          La risposta verrà inviata a <strong>{user.email}</strong>
-        </div>
-        <button
-          type="submit"
-          disabled={sending}
-          className="w-full py-3 bg-brand-primary text-white font-semibold rounded-lg hover:bg-brand-primary/90 transition-colors disabled:opacity-60"
-        >
-          {sending ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Invio in corso...
-            </span>
+      </div>
+
+      <div className="p-4 sm:p-6">
+        {/* NEW TICKET FORM */}
+        {tab === 'new' && (
+          submitted ? (
+            <div className="text-center py-10">
+              <div className="w-14 h-14 rounded-full bg-[#e8f4f1] flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <p className="text-[15px] font-semibold text-[#1a1a1a] mb-1">Ticket inviato!</p>
+              <p className="text-[13px] text-[#888]">Risponderemo entro 24 ore lavorative.</p>
+            </div>
           ) : (
-            'Invia richiesta di assistenza'
-          )}
-        </button>
-      </form>
-    </SectionCard>
+            <div className="space-y-4 max-w-xl">
+              <div>
+                <label className="text-[12px] font-semibold text-[#444] mb-1 block">Categoria</label>
+                <select value={category} onChange={e => setCategory(e.target.value)}
+                  className="w-full px-3 py-2.5 text-[13px] border border-[#e8e4dc] rounded-lg focus:outline-none focus:border-[#005667]">
+                  {Object.entries(categoryLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[12px] font-semibold text-[#444] mb-1 block">Oggetto *</label>
+                <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Descrivi brevemente il problema…"
+                  className="w-full px-3 py-2.5 text-[13px] border border-[#e8e4dc] rounded-lg focus:outline-none focus:border-[#005667] placeholder:text-[#bbb]" />
+              </div>
+              <div>
+                <label className="text-[12px] font-semibold text-[#444] mb-1 block">Numero ordine (opzionale)</label>
+                <input type="text" value={orderId} onChange={e => setOrderId(e.target.value)} placeholder="es. 10042"
+                  className="w-full px-3 py-2.5 text-[13px] border border-[#e8e4dc] rounded-lg focus:outline-none focus:border-[#005667] placeholder:text-[#bbb]" />
+              </div>
+              <div>
+                <label className="text-[12px] font-semibold text-[#444] mb-1 block">Messaggio *</label>
+                <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5} placeholder="Descrivi il problema in dettaglio…"
+                  className="w-full px-3 py-2.5 text-[13px] border border-[#e8e4dc] rounded-lg focus:outline-none focus:border-[#005667] resize-none placeholder:text-[#bbb]" />
+              </div>
+              <button onClick={handleSubmitTicket} disabled={submitting || !subject.trim() || !message.trim()}
+                className="w-full py-3 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
+                {submitting ? 'Invio in corso…' : 'Invia ticket'}
+              </button>
+            </div>
+          )
+        )}
+
+        {/* TICKET LIST */}
+        {tab === 'list' && !selected && (
+          loadingTickets ? (
+            <div className="text-center py-10 text-[13px] text-[#888]">Caricamento…</div>
+          ) : tickets.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-[14px] text-[#888] mb-3">Nessun ticket aperto.</p>
+              <button onClick={() => setTab('new')} className="px-5 py-2.5 bg-[#005667] text-white rounded-lg text-[13px] font-semibold hover:bg-[#004555] transition-colors">Apri un ticket</button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {(tickets as TicketItem[]).map((t: TicketItem) => (
+                <button key={t.id} onClick={() => setSelected(t)}
+                  className="w-full text-left p-4 border border-[#e8e4dc] rounded-xl hover:border-[#005667]/30 hover:bg-[#f9f7f2] transition-colors">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <p className="text-[14px] font-semibold text-[#1a1a1a] flex-1">{t.subject}</p>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColors[t.status]}`}>{statusLabelsTicket[t.status] || t.status}</span>
+                  </div>
+                  <p className="text-[11px] text-[#888]">{categoryLabels[t.category] || t.category}{t.orderId ? ` · Ordine #${t.orderId}` : ''}</p>
+                  <p className="text-[11px] text-[#666] mt-1 line-clamp-1">{t.messages[t.messages.length - 1]?.content}</p>
+                  <p className="text-[10px] text-[#bbb] mt-1">{fmtDate(t.updatedAt)}</p>
+                </button>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* TICKET THREAD */}
+        {tab === 'list' && selected && (
+          <div>
+            <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-[12px] text-[#aaa] hover:text-[#666] mb-4">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              Tutti i ticket
+            </button>
+
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-[15px] font-bold text-[#1a1a1a]">{selected.subject}</h3>
+                <p className="text-[11px] text-[#888] mt-0.5">{categoryLabels[selected.category] || selected.category}{selected.orderId ? ` · Ordine #${selected.orderId}` : ''}</p>
+              </div>
+              <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold ${statusColors[selected.status]}`}>{statusLabelsTicket[selected.status]}</span>
+            </div>
+
+            <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto pr-1">
+              {selected.messages.map((msg: { id: string; from: string; authorName: string; content: string; createdAt: string }) => (
+                <div key={msg.id} className={`flex ${msg.from === 'customer' ? 'justify-start' : 'justify-end'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.from === 'customer' ? 'bg-[#f5f3ee] text-[#1a1a1a]' : 'bg-[#005667] text-white'}`}>
+                    <p className={`text-[10px] font-semibold mb-1 ${msg.from === 'customer' ? 'text-[#888]' : 'text-[#d9c39a]'}`}>{msg.authorName} · {fmtDate(msg.createdAt)}</p>
+                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {selected.status !== 'closed' && (
+              <div className="border-t border-[#f0f0f0] pt-4">
+                <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Scrivi una risposta…" rows={3}
+                  className="w-full px-4 py-3 text-[13px] border border-[#e8e4dc] rounded-xl focus:outline-none focus:border-[#005667] resize-none placeholder:text-[#bbb] mb-2" />
+                <div className="flex justify-end">
+                  <button onClick={handleReply} disabled={sendingReply || !reply.trim()}
+                    className="px-5 py-2.5 bg-[#005667] text-white rounded-lg text-[13px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50">
+                    {sendingReply ? 'Invio…' : 'Rispondi'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {selected.status === 'closed' && (
+              <p className="text-center text-[12px] text-[#888] py-3 border-t border-[#f0f0f0] mt-2">Questo ticket è chiuso. <button onClick={() => setTab('new')} className="text-[#005667] underline">Apri un nuovo ticket</button></p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

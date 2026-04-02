@@ -283,13 +283,10 @@ export default function Header() {
 
   return (
     <>
-      {/* ── Sticky wrapper: TopBar + Header stick together on desktop ── */}
-      <div className="lg:sticky lg:top-0 lg:z-50">
-      {/* ── Top Bar ── */}
-      <TopBar visible={topBarVisible} />
+      {/* ── Header (always sticky — TopBar collapses via CSS height animation) ── */}
+      <header className="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+        <TopBar visible={topBarVisible} />
 
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-50 lg:static lg:z-auto bg-white border-b border-[#e5e5e5]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 relative">
           <div className={`flex items-center transition-all duration-200 ease-out ${
             scrolled ? 'h-[56px]' : 'h-[60px] sm:h-[64px]'
@@ -411,18 +408,11 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search overlay */}
         {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
       </header>
-      </div>{/* end sticky wrapper */}
 
-      {/* Mobile drawer */}
       <MobileDrawer isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onOpenAuth={() => setAuthModalOpen(true)} onOpenVendorAuth={() => { setAuthVendorMode(true); setAuthModalOpen(true); }} />
-
-      {/* Auth modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => { setAuthModalOpen(false); setAuthVendorMode(false); }} vendorMode={authVendorMode} />
-
-      {/* Mobile search — fullscreen overlay */}
       {mobileSearchOpen && <SearchOverlay onClose={() => setMobileSearchOpen(false)} isMobile />}
     </>
   );

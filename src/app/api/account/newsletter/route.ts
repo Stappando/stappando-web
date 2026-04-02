@@ -15,6 +15,23 @@ function md5(email: string) {
   return crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex');
 }
 
+async function setMailchimpTags(apiKey: string, baseUrl: string, listId: string, hash: string, subscribed: boolean) {
+  try {
+    await fetch(`${baseUrl}/lists/${listId}/members/${hash}/tags`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tags: [
+          { name: 'Si newsletter', status: subscribed ? 'active' : 'inactive' },
+          { name: 'No newsletter', status: subscribed ? 'inactive' : 'active' },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error('Mailchimp tag update error:', err);
+  }
+}
+
 /**
  * GET /api/account/newsletter?email=...
  * Returns the current newsletter subscription status for the given email.
@@ -89,6 +106,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: err.title || 'Errore iscrizione' }, { status: 502 });
       }
 
+      await setMailchimpTags(apiKey, baseUrl, listId, hash, true);
       return NextResponse.json({ subscribed: true });
     } else {
       // PATCH to set status = unsubscribed
@@ -104,6 +122,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: err.title || 'Errore disiscrizione' }, { status: 502 });
       }
 
+      await setMailchimpTags(apiKey, baseUrl, listId, hash, false);
       return NextResponse.json({ subscribed: false });
     }
   } catch (err) {

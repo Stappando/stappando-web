@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
 import { validateStock } from '@/lib/payments/validate-stock';
+import { buildItemsMetadata } from '@/lib/payments/items-meta';
 
 interface LineItem {
   id: number;
@@ -92,14 +93,11 @@ export async function POST(req: NextRequest) {
         customer_email: sanitize(c.email, 254),
         customer_name: sanitize(`${c.firstName} ${c.lastName}`, 200),
         customer_phone: sanitize(c.phone || '', 30),
-        shipping_address: sanitize(c.address, 500),
+        shipping_address: sanitize(c.address, 200),
         shipping_city: sanitize(c.city, 100),
         shipping_province: sanitize(c.province, 5),
         shipping_zip: sanitize(c.zip, 10),
-        order_notes: sanitize(c.notes || '', 500),
-        items_json: JSON.stringify(
-          body.items.map((i) => ({ id: i.id, qty: i.quantity, price: i.price, name: i.name?.slice(0, 60) || '' })),
-        ).slice(0, 500),
+        order_notes: sanitize(c.notes || '', 200),
         shipping_cost: String(shipping),
         preferred_carrier: sanitize(body.carrier || '', 20),
         coupon_code: sanitize(body.couponCode || '', 50),
@@ -109,6 +107,8 @@ export async function POST(req: NextRequest) {
         invoice_ragione: sanitize(c.ragioneSociale || '', 100),
         invoice_cf: sanitize(c.codFiscale || '', 20),
         invoice_sdi: sanitize(c.sdi || '', 10),
+        // Items stored in compact chunked format — each key ≤490 chars, never truncated
+        ...buildItemsMetadata(body.items.map(i => ({ id: i.id, quantity: i.quantity, price: i.price }))),
       },
       receipt_email: sanitize(c.email, 254),
     });

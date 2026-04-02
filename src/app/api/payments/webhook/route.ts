@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { createWCOrder } from '@/lib/payments/create-wc-order';
+import { parseItemsFromMeta } from '@/lib/payments/items-meta';
 import type Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +73,12 @@ export async function POST(req: NextRequest) {
             }
           }
         } catch { /* proceed if check fails */ }
-        const items = JSON.parse(meta.items_json);
+        // Parse items — supports chunked compact format and legacy format (with regex fallback for old truncated PIs)
+        const items = parseItemsFromMeta(meta as unknown as Record<string, string>);
+        if (items.length === 0) {
+          console.error(`[Stripe webhook] No items parsed from metadata for PI ${pi.id} — order NOT created`);
+          return NextResponse.json({ received: true, error: 'items_empty' });
+        }
         const [firstName, ...lastParts] = (meta.customer_name || '').split(' ');
 
         await createWCOrder({
@@ -89,8 +95,8 @@ export async function POST(req: NextRequest) {
             zip: meta.shipping_zip || '',
             notes: meta.order_notes || '',
           },
-          items: items.map((i: { id: number; qty: number; price: number; name?: string }) => ({
-            id: i.id, name: i.name || '', price: i.price, quantity: i.qty,
+          items: items.map(i => ({
+            id: i.id, name: i.name || '', price: i.price, quantity: i.quantity,
           })),
           shippingCost: parseFloat(meta.shipping_cost || '0'),
           preferences: meta.preferred_carrier ? { carrier: meta.preferred_carrier } : undefined,
