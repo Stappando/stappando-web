@@ -463,48 +463,42 @@ function Step2Shipping() {
       setPrefilled(true);
       // Fetch full customer data for address + saved addresses
       if (user.id) {
-        fetch(`/api/customers?id=${user.id}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data) return;
-            // Parse saved addresses from meta
-            const meta = (data as { meta_data?: { key: string; value: string }[] }).meta_data || [];
-            const raw = meta.find((m: { key: string; value: string }) => m.key === '_saved_addresses')?.value;
-            let addrList: SavedAddress[] = [];
-            if (raw) {
-              try { addrList = JSON.parse(raw); } catch { addrList = []; }
-            }
-            if (addrList.length > 0) {
-              setSavedAddresses(addrList);
-              const def = addrList.find(a => a.isDefault) || addrList[0];
-              setSelectedAddressId(def.id);
-              setForm(f => ({
-                ...f,
-                firstName: def.first_name || user.firstName || f.firstName,
-                lastName: def.last_name || user.lastName || f.lastName,
-                email: f.email || data.billing?.email || user.email || '',
-                phone: def.phone || data.billing?.phone || f.phone || '',
-                address: def.address_1,
-                zip: def.postcode,
-                city: def.city,
-                province: def.state,
-              }));
-            } else {
-              const b = data.billing || data.shipping || {};
-              setForm(f => ({
-                ...f,
-                firstName: f.firstName || b.first_name || user.firstName || '',
-                lastName: f.lastName || b.last_name || user.lastName || '',
-                email: f.email || b.email || user.email || '',
-                phone: f.phone || b.phone || '',
-                address: f.address || b.address_1 || '',
-                zip: f.zip || b.postcode || '',
-                city: f.city || b.city || '',
-                province: f.province || b.state || '',
-              }));
-            }
-          })
-          .catch(() => {});
+        // Fetch saved addresses from dedicated endpoint + WC billing fallback in parallel
+        Promise.all([
+          fetch(`/api/customers/addresses?customerId=${user.id}`).then(r => r.ok ? r.json() : { addresses: [] }),
+          fetch(`/api/customers?id=${user.id}`).then(r => r.ok ? r.json() : null),
+        ]).then(([addrData, wcData]) => {
+          const addrList: SavedAddress[] = addrData.addresses || [];
+          if (addrList.length > 0) {
+            setSavedAddresses(addrList);
+            const def = addrList.find(a => a.isDefault) || addrList[0];
+            setSelectedAddressId(def.id);
+            setForm(f => ({
+              ...f,
+              firstName: def.first_name || user.firstName || f.firstName,
+              lastName: def.last_name || user.lastName || f.lastName,
+              email: f.email || wcData?.billing?.email || user.email || '',
+              phone: def.phone || wcData?.billing?.phone || f.phone || '',
+              address: def.address_1,
+              zip: def.postcode,
+              city: def.city,
+              province: def.state,
+            }));
+          } else if (wcData) {
+            const b = wcData.billing || wcData.shipping || {};
+            setForm(f => ({
+              ...f,
+              firstName: f.firstName || b.first_name || user.firstName || '',
+              lastName: f.lastName || b.last_name || user.lastName || '',
+              email: f.email || b.email || user.email || '',
+              phone: f.phone || b.phone || '',
+              address: f.address || b.address_1 || '',
+              zip: f.zip || b.postcode || '',
+              city: f.city || b.city || '',
+              province: f.province || b.state || '',
+            }));
+          }
+        }).catch(() => {});
       }
     }
   }, [isLogged, user, prefilled]);
