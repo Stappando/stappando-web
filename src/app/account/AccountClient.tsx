@@ -1410,54 +1410,34 @@ function AddressesSection({ userId }: { userId: number }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetchCustomer(userId).then(c => {
-      const meta = (c as unknown as { meta_data?: { key: string; value: string }[] }).meta_data || [];
-      const raw = meta.find(m => m.key === '_saved_addresses')?.value;
-      if (raw) {
-        try { setAddresses(JSON.parse(raw)); } catch { setAddresses([]); }
-      } else {
-        const s = c.shipping;
-        if (s?.address_1) {
-          const migrated: SavedAddress[] = [{
-            id: Date.now().toString(),
-            first_name: s.first_name || '',
-            last_name: s.last_name || '',
-            address_1: s.address_1 || '',
-            city: s.city || '',
-            state: s.state || '',
-            postcode: s.postcode || '',
-            phone: (s as unknown as { phone?: string }).phone || '',
-            isDefault: true,
-          }];
-          setAddresses(migrated);
-        } else {
-          setAddresses([]);
-        }
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch(`/api/customers/addresses?customerId=${userId}`)
+      .then(r => r.ok ? r.json() : { addresses: [] })
+      .then(data => setAddresses(data.addresses || []))
+      .catch(() => setAddresses([]))
+      .finally(() => setLoading(false));
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
 
   const persist = async (updated: SavedAddress[]) => {
     setSaving(true);
-    const defaultAddr = updated.find(a => a.isDefault) || updated[0];
-    const wcShipping = defaultAddr ? {
-      first_name: defaultAddr.first_name,
-      last_name: defaultAddr.last_name,
-      address_1: defaultAddr.address_1,
-      city: defaultAddr.city,
-      state: defaultAddr.state,
-      postcode: defaultAddr.postcode,
-      country: 'IT',
-    } : {};
-    await updateCustomer(userId, {
-      shipping: wcShipping as Address,
-      meta_data: [{ key: '_saved_addresses', value: JSON.stringify(updated) }],
-    } as unknown as Partial<WCCustomer>);
-    setAddresses(updated);
-    setSaving(false);
+    try {
+      const res = await fetch('/api/customers/addresses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: userId, addresses: updated }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Errore ${res.status}`);
+      }
+      setAddresses(updated);
+    } catch (err) {
+      console.error('Errore salvataggio indirizzo:', err);
+      setSuccessMsg('❌ Errore nel salvataggio. Riprova.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAdd = async (addr: Omit<SavedAddress, 'id' | 'isDefault'>) => {
