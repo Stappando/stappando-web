@@ -276,7 +276,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
     },
     {
       id: 'followup-1',
-      title: '19. Follow-up +5gg — 50.000 visite al mese',
+      title: '19. Follow-up +5gg — La community Stappando',
       html: buildFollowUp1(),
     },
     {
@@ -471,24 +471,33 @@ ${content}
 </html>`;
 }
 
-/* ── Follow-up 1  (+5 gg) — 50.000 visite al mese ───────────────────── */
+/* ── Follow-up 1  (+5 gg) — La community Stappando ─────────────────── */
 function buildFollowUp1(): string {
   return followUpLayout(`
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
 Ciao <strong>Mario</strong>,
 </p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Mi sono reso conto che nell&rsquo;ultima mail vi ho mandato tante informazioni tutte insieme. Volevo soffermarmi su un dato che forse &egrave; passato in secondo piano.
+Mi sono reso conto che nell&rsquo;ultima mail vi ho mandato tante informazioni tutte insieme. Volevo soffermarmi su alcuni dati che forse sono passati in secondo piano.
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
-<tr><td style="padding:24px;background:#f0f7f9;border-radius:12px;text-align:center;">
-  <p style="margin:0 0 4px;font-size:36px;font-weight:800;color:#005667;">50.000</p>
-  <p style="margin:0 0 10px;font-size:15px;font-weight:600;color:#005667;">visite al mese su Stappando.it</p>
-  <p style="margin:0;font-size:13px;color:#666;">Persone che cercano vino di qualit&agrave;, pronte ad acquistare</p>
-</td></tr>
+<tr>
+<td width="33%" style="padding:20px 8px;text-align:center;background:#f0f7f9;border-radius:12px 0 0 12px;">
+  <p style="margin:0 0 4px;font-size:28px;font-weight:800;color:#005667;">5.000</p>
+  <p style="margin:0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">visite/mese</p>
+</td>
+<td width="34%" style="padding:20px 8px;text-align:center;background:#f0f7f9;">
+  <p style="margin:0 0 4px;font-size:28px;font-weight:800;color:#005667;">13.000</p>
+  <p style="margin:0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">iscritti newsletter</p>
+</td>
+<td width="33%" style="padding:20px 8px;text-align:center;background:#f0f7f9;border-radius:0 12px 12px 0;">
+  <p style="margin:0 0 4px;font-size:28px;font-weight:800;color:#005667;">15.000+</p>
+  <p style="margin:0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">follower social</p>
+</td>
+</tr>
 </table>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#333;">
-Sono wine lover da tutta Italia che ogni giorno navigano il nostro catalogo. Quando una cantina si registra, i suoi vini finiscono davanti a questo pubblico <strong>dal giorno stesso</strong>.
+Una community di wine lover che ogni giorno naviga il nostro catalogo, legge le nostre newsletter e interagisce sui social. Quando una cantina si registra, i suoi vini finiscono davanti a questo pubblico <strong>dal giorno stesso</strong>.
 </p>
 <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#444;">
 Nessun canone, nessun costo fisso. Pagate solo una commissione del 15% quando vendete. Il restante 85% &egrave; vostro, accreditato il 10 di ogni mese.
@@ -556,17 +565,21 @@ Vi condivido qualche numero del gruppo Stappando. Penso che possano darvi un&rsq
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
 <tr>
-<td width="33%" style="padding:16px 8px;text-align:center;background:#f0f7f9;border-radius:12px 0 0 12px;">
-  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">50K</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">visite/mese</p>
+<td width="25%" style="padding:16px 6px;text-align:center;background:#f0f7f9;border-radius:12px 0 0 12px;">
+  <p style="margin:0;font-size:24px;font-weight:800;color:#005667;">5K</p>
+  <p style="margin:4px 0 0;font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">visite/mese</p>
 </td>
-<td width="34%" style="padding:16px 8px;text-align:center;background:#f0f7f9;">
-  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">200+</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">cantine attive</p>
+<td width="25%" style="padding:16px 6px;text-align:center;background:#f0f7f9;">
+  <p style="margin:0;font-size:24px;font-weight:800;color:#005667;">13K</p>
+  <p style="margin:4px 0 0;font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">newsletter</p>
 </td>
-<td width="33%" style="padding:16px 8px;text-align:center;background:#f0f7f9;border-radius:0 12px 12px 0;">
-  <p style="margin:0;font-size:28px;font-weight:800;color:#005667;">20</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">regioni coperte</p>
+<td width="25%" style="padding:16px 6px;text-align:center;background:#f0f7f9;">
+  <p style="margin:0;font-size:24px;font-weight:800;color:#005667;">15K+</p>
+  <p style="margin:4px 0 0;font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">follower social</p>
+</td>
+<td width="25%" style="padding:16px 6px;text-align:center;background:#f0f7f9;border-radius:0 12px 12px 0;">
+  <p style="margin:0;font-size:24px;font-weight:800;color:#005667;">20</p>
+  <p style="margin:4px 0 0;font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">regioni</p>
 </td>
 </tr>
 </table>
@@ -651,7 +664,7 @@ Vi siete mai chiesti come appare una cantina su Stappando? Ve lo mostro.
   <strong style="color:#005667;">&#10003;</strong> Posizionamento SEO su Google per i vostri vini
 </p>
 <p style="margin:0;font-size:13px;color:#888;font-style:italic;">
-Tutto questo visibile 24 ore su 24, 365 giorni l&rsquo;anno, davanti a 50.000 visitatori al mese.
+Tutto questo visibile 24 ore su 24, 365 giorni l&rsquo;anno, davanti a una community di oltre 15.000 follower e 13.000 iscritti alla newsletter.
 </p>
 </td></tr>
 </table>
@@ -718,7 +731,7 @@ Vi faccio un riepilogo veloce di quello che il gruppo Stappando offre alle canti
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
 <tr><td style="padding:14px 18px;background:#f0f7f9;border-radius:8px 8px 0 0;border-bottom:1px solid #e0edf0;">
   <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#005667;">Stappando.it &mdash; Vendita online</p>
-  <p style="margin:0;font-size:13px;line-height:1.6;color:#444;">50.000 visite/mese, catalogo con foto professionali, logistica gestita, pagamenti automatici. Commissione 15%.</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#444;">5.000 visite/mese al sito, 13.000 iscritti newsletter, 15.000+ follower social. Catalogo con foto professionali, logistica gestita. Commissione 15%.</p>
 </td></tr>
 <tr><td style="padding:14px 18px;background:#f0f9f2;border-bottom:1px solid #dceede;">
   <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#4a8c3f;">Vineis.eu &mdash; Enoturismo</p>
