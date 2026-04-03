@@ -32,7 +32,51 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
 
   const isAuth = !!token && !!user;
   const isVendorRole = role === 'vendor' || role === 'wcfm_vendor' || role === 'dc_vendor';
-  const isApproved = vendorStatus === 'approved';
+  const [liveStatus, setLiveStatus] = useState<string | null>(null);
+  const effectiveStatus = liveStatus || vendorStatus;
+  const isApproved = effectiveStatus === 'approved';
+
+  // Re-check vendor status from server on every visit (admin may have approved since last login)
+  useEffect(() => {
+    if (!hydrated || !isAuth || !user?.id) return;
+    // Already approved in store — skip server check
+    if (vendorStatus === 'approved') return;
+
+    let cancelled = false;
+    fetch(`/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user.email, password: '__token_refresh__' }),
+    }).catch(() => null);
+
+    // Use a lighter check: fetch customer meta directly
+    fetch(`/api/vendor/profile?vendorId=${user.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(() => {
+        // Profile endpoint doesn't return status, use customers endpoint
+        return fetch(`/api/customers?id=${user.id}`);
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(customer => {
+        if (cancelled || !customer) return;
+        const wpRole = customer.role;
+        const meta = customer.meta_data || [];
+        const statusMeta = meta.find((m: { key: string }) => m.key === '_vendor_status')?.value;
+        const isWPVendor = ['wcfm_vendor', 'dc_vendor', 'seller'].includes(wpRole);
+
+        const serverStatus = isWPVendor ? 'approved' : (statusMeta || null);
+        if (serverStatus && serverStatus !== vendorStatus) {
+          setLiveStatus(serverStatus);
+          useAuthStore.getState().setVendorStatus(serverStatus);
+          if (isWPVendor && role !== 'vendor') {
+            useAuthStore.setState({ role: 'vendor' });
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [hydrated, isAuth, user?.id, user?.email, vendorStatus, role]);
 
   // Check profile + shop completeness for approved vendors
   useEffect(() => {
@@ -48,11 +92,8 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
     ]).then(([profile, shop]) => {
       if (cancelled) return;
 
-      // Profile required fields
       const profileFields = ['nome', 'cognome', 'telefono', 'email', 'ragioneSociale', 'piva', 'codiceFiscale', 'pec', 'sdi', 'iban', 'intestazioneIban'];
       const profileComplete = profile && profileFields.every((k: string) => String(profile[k] || '').trim().length > 0);
-
-      // Shop required fields: descrizione + at least logo or banner
       const shopComplete = shop && !!shop.descrizione?.trim() && (!!shop.logo || !!shop.banner);
 
       setSetupComplete(!!profileComplete && !!shopComplete);
