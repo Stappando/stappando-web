@@ -8,10 +8,12 @@ interface WCSubOrder {
   id: number;
   number: string;
   status: string;
+  parent_id?: number;
   line_items: { id: number; product_id: number; name: string; quantity: number; price: string; total: string; image?: { src: string } }[];
   meta_data: WCOrderMeta[];
   shipping?: { postcode?: string };
   _vendor_name?: string;
+  _display_number?: string;
 }
 
 interface WCOrder {
@@ -20,6 +22,7 @@ interface WCOrder {
   status: string;
   total: string;
   date_created: string;
+  parent_id?: number;
   meta_data: WCOrderMeta[];
   line_items: { id?: number; product_id: number; name: string; quantity: number; price?: string; total: string; image?: { src: string } }[];
   billing?: { first_name?: string; last_name?: string; address_1?: string; city?: string; state?: string; postcode?: string; email?: string; phone?: string };
@@ -36,6 +39,26 @@ interface WCOrder {
 /** Cutover: orders created on or after this timestamp show sub-orders as
  *  standalone rows instead of embedding them inside the parent. */
 const SUB_ORDER_CUTOVER = new Date('2026-04-03T11:00:00+02:00'); // 3 Apr 2026 11:00 CEST
+
+/** Helper: check if an order is a sub-order (works with both old _stp_ and new _is_ meta) */
+function isSubOrder(order: WCOrder): boolean {
+  if (order.parent_id && order.parent_id > 0) return true;
+  const meta = order.meta_data || [];
+  return (
+    meta.find(m => m.key === '_is_sub_order')?.value === 'true' ||
+    meta.find(m => m.key === '_stp_is_suborder')?.value === '1'
+  );
+}
+
+/** Helper: check if an order has sub-orders */
+function hasSubOrders(order: WCOrder): boolean {
+  const meta = order.meta_data || [];
+  return (
+    meta.find(m => m.key === '_has_sub_orders')?.value === 'true' ||
+    meta.find(m => m.key === '_is_parent_only')?.value === 'true' ||
+    meta.find(m => m.key === '_stp_has_suborders')?.value === '1'
+  );
+}
 
 /** GET /api/orders?customerId=123 — fetch orders for customer, resolving sub-orders */
 export async function GET(req: NextRequest) {
@@ -56,22 +79,16 @@ export async function GET(req: NextRequest) {
     const result: WCOrder[] = [];
 
     for (const order of orders) {
-      const hasSubs = order.meta_data?.find(m => m.key === '_has_sub_orders')?.value === 'true';
-      const isSubOrder = order.meta_data?.find(m => m.key === '_is_sub_order')?.value === 'true';
+      // 1. Skip sub-orders from the main list — they get promoted via parent fetch
+      if (isSubOrder(order)) continue;
+
       const orderDate = new Date(order.date_created);
       const isPostCutover = orderDate >= SUB_ORDER_CUTOVER;
 
-      // Skip sub-orders from the main list — they are either embedded (pre-cutover)
-      // or promoted via their parent's fetch (post-cutover)
-      if (isSubOrder) continue;
-
-      // Parent-only orders: always treat as having sub-orders (fetch them)
-      const isParentOnly = order.meta_data?.find(m => m.key === '_is_parent_only')?.value === 'true';
-      const effectiveHasSubs = hasSubs || isParentOnly;
-
-      if (effectiveHasSubs) {
+      // 2. Parent orders with sub-orders — fetch and resolve them
+      if (hasSubOrders(order)) {
         try {
-          const subUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?parent=${order.id}&${auth}`;
+          const subUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?parent=${order.id}&per_page=20&${auth}`;
           const subRes = await fetch(subUrl);
           if (subRes.ok) {
             const subOrders: WCSubOrder[] = await subRes.json();
@@ -83,7 +100,6 @@ export async function GET(req: NextRequest) {
                   const vendorName = sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando Enoteca';
                   result.push({
                     ...order,
-                    // Override with sub-order specific data
                     id: sub.id,
                     number: displayNumber,
                     status: sub.status,
@@ -95,7 +111,7 @@ export async function GET(req: NextRequest) {
                   } as WCOrder);
                 }
               } else {
-                // Pre-cutover: embed sub-orders inside the parent — show ONE row per parent order
+                // Pre-cutover: embed sub-orders inside the parent
                 result.push({
                   ...order,
                   _sub_orders: subOrders.map(sub => ({
@@ -105,18 +121,18 @@ export async function GET(req: NextRequest) {
                   })),
                 });
               }
-              continue;
+              continue; // Parent resolved — don't add it as a regular row
             }
           }
         } catch (err) {
           console.error(`Failed to fetch sub-orders for #${order.id}:`, err);
         }
+        // If sub-order fetch failed but order is parent-only, hide it anyway
+        continue;
       }
 
-      // Regular order — show as-is (but never show parent-only orders)
-      if (!isParentOnly) {
-        result.push(order);
-      }
+      // 3. Regular order (no parent, no sub-orders) — show as-is
+      result.push(order);
     }
 
     return NextResponse.json(result);
