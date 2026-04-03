@@ -135,8 +135,7 @@ export async function POST(req: NextRequest) {
     pdf.setTextColor(68, 68, 68);
     pdf.text('Fee annuale visibilita\' vendor: EUR 0', 20, y); y += 4;
     pdf.text('Commissione vendite stappando.it: 15%', 20, y); y += 4;
-    pdf.text('Commissione vendite vivino.com (opzionale): 35%', 20, y); y += 4;
-    pdf.text('Creazione scheda prodotto (oltre le prime 5): EUR 10 cad.', 20, y);
+    pdf.text('Commissione vendite vivino.com (opzionale): 35%', 20, y);
     y += 15;
 
     // Signature section

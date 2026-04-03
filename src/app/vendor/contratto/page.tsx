@@ -176,7 +176,6 @@ export default function VendorContractPage() {
               <li>Fee annuale visibilità vendor: €0</li>
               <li>Commissione vendite stappando.it: 15%</li>
               <li>Commissione vendite vivino.com (opzionale): 35%</li>
-              <li>Creazione scheda prodotto (oltre le prime 5): €10 cad.</li>
             </ul>
           </div>
 
