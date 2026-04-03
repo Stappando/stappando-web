@@ -109,7 +109,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
           <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Ancora un passo!</h1>
           <p className="text-[14px] text-[#888] mb-2">Per pubblicare i tuoi vini su Stappando, completa la firma del contratto di adesione.</p>
           <p className="text-[13px] text-[#aaa] mb-6">Ci vogliono solo 2 minuti.</p>
-          <Link href="/vendor/contratto" className="inline-block bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Firma il contratto →</Link>
+          <a href="/vendor/contratto" className="inline-block bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Firma il contratto →</a>
           <button onClick={() => { useAuthStore.getState().logout(); window.location.href = '/'; }} className="block mx-auto mt-4 text-[13px] text-[#888] hover:text-[#c0392b] transition-colors">Esci e cambia account</button>
         </div>
       </div>
