@@ -38,42 +38,45 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
 
   // Re-check vendor status from server on every visit (admin may have approved since last login)
   useEffect(() => {
-    if (!hydrated || !isAuth || !user?.id) return;
-    // Already approved in store — skip server check
+    if (!hydrated || !isAuth || !user?.email) return;
     if (vendorStatus === 'approved') return;
 
     let cancelled = false;
-    fetch(`/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user.email, password: '__token_refresh__' }),
-    }).catch(() => null);
 
-    // Use a lighter check: fetch customer meta directly
-    fetch(`/api/vendor/profile?vendorId=${user.id}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(() => {
-        // Profile endpoint doesn't return status, use customers endpoint
-        return fetch(`/api/customers?id=${user.id}`);
-      })
-      .then(r => r.ok ? r.json() : null)
-      .then(customer => {
-        if (cancelled || !customer) return;
-        const wpRole = customer.role;
-        const meta = customer.meta_data || [];
-        const statusMeta = meta.find((m: { key: string }) => m.key === '_vendor_status')?.value;
-        const isWPVendor = ['wcfm_vendor', 'dc_vendor', 'seller'].includes(wpRole);
+    // Fetch customer from WC — by ID if available, otherwise by email
+    const fetchCustomer = async () => {
+      if (user.id && user.id > 0) {
+        const r = await fetch(`/api/customers?id=${user.id}`);
+        if (r.ok) return r.json();
+      }
+      // Fallback: search by email via vendor register-style lookup
+      const r = await fetch(`/api/vendor/lookup?email=${encodeURIComponent(user.email)}`);
+      if (r.ok) return r.json();
+      return null;
+    };
 
-        const serverStatus = isWPVendor ? 'approved' : (statusMeta || null);
-        if (serverStatus && serverStatus !== vendorStatus) {
-          setLiveStatus(serverStatus);
-          useAuthStore.getState().setVendorStatus(serverStatus);
-          if (isWPVendor && role !== 'vendor') {
-            useAuthStore.setState({ role: 'vendor' });
-          }
-        }
-      })
-      .catch(() => {});
+    fetchCustomer().then(customer => {
+      if (cancelled || !customer) return;
+
+      // Fix user.id in store if it was 0
+      if ((!user.id || user.id === 0) && customer.id) {
+        useAuthStore.setState({ user: { ...user, id: customer.id } });
+      }
+
+      const wpRole = customer.role;
+      const meta = customer.meta_data || [];
+      const statusMeta = meta.find((m: { key: string }) => m.key === '_vendor_status')?.value;
+      const isWPVendor = ['wcfm_vendor', 'dc_vendor', 'seller'].includes(wpRole);
+
+      const serverStatus = isWPVendor ? 'approved' : (statusMeta || null);
+      if (serverStatus && serverStatus !== vendorStatus) {
+        setLiveStatus(serverStatus);
+        useAuthStore.getState().setVendorStatus(serverStatus);
+      }
+      if (isWPVendor && role !== 'vendor') {
+        useAuthStore.setState({ role: 'vendor' });
+      }
+    }).catch(() => {});
 
     return () => { cancelled = true; };
   }, [hydrated, isAuth, user?.id, user?.email, vendorStatus, role]);
