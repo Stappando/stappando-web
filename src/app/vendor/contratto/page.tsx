@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAuthStore } from '@/store/auth';
-import { useRouter } from 'next/navigation';
+import { useAuthStore, useStoreHydrated } from '@/store/auth';
+import Link from 'next/link';
 import Image from 'next/image';
 
 export default function VendorContractPage() {
-  const { user, isAuthenticated, isVendor } = useAuthStore();
-  const router = useRouter();
-  const [hydrated, setHydrated] = useState(false);
+  const { user, isAuthenticated } = useAuthStore();
+  const hydrated = useStoreHydrated();
   const [form, setForm] = useState({
     rappresentante: '',
     piva: '',
@@ -25,14 +24,7 @@ export default function VendorContractPage() {
   const [hasDrawn, setHasDrawn] = useState(false);
   const [useCanvas, setUseCanvas] = useState(false);
 
-  useEffect(() => { setHydrated(true); }, []);
 
-  // Redirect if not authenticated or already approved
-  useEffect(() => {
-    if (!hydrated) return;
-    if (!isAuthenticated()) { router.push('/'); return; }
-    if (isVendor()) { router.push('/vendor/dashboard'); }
-  }, [hydrated, isAuthenticated, isVendor, router]);
 
   // Canvas drawing
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -112,7 +104,6 @@ export default function VendorContractPage() {
       setDone(true);
       // Update store — no more WC calls needed
       useAuthStore.getState().setVendorStatus('pending_approval');
-      setTimeout(() => router.push('/vendor/dashboard'), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore imprevisto');
     } finally {
@@ -122,6 +113,16 @@ export default function VendorContractPage() {
 
   if (!hydrated) {
     return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /></div>;
+  }
+
+  if (!isAuthenticated()) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Accesso riservato</h1>
+        <p className="text-[14px] text-[#888] mb-6">Devi effettuare il login per accedere a questa pagina.</p>
+        <Link href="/" className="inline-block bg-[#005667] text-white rounded-lg px-6 py-3 text-[14px] font-semibold hover:bg-[#004555]">Torna alla homepage</Link>
+      </div>
+    );
   }
 
   // Success state
@@ -134,7 +135,7 @@ export default function VendorContractPage() {
           </div>
           <h1 className="text-[24px] font-bold text-[#1a1a1a] mb-3">Contratto firmato!</h1>
           <p className="text-[15px] text-[#666] mb-2">Una copia è stata inviata al tuo indirizzo email.</p>
-          <p className="text-[14px] text-[#888]">Verrai reindirizzato alla dashboard...</p>
+          <Link href="/vendor/dashboard" className="inline-block mt-4 bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Vai alla dashboard →</Link>
         </div>
       </div>
     );
