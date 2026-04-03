@@ -424,18 +424,27 @@ function Step1Cart() {
                       <div className="space-y-2">
                         {giftCards.map(p => {
                           const isSelected = selectedCard?.id === p.id;
+                          const isInCart = items.some(i => i.id === p.id && i.vendorId === 'giftcard');
                           return (
                             <div key={p.id}>
                               <button
                                 onClick={() => setSelectedCard(isSelected ? null : p)}
-                                className={`w-full flex items-center gap-3 rounded-lg p-2.5 text-left transition-all ${isSelected ? 'bg-[#005667]/10 border-[1.5px] border-[#005667]' : 'bg-[#fdf8f0] border border-[#e8dcc8] hover:border-[#005667]/30'}`}
+                                className={`w-full flex items-center gap-3 rounded-lg p-2.5 text-left transition-all ${isSelected ? 'bg-[#005667]/10 border-[1.5px] border-[#005667]' : isInCart ? 'bg-[#e8f4f1] border border-[#005667]/30' : 'bg-[#fdf8f0] border border-[#e8dcc8] hover:border-[#005667]/30'}`}
                               >
                                 {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
                                   <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                                  {/* Show dedication preview when card is in cart and not editing */}
+                                  {isInCart && giftMessage.trim() && !isSelected && (
+                                    <p className="text-[11px] text-[#888] mt-1 italic line-clamp-1">&ldquo;{giftMessage}&rdquo;</p>
+                                  )}
                                 </div>
-                                {isSelected && <svg className="w-4 h-4 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                {isInCart && !isSelected ? (
+                                  <span className="text-[10px] font-semibold text-[#005667] shrink-0">Modifica</span>
+                                ) : isSelected ? (
+                                  <svg className="w-4 h-4 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                ) : null}
                               </button>
 
                               {/* Dedica + add to cart — appears when card is selected */}
@@ -456,13 +465,22 @@ function Step1Cart() {
                                     />
                                     <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
                                   </div>
-                                  <button
-                                    onClick={() => { handleAddCard(p); setSelectedCard(null); }}
-                                    disabled={!giftMessage.trim()}
-                                    className="w-full py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#004555]"
-                                  >
-                                    Aggiungi biglietto al carrello
-                                  </button>
+                                  {!isInCart ? (
+                                    <button
+                                      onClick={() => { handleAddCard(p); setSelectedCard(null); }}
+                                      disabled={!giftMessage.trim()}
+                                      className="w-full py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#004555]"
+                                    >
+                                      Aggiungi biglietto al carrello
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => setSelectedCard(null)}
+                                      className="w-full py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold hover:bg-[#004555] transition-colors"
+                                    >
+                                      Salva dedica
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>
