@@ -143,7 +143,7 @@ export default function AuthModal({ isOpen, onClose, vendorMode = false }: AuthM
           </div>
 
           <h2 className="text-lg font-bold text-center text-gray-900 mb-1">
-            {vendorMode ? 'Accedi come venditore' : 'Accedi o registrati'}
+            {vendorMode ? 'Registrati come venditore' : 'Accedi o registrati'}
           </h2>
           <p className="text-center text-xs text-gray-500 mb-5">
             {vendorMode ? 'Inserisci email e password per iniziare' : 'Per ordinare, salvare preferiti e accumulare Punti POP'}
