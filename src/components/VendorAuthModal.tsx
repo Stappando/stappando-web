@@ -56,22 +56,41 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
     setLoading(true); setError('');
     try {
       // 1. Create vendor account in WooCommerce
-      const res = await fetch('/api/vendor/register', {
+      const regRes = await fetch('/api/vendor/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, cantina, regione, piva, telefono, sito }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Errore registrazione');
+      const regData = await regRes.json();
+      if (!regRes.ok) throw new Error(regData.message || 'Errore registrazione');
 
-      // 2. Login to get JWT token and populate store
-      await authLogin(email, password);
+      // 2. Get JWT token via login API
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password }),
+      });
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) throw new Error(loginData.message || 'Errore login');
 
-      // 3. Ensure user.id is set (JWT may not return WP user ID, use register's vendorId)
-      const state = useAuthStore.getState();
-      if (state.user && (!state.user.id || state.user.id === 0) && data.vendorId) {
-        useAuthStore.setState({ user: { ...state.user, id: data.vendorId } });
-      }
+      // 3. Set store directly with GUARANTEED correct data
+      //    - vendorId from register (login may return 0 due to WC race condition)
+      //    - token from login (needed for auth)
+      //    - role/status hardcoded (we know what they are)
+      useAuthStore.setState({
+        user: {
+          id: regData.vendorId,
+          email,
+          firstName: loginData.user?.firstName || cantina,
+          lastName: loginData.user?.lastName || '',
+          username: loginData.user?.username || email,
+        },
+        token: loginData.token,
+        role: 'vendor',
+        vendorStatus: 'pending_contract',
+        isLoading: false,
+        error: null,
+      });
 
       setSuccess(true);
       // 4. Redirect to contract page
