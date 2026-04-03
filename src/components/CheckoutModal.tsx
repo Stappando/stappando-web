@@ -184,8 +184,8 @@ function Step1Cart() {
   }, [tab, giftProducts.length, loadingGifts]);
 
   // Count gift items already in cart
-  const giftItemsInCart = items.filter(i => i.vendorId === 'default' && (giftProducts.some(g => g.id === i.id) || giftCards.some(g => g.id === i.id))).length;
-  const cardsInCart = items.filter(i => i.vendorId === 'default' && giftCards.some(g => g.id === i.id)).reduce((sum, i) => sum + i.quantity, 0);
+  const giftItemsInCart = items.filter(i => (i.vendorId === 'default' && giftProducts.some(g => g.id === i.id)) || i.vendorId === 'giftcard').length;
+  const cardsInCart = items.filter(i => i.vendorId === 'giftcard').reduce((sum, i) => sum + i.quantity, 0);
   const needsDedica = cardsInCart >= 1;
   const dedicaValid = !needsDedica || giftMessage.trim().length > 0;
   const [dedicaError, setDedicaError] = useState(false);
@@ -208,6 +208,17 @@ function Step1Cart() {
       price: parseFloat(p.price),
       image: p.image || '',
       vendorId: 'default',
+      vendorName: 'Stappando Enoteca',
+    });
+  };
+
+  const handleAddCard = (p: GiftProduct) => {
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: parseFloat(p.price),
+      image: p.image || '',
+      vendorId: 'giftcard',
       vendorName: 'Stappando Enoteca',
     });
   };
@@ -408,7 +419,7 @@ function Step1Cart() {
                               <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
                               <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
                             </div>
-                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
+                            <button onClick={() => handleAddCard(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
                           </div>
                         ))}
                       </div>
