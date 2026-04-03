@@ -54,24 +54,51 @@ export async function POST(req: NextRequest) {
 
 async function handleWebhook(topic: string, resource: string, payload: Record<string, unknown>) {
   switch (topic) {
-    case 'order.created':
-      await handleOrderEvent(payload);
+    case 'order.created': {
+      // Sub-orders created by our split — skip email (vendor gets notified separately)
+      const parentId = payload.parent_id as number | undefined;
+      if (parentId && parentId > 0) {
+        console.log(`Order #${payload.id}: sub-order of #${parentId}, skipping email`);
+        break;
+      }
+
       // Split into vendor sub-orders on creation (only for paid orders)
+      let didSplit = false;
       if ((payload.status === 'processing' || payload.set_paid) && payload.line_items) {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const results = await splitOrderIntoSubOrders(payload as any);
           if (results.length > 0) {
+            didSplit = true;
             console.log(`Order #${payload.id}: split into ${results.length} sub-orders`);
           }
         } catch (err) {
           console.error(`Sub-order split failed for order #${payload.id}:`, err);
         }
       }
-      break;
-    case 'order.updated':
+
+      // Send customer confirmation email ONCE (after split, on the parent)
       await handleOrderEvent(payload);
       break;
+    }
+    case 'order.updated': {
+      // Skip events for parent-only orders (they're managed via sub-orders)
+      const meta = (payload.meta_data || []) as { key: string; value: string }[];
+      const isParentOnly = meta.find(m => m.key === '_is_parent_only')?.value === 'true';
+      if (isParentOnly) {
+        console.log(`Order #${payload.id}: parent-only order, skipping event`);
+        break;
+      }
+      // Skip sub-order update events (vendor handles these)
+      const isSubOrder = meta.find(m => m.key === '_is_sub_order')?.value === 'true';
+      if (isSubOrder) {
+        // But still handle tracking/shipping updates for sub-orders
+        await handleOrderEvent(payload);
+        break;
+      }
+      await handleOrderEvent(payload);
+      break;
+    }
 
     case 'customer.created':
       await handleNewCustomer(payload);
