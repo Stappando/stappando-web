@@ -6,7 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function VendorContractPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthStore(s => s.user);
+  const token = useAuthStore(s => s.token);
   const hydrated = useStoreHydrated();
   const [form, setForm] = useState({
     rappresentante: '',
@@ -74,6 +75,11 @@ export default function VendorContractPage() {
     if (!useCanvas && !form.firma.trim()) { setError('Inserisci la tua firma'); return; }
     if (useCanvas && !hasDrawn) { setError('Disegna la tua firma'); return; }
 
+    if (!user?.id || !user?.email) {
+      setError('Sessione scaduta. Ricarica la pagina e riprova.');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
@@ -115,7 +121,7 @@ export default function VendorContractPage() {
     return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  if (!isAuthenticated()) {
+  if (!token || !user) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Accesso riservato</h1>

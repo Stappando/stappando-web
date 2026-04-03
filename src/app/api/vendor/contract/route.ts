@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
     const dataFirma = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
     if (!vendorId || !email || (!firma && !firmaData)) {
-      return NextResponse.json({ message: 'Dati mancanti' }, { status: 400 });
+      const missing = [!vendorId && 'vendorId', !email && 'email', (!firma && !firmaData) && 'firma'].filter(Boolean);
+      console.error(`[contract] Dati mancanti: ${missing.join(', ')}`, { vendorId, email, hasFirma: !!firma, hasFirmaData: !!firmaData });
+      return NextResponse.json({ message: `Dati mancanti: ${missing.join(', ')}` }, { status: 400 });
     }
 
     const wc = getWCSecrets();
