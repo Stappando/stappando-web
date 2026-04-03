@@ -149,8 +149,7 @@ function Step1Cart() {
     setCouponLoading(false);
   };
   const [giftMessage, setGiftMessage] = useState('');
-  const [wantBox, setWantBox] = useState(false);
-  const [wantCard, setWantCard] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<GiftProduct | null>(null);
   const [giftProducts, setGiftProducts] = useState<GiftProduct[]>([]);
   const [giftCards, setGiftCards] = useState<GiftProduct[]>([]);
   const [loadingGifts, setLoadingGifts] = useState(false);
@@ -193,7 +192,6 @@ function Step1Cart() {
   const handleContinue = () => {
     if (!dedicaValid) {
       setTab('gifts');
-      setWantCard(true);
       setDedicaError(true);
       return;
     }
@@ -368,24 +366,21 @@ function Step1Cart() {
           </>
         )}
 
-        {/* TAB: GIFTS */}
+        {/* TAB: GIFTS — two columns layout */}
         {tab === 'gifts' && (
           <div className="px-6 py-5">
-            <div className="space-y-4">
-              {/* Scatola regalo */}
-              <div className="border border-[#e8dcc8] rounded-xl overflow-hidden bg-[#fdf8f0]">
-                <button onClick={() => setWantBox(!wantBox)} className="w-full flex items-center justify-between px-4 py-3.5">
-                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi una scatola regalo?</span>
-                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantBox ? 'bg-[#8b6914] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantBox ? 'SI' : 'NO'}</span>
-                </button>
-                {wantBox && (
-                  <div className="px-4 pb-4 border-t border-[#e8dcc8]">
-                    {loadingGifts ? (
-                      <div className="py-4 text-center text-[12px] text-[#888]">Caricamento...</div>
-                    ) : giftProducts.length > 0 ? (
-                      <div className="space-y-2 mt-3">
+            {loadingGifts ? (
+              <div className="py-8 text-center text-[13px] text-[#888]">Caricamento regali...</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Left column: Scatole regalo */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-3">Scatole regalo</p>
+                    {giftProducts.length > 0 ? (
+                      <div className="space-y-2">
                         {giftProducts.map(p => (
-                          <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
+                          <div key={p.id} className="flex items-center gap-3 bg-[#fdf8f0] border border-[#e8dcc8] rounded-lg p-2.5">
                             {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
                             <div className="flex-1 min-w-0">
                               <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
@@ -399,64 +394,87 @@ function Step1Cart() {
                       <p className="text-[12px] text-[#888] py-3">Scatole regalo in arrivo</p>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Biglietto auguri */}
-              <div className="border border-[#e8dcc8] rounded-xl overflow-hidden bg-[#fdf8f0]">
-                <button onClick={() => setWantCard(!wantCard)} className="w-full flex items-center justify-between px-4 py-3.5">
-                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi il biglietto di auguri?</span>
-                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantCard ? 'bg-[#8b6914] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantCard ? 'SI' : 'NO'}</span>
-                </button>
-                {wantCard && (
-                  <div className="px-4 pb-4 border-t border-[#e8dcc8]">
-                    {giftCards.length > 0 && (
-                      <div className="space-y-2 mt-3 mb-3">
-                        {giftCards.map(p => (
-                          <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
-                            {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
-                              <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                  {/* Right column: Biglietti auguri */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-3">Biglietti di auguri</p>
+                    {giftCards.length > 0 ? (
+                      <div className="space-y-2">
+                        {giftCards.map(p => {
+                          const isSelected = selectedCard?.id === p.id;
+                          return (
+                            <div key={p.id}>
+                              <button
+                                onClick={() => setSelectedCard(isSelected ? null : p)}
+                                className={`w-full flex items-center gap-3 rounded-lg p-2.5 text-left transition-all ${isSelected ? 'bg-[#005667]/10 border-[1.5px] border-[#005667]' : 'bg-[#fdf8f0] border border-[#e8dcc8] hover:border-[#005667]/30'}`}
+                              >
+                                {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                                  <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                                </div>
+                                {isSelected && <svg className="w-4 h-4 text-[#005667] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                              </button>
+
+                              {/* Dedica + add to cart — appears when card is selected */}
+                              {isSelected && (
+                                <div className="mt-2 p-3 bg-[#fdf8f0] border border-[#e8dcc8] rounded-lg space-y-2.5">
+                                  <div>
+                                    <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1">
+                                      Dedica <span className="text-[#c0392b]">*</span>
+                                    </label>
+                                    <textarea
+                                      value={giftMessage}
+                                      onChange={e => { setGiftMessage(e.target.value); if (e.target.value.trim()) setDedicaError(false); }}
+                                      placeholder="Scrivi la tua dedica..."
+                                      rows={2}
+                                      maxLength={200}
+                                      autoFocus
+                                      className={`w-full px-3 py-2 text-[13px] border rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b]' : 'border-[#e5e5e5]'}`}
+                                    />
+                                    <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                                  </div>
+                                  <button
+                                    onClick={() => { handleAddCard(p); setSelectedCard(null); }}
+                                    disabled={!giftMessage.trim()}
+                                    className="w-full py-2.5 bg-[#005667] text-white rounded-lg text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#004555]"
+                                  >
+                                    Aggiungi biglietto al carrello
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <button onClick={() => handleAddCard(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Dedica — shown only when card items are in cart */}
-              {needsDedica && (
-                <div className={`border rounded-xl p-4 ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b] bg-red-50/50' : 'border-[#e8dcc8] bg-[#fdf8f0]'}`}>
-                  <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">
-                    Dedica <span className="text-[#c0392b]">*</span>
-                  </label>
-                  <textarea
-                    value={giftMessage}
-                    onChange={e => { setGiftMessage(e.target.value); if (e.target.value.trim()) setDedicaError(false); }}
-                    placeholder="Scrivi la tua dedica per il biglietto..."
-                    rows={2}
-                    maxLength={200}
-                    className={`w-full px-3 py-2 text-[13px] border rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b]' : 'border-[#e5e5e5]'}`}
-                  />
-                  <div className="flex justify-between mt-0.5">
-                    {dedicaError && !giftMessage.trim() ? (
-                      <p className="text-[11px] text-[#c0392b] font-medium">Scrivi una dedica per il biglietto di auguri</p>
                     ) : (
-                      <span />
+                      <p className="text-[12px] text-[#888] py-3">Biglietti in arrivo</p>
                     )}
-                    <p className="text-[10px] text-[#aaa]">{giftMessage.length}/200</p>
                   </div>
                 </div>
-              )}
 
-              <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
-                ← Torna al carrello
-              </button>
-            </div>
+                {/* Dedica reminder if cards already in cart but no message */}
+                {needsDedica && !giftMessage.trim() && !selectedCard && (
+                  <div className={`mt-4 border rounded-xl p-3.5 ${dedicaError ? 'border-[#c0392b] bg-red-50/50' : 'border-[#e8dcc8] bg-[#fdf8f0]'}`}>
+                    <p className="text-[12px] text-[#c0392b] font-medium">Scrivi una dedica per il biglietto di auguri per continuare</p>
+                    <textarea
+                      value={giftMessage}
+                      onChange={e => { setGiftMessage(e.target.value); if (e.target.value.trim()) setDedicaError(false); }}
+                      placeholder="Scrivi la tua dedica..."
+                      rows={2}
+                      maxLength={200}
+                      autoFocus
+                      className="w-full mt-2 px-3 py-2 text-[13px] border border-[#c0392b]/30 rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white"
+                    />
+                    <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                  </div>
+                )}
+
+                <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-4">
+                  ← Torna al carrello
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
