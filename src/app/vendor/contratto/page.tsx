@@ -75,11 +75,6 @@ export default function VendorContractPage() {
     if (!useCanvas && !form.firma.trim()) { setError('Inserisci la tua firma'); return; }
     if (useCanvas && !hasDrawn) { setError('Disegna la tua firma'); return; }
 
-    if (!user?.id || !user?.email) {
-      setError('Errore: dati account non disponibili. Ricarica la pagina e riprova.');
-      return;
-    }
-
     setSubmitting(true);
     setError('');
 

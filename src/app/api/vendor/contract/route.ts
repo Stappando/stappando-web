@@ -22,17 +22,30 @@ export async function POST(req: NextRequest) {
     const firmaData = body.firmaData || '';
     const dataFirma = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    if (!vendorId || !email || (!firma && !firmaData)) {
-      const missing = [!vendorId && 'vendorId', !email && 'email', (!firma && !firmaData) && 'firma'].filter(Boolean);
-      console.error(`[contract] Dati mancanti: ${missing.join(', ')}`, { vendorId, email, hasFirma: !!firma, hasFirmaData: !!firmaData });
-      return NextResponse.json({ message: `Dati mancanti: ${missing.join(', ')}` }, { status: 400 });
+    if (!email || (!firma && !firmaData)) {
+      return NextResponse.json({ message: 'Dati mancanti: email e firma obbligatori' }, { status: 400 });
     }
 
     const wc = getWCSecrets();
     const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
 
+    // Resolve vendorId: use provided ID, or look up by email if missing/zero
+    let resolvedVendorId = vendorId;
+    if (!resolvedVendorId) {
+      try {
+        const custRes = await fetch(`${wc.baseUrl}/wp-json/wc/v3/customers?email=${encodeURIComponent(email)}&role=all&${auth}`);
+        if (custRes.ok) {
+          const customers = await custRes.json();
+          if (customers[0]?.id) resolvedVendorId = customers[0].id;
+        }
+      } catch { /* fallback: proceed without ID */ }
+      if (!resolvedVendorId) {
+        return NextResponse.json({ message: 'Vendor non trovato. Registrati di nuovo.' }, { status: 400 });
+      }
+    }
+
     // Update vendor status (fire and forget)
-    fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${vendorId}?${auth}`, {
+    fetch(`${wc.baseUrl}/wp-json/wc/v3/customers/${resolvedVendorId}?${auth}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
