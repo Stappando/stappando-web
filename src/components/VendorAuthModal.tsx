@@ -65,7 +65,7 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
       // Auto-login after register
       await authLogin(email, password);
       setSuccess(true);
-      setTimeout(() => { onClose(); window.location.href = '/vendor/dashboard'; }, 1500);
+      setTimeout(() => { onClose(); window.location.href = '/vendor/contratto'; }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');
     }
@@ -76,23 +76,16 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/vendor/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPw }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Credenziali non valide');
-      // Save to auth store
-      useAuthStore.setState({ user: data.user, token: data.token, role: data.role });
-      if (data.isVendor) {
+      await authLogin(loginEmail, loginPw);
+      const state = useAuthStore.getState();
+      onClose();
+      if (state.role === 'vendor' || state.role === 'wcfm_vendor' || state.role === 'dc_vendor') {
         window.location.href = '/vendor/dashboard';
       } else {
         window.location.href = '/account';
       }
-      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore');
+      setError(err instanceof Error ? err.message : 'Credenziali non valide');
     }
     setLoading(false);
   };
@@ -120,12 +113,12 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
 
           {/* Tabs */}
           <div className="flex border-b border-gray-200 mb-5">
-            <button onClick={() => { setTab('register'); setError(''); }} className={`flex-1 pb-3 text-sm font-semibold ${tab === 'register' ? 'text-[#005667] border-b-2 border-[#005667]' : 'text-[#888]'}`}>Registrati</button>
+            <button onClick={() => { setTab('register'); setError(''); }} className={`flex-1 pb-3 text-sm font-semibold ${tab === 'register' ? 'text-[#005667] border-b-2 border-[#005667]' : 'text-[#888]'}`}>Registrati come venditore</button>
             <button onClick={() => { setTab('login'); setError(''); }} className={`flex-1 pb-3 text-sm font-semibold ${tab === 'login' ? 'text-[#005667] border-b-2 border-[#005667]' : 'text-[#888]'}`}>Accedi</button>
           </div>
 
           {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 mb-4">Account creato! Redirect alla dashboard...</div>
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 mb-4">Account creato! Redirect al contratto...</div>
           )}
 
           {error && (
