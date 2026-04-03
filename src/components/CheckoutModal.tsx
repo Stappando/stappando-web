@@ -170,9 +170,12 @@ function Step1Cart() {
         fetch('/api/products?category=Biglietti&limit=4').then(r => r.ok ? r.json() : []).catch(() => []),
       ])
         .then(([boxes, cards]) => {
-          setGiftProducts(boxes.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
-            id: p.id, name: p.name, price: p.price, image: p.image, slug: p.slug,
-          })));
+          const cardIds = new Set(cards.map((p: { id: number }) => p.id));
+          setGiftProducts(boxes
+            .filter((p: { id: number }) => !cardIds.has(p.id)) // exclude cards that WC cache may still return here
+            .map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
+              id: p.id, name: p.name, price: p.price, image: p.image, slug: p.slug,
+            })));
           setGiftCards(cards.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
             id: p.id, name: p.name, price: p.price, image: p.image, slug: p.slug,
           })));
