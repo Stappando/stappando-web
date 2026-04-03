@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       provider: 'vivino',
       transactionId: sanitize(vivinoOrderId),
       customer: {
-        email: sanitize(customer.email),
+        email: customer.email ? sanitize(customer.email) : 'spedizioni@stappando.it',
         firstName: sanitize(customer.firstName),
         lastName: sanitize(customer.lastName),
         phone: customer.phone ? sanitize(customer.phone) : undefined,

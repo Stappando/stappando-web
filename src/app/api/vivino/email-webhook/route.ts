@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       provider: 'vivino',
       transactionId: sanitize(parsed.vivinoOrderId),
       customer: {
-        email: '', // Vivino doesn't share customer email
+        email: 'spedizioni@stappando.it',
         firstName: sanitize(parsed.firstName),
         lastName: sanitize(parsed.lastName),
         phone: parsed.phone ? sanitize(parsed.phone) : undefined,
