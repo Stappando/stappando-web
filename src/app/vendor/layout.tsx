@@ -110,6 +110,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
           <p className="text-[14px] text-[#888] mb-2">Per pubblicare i tuoi vini su Stappando, completa la firma del contratto di adesione.</p>
           <p className="text-[13px] text-[#aaa] mb-6">Ci vogliono solo 2 minuti.</p>
           <Link href="/vendor/contratto" className="inline-block bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Firma il contratto →</Link>
+          <button onClick={() => { useAuthStore.getState().logout(); window.location.href = '/'; }} className="block mx-auto mt-4 text-[13px] text-[#888] hover:text-[#c0392b] transition-colors">Esci e cambia account</button>
         </div>
       </div>
     );
@@ -150,6 +151,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
           <div className="space-y-3">
             <Link href="/" className="block w-full py-3 bg-[#005667] text-white rounded-xl text-[15px] font-semibold hover:bg-[#004555] transition-colors text-center">Torna alla homepage</Link>
             <a href="mailto:assistenza@stappando.it" className="block text-[13px] text-[#888] hover:text-[#005667] transition-colors">Hai domande? Scrivici</a>
+            <button onClick={() => { useAuthStore.getState().logout(); window.location.href = '/'; }} className="block text-[13px] text-[#888] hover:text-[#c0392b] transition-colors">Esci e cambia account</button>
           </div>
         </div>
       </div>
