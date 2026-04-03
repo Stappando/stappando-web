@@ -1,17 +1,21 @@
 /**
- * Bulk update producer regions/addresses via stp-app/v1/update-producer-meta.
- *
- * GET /api/admin/bulk-regions?password=XXX  → runs the update and returns results
- * POST /api/admin/bulk-regions              → { adminPassword, producers: [...] }
+ * Bulk update producer regions (and optionally addresses) via stp-app/v1/update-producer-meta.
+ * Run with: node scripts/bulk-update-regions.mjs
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getWCSecrets } from '@/lib/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
-export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+const WC_BASE_URL = process.env.WC_BASE_URL || 'https://stappando.it';
+const WC_CK = process.env.WC_CONSUMER_KEY;
+const WC_CS = process.env.WC_CONSUMER_SECRET;
+const WP_USER = process.env.WP_ADMIN_USER || process.env.WP_USER;
+const WP_PASS = process.env.WP_ADMIN_APP_PASSWORD || process.env.WP_APP_PASSWORD;
 
-// ── All producers with their regions ──
-const ALL_PRODUCERS: { slug: string; region: string }[] = [
+const wpAuth = Buffer.from(`${WP_USER}:${WP_PASS}`).toString('base64');
+const wcAuth = `consumer_key=${WC_CK}&consumer_secret=${WC_CS}`;
+
+// ── Producer data: slug → region ──
+const PRODUCERS = [
   { slug: 'di-cicco', region: 'Abruzzo' },
   { slug: 'cantina-pietrantonj', region: 'Abruzzo' },
   { slug: 'scuppoz', region: 'Abruzzo' },
@@ -235,21 +239,14 @@ const ALL_PRODUCERS: { slug: string; region: string }[] = [
   { slug: 'bonaventura-maschio', region: 'Veneto' },
   { slug: 'contri-spumanti', region: 'Veneto' },
   { slug: 'gambrinus', region: 'Veneto' },
-  { slug: 'bocca-di-gabbia', region: 'Marche' },
-  { slug: 'la-braghina', region: 'Veneto' },
-  { slug: 'maculan', region: 'Veneto' },
-  { slug: 'thomas-dorfmann', region: 'Trentino-Alto Adige' },
 ];
 
-async function runBulkUpdate(wc: { baseUrl: string; consumerKey: string; consumerSecret: string }) {
-  const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
-
-  // 1. Fetch all terms
-  const terms: { id: number; slug: string }[] = [];
+async function getAllTerms() {
+  const terms = [];
   let page = 1;
   while (true) {
     const res = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&page=${page}&${wcAuth}`,
+      `${WC_BASE_URL}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&page=${page}&${wcAuth}`
     );
     if (!res.ok) break;
     const batch = await res.json();
@@ -258,106 +255,52 @@ async function runBulkUpdate(wc: { baseUrl: string; consumerKey: string; consume
     if (page >= totalPages) break;
     page++;
   }
+  return terms;
+}
 
-  const slugMap = new Map(terms.map(t => [t.slug, t.id]));
+async function updateProducerMeta(termId, region, address = '') {
+  const res = await fetch(`${WC_BASE_URL}/wp-json/stp-app/v1/update-producer-meta`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${wpAuth}` },
+    body: JSON.stringify({ term_id: termId, region, address }),
+  });
+  return res.ok;
+}
 
-  // 2. Get WP auth
-  const wpUser = process.env.WP_ADMIN_USER || process.env.WP_USER;
-  const wpPass = process.env.WP_ADMIN_APP_PASSWORD || process.env.WP_APP_PASSWORD;
-  if (!wpUser || !wpPass) {
-    return { error: 'WP_USER/WP_APP_PASSWORD not set', terms: terms.length };
+async function main() {
+  console.log('Fetching all pa_produttore terms...');
+  const terms = await getAllTerms();
+  console.log(`Found ${terms.length} terms`);
+
+  // Build slug → term_id map
+  const slugMap = new Map();
+  for (const t of terms) {
+    slugMap.set(t.slug, t.id);
   }
-  const wpAuth = Buffer.from(`${wpUser}:${wpPass}`).toString('base64');
 
-  // 3. Update each producer
-  let updated = 0, notFound = 0, failed = 0;
-  const failures: string[] = [];
+  let updated = 0;
+  let notFound = 0;
+  let failed = 0;
 
-  for (const p of ALL_PRODUCERS) {
+  for (const p of PRODUCERS) {
     const termId = slugMap.get(p.slug);
-    if (!termId) { notFound++; continue; }
-
-    try {
-      const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/update-producer-meta`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Basic ${wpAuth}` },
-        body: JSON.stringify({ term_id: termId, region: p.region }),
-      });
-      if (res.ok) updated++;
-      else {
-        failed++;
-        if (failures.length < 10) failures.push(`${p.slug}:${res.status}`);
-      }
-    } catch { failed++; }
-  }
-
-  return { updated, notFound, failed, total: ALL_PRODUCERS.length, termsFound: terms.length, failures };
-}
-
-/** GET — run with password in query string */
-export async function GET(req: NextRequest) {
-  const password = req.nextUrl.searchParams.get('password');
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword || password !== adminPassword) {
-    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
-  }
-
-  const wc = getWCSecrets();
-  const result = await runBulkUpdate(wc);
-  return NextResponse.json(result);
-}
-
-/** POST — run with password in body */
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ error: 'Body non valido' }, { status: 400 });
-
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword || body.adminPassword !== adminPassword) {
-    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
-  }
-
-  const wc = getWCSecrets();
-  const producers = body.producers || ALL_PRODUCERS;
-
-  // If custom producers passed, use those instead
-  if (body.producers) {
-    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
-    const terms: { id: number; slug: string }[] = [];
-    let page = 1;
-    while (true) {
-      const res = await fetch(
-        `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&page=${page}&${wcAuth}`,
-      );
-      if (!res.ok) break;
-      const batch = await res.json();
-      terms.push(...batch);
-      const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
-      if (page >= totalPages) break;
-      page++;
+    if (!termId) {
+      console.log(`  SKIP (no term): ${p.slug}`);
+      notFound++;
+      continue;
     }
-    const slugMap = new Map(terms.map(t => [t.slug, t.id]));
-    const wpUser = process.env.WP_ADMIN_USER || process.env.WP_USER;
-    const wpPass = process.env.WP_ADMIN_APP_PASSWORD || process.env.WP_APP_PASSWORD;
-    if (!wpUser || !wpPass) return NextResponse.json({ error: 'WP credentials missing' }, { status: 500 });
-    const wpAuth = Buffer.from(`${wpUser}:${wpPass}`).toString('base64');
 
-    let updated = 0, notFound = 0, failed = 0;
-    for (const p of producers) {
-      const termId = slugMap.get(p.slug);
-      if (!termId) { notFound++; continue; }
-      try {
-        const res = await fetch(`${wc.baseUrl}/wp-json/stp-app/v1/update-producer-meta`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Basic ${wpAuth}` },
-          body: JSON.stringify({ term_id: termId, region: p.region, address: p.address || '' }),
-        });
-        if (res.ok) updated++; else failed++;
-      } catch { failed++; }
+    const ok = await updateProducerMeta(termId, p.region, p.address || '');
+    if (ok) {
+      updated++;
+      if (updated % 20 === 0) console.log(`  ... ${updated} updated`);
+    } else {
+      console.log(`  FAIL: ${p.slug} (term ${termId})`);
+      failed++;
     }
-    return NextResponse.json({ updated, notFound, failed, total: producers.length });
   }
 
-  const result = await runBulkUpdate(wc);
-  return NextResponse.json(result);
+  console.log(`\nDone! Updated: ${updated}, Not found: ${notFound}, Failed: ${failed}`);
 }
+
+main().catch(console.error);
