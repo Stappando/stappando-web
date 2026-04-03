@@ -978,6 +978,9 @@ function OrdersSection({ userId }: { userId: number }) {
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                             {statusLabels[order.status] || order.status}
                           </span>
+                          {order.payment_method_title?.includes('Vivino') && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#7e1a2a] text-white">Vivino</span>
+                          )}
                           {(() => { const rs = getReturnStatus(order); return rs && returnLabels[rs] ? <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${returnLabels[rs].css}`}>{returnLabels[rs].label}</span> : null; })()}
                         </div>
                         <p className="text-[11px] text-[#888] mt-0.5">{safeDate(order.date_created)} · {formatPrice(order.total)} €</p>

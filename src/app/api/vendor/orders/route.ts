@@ -28,6 +28,7 @@ interface WCOrderRaw {
   line_items: WCLineItem[];
   billing: { first_name: string; last_name: string; email: string; phone: string };
   shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string; country: string };
+  payment_method_title?: string;
   meta_data: WCMetaData[];
 }
 
@@ -79,6 +80,7 @@ export async function GET(req: NextRequest) {
         date_created: o.date_created,
         total: o.total,
         currency: o.currency || 'EUR',
+        payment_method_title: o.payment_method_title || '',
         customer_name: `${o.billing.first_name} ${o.billing.last_name}`.trim(),
         customer_email: o.billing.email,
         shipping: o.shipping,

@@ -7,6 +7,7 @@ import type { OrderCustomer, OrderLineItem, PaymentProvider } from './types';
 const PROVIDER_TITLES: Record<PaymentProvider, string> = {
   stripe: 'Carta di credito (Stripe)',
   paypal: 'PayPal',
+  vivino: 'Vivino Marketplace',
 };
 
 const CARRIER_NAMES: Record<string, string> = {
@@ -44,6 +45,7 @@ interface CreateWCOrderParams {
   couponDiscount?: number;
   needsInvoice?: boolean;
   invoiceData?: InvoiceData;
+  extraMeta?: { key: string; value: string }[];
 }
 
 export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: number }> {
@@ -98,13 +100,16 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       : [],
     coupon_lines: params.couponCode ? [{ code: params.couponCode }] : [],
     customer_note: noteParts.join(' — '),
-    meta_data: (params.needsInvoice || customer.needsInvoice) ? [
-      { key: '_needs_invoice', value: 'true' },
-      { key: '_invoice_company', value: params.invoiceData?.ragioneSociale || customer.ragioneSociale || '' },
-      { key: '_invoice_vat', value: params.invoiceData?.piva || customer.piva || '' },
-      { key: '_invoice_cf', value: params.invoiceData?.codFiscale || customer.codFiscale || '' },
-      { key: '_invoice_sdi', value: params.invoiceData?.sdi || customer.sdi || '' },
-    ] : [],
+    meta_data: [
+      ...((params.needsInvoice || customer.needsInvoice) ? [
+        { key: '_needs_invoice', value: 'true' },
+        { key: '_invoice_company', value: params.invoiceData?.ragioneSociale || customer.ragioneSociale || '' },
+        { key: '_invoice_vat', value: params.invoiceData?.piva || customer.piva || '' },
+        { key: '_invoice_cf', value: params.invoiceData?.codFiscale || customer.codFiscale || '' },
+        { key: '_invoice_sdi', value: params.invoiceData?.sdi || customer.sdi || '' },
+      ] : []),
+      ...(params.extraMeta || []),
+    ],
   };
 
   const res = await fetch(url, {

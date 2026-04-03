@@ -37,6 +37,7 @@ interface VendorOrder {
     country: string;
   };
   vendor_name: string;
+  payment_method_title?: string;
   items: OrderItem[];
   commission: {
     gross: string;
@@ -212,6 +213,9 @@ export default function VendorOrdiniPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-[15px] font-bold text-[#1a1a1a]">#{order.display_number || order.id}</span>
+                    {order.payment_method_title?.includes('Vivino') && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#7e1a2a] text-white">Vivino</span>
+                    )}
                     <span className="text-[12px] text-[#888]">{formatDate(order.date_created)}</span>
                   </div>
                   {statusBadge(order.status)}
