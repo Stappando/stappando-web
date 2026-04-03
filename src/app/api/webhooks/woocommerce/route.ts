@@ -55,30 +55,20 @@ export async function POST(req: NextRequest) {
 async function handleWebhook(topic: string, resource: string, payload: Record<string, unknown>) {
   switch (topic) {
     case 'order.created': {
-      // Sub-orders created by our split — skip email (vendor gets notified separately)
+      // Sub-orders created by our split — skip entirely
       const parentId = payload.parent_id as number | undefined;
       if (parentId && parentId > 0) {
-        console.log(`Order #${payload.id}: sub-order of #${parentId}, skipping email`);
+        console.log(`WC webhook: sub-order #${payload.id} of parent #${parentId}, skipping`);
         break;
       }
 
-      // Split into vendor sub-orders on creation (only for paid orders)
-      let didSplit = false;
-      if ((payload.status === 'processing' || payload.set_paid) && payload.line_items) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const results = await splitOrderIntoSubOrders(payload as any);
-          if (results.length > 0) {
-            didSplit = true;
-            console.log(`Order #${payload.id}: split into ${results.length} sub-orders`);
-          }
-        } catch (err) {
-          console.error(`Sub-order split failed for order #${payload.id}:`, err);
-        }
-      }
-
-      // Send customer confirmation email ONCE (after split, on the parent)
-      await handleOrderEvent(payload);
+      // Parent orders: DO NOT send confirmation email here.
+      // create-wc-order.ts already handles split + emails in a single flow.
+      // The webhook would cause duplicate emails and uses the wrong order number.
+      //
+      // The split also already runs inside create-wc-order.ts, so skip it here
+      // to avoid the idempotency guard rejecting a second split attempt.
+      console.log(`WC webhook: parent order #${payload.id} created, skipping (handled by create-wc-order)`);
       break;
     }
     case 'order.updated': {
@@ -122,7 +112,9 @@ async function handleOrderEvent(order: Record<string, unknown>) {
   if (!billing?.email) return;
 
   const customerName = `${billing.first_name || ''} ${billing.last_name || ''}`.trim() || 'Cliente';
-  const orderNumber = String(order.number || order.id);
+  const meta = (order.meta_data || []) as { key: string; value: string }[];
+  const displayNumber = meta.find(m => m.key === '_display_number')?.value;
+  const orderNumber = displayNumber || String(order.number || order.id);
   const lineItems = (order.line_items || []) as Record<string, unknown>[];
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
   const orderUrl = `${siteUrl}/account`;
@@ -140,25 +132,11 @@ async function handleOrderEvent(order: Record<string, unknown>) {
   switch (status) {
     case 'processing':
     case 'completed': {
-      // Only send order confirmed once (on processing, not completed)
-      if (status === 'processing') {
-        await dispatchEmail({
-          type: 'order.confirmed',
-          email: billing.email,
-          name: customerName,
-          data: {
-            customerName,
-            orderNumber,
-            items,
-            shipping: parseFloat(shippingTotal) === 0 ? 'Gratuita' : `${formatPrice(shippingTotal)}`,
-            total: orderTotal,
-            orderUrl,
-          },
-        });
-      }
+      // Order confirmed email is handled by create-wc-order.ts — skip here
+      // to avoid duplicate emails. Only handle shipping/tracking updates.
+
 
       // Check for tracking data (order shipped)
-      const meta = (order.meta_data || []) as { key: string; value: string }[];
       const trackingNumber = meta.find(m => m.key === '_tracking_number')?.value;
       const trackingUrl = meta.find(m => m.key === '_tracking_url')?.value;
       const carrier = meta.find(m => m.key === '_tracking_provider')?.value;
@@ -225,7 +203,6 @@ async function handleOrderEvent(order: Record<string, unknown>) {
   }
 
   // Points update (check for YITH points meta)
-  const meta = (order.meta_data || []) as { key: string; value: string }[];
   const pointsEarned = meta.find(m => m.key === '_ywpar_points_earned')?.value;
   const totalPoints = meta.find(m => m.key === '_ywpar_total_points')?.value;
 

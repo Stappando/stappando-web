@@ -59,7 +59,8 @@ export async function GET(req: NextRequest) {
       if (!email) continue;
 
       const customerName = `${billing.first_name || ''} ${billing.last_name || ''}`.trim() || 'Cliente';
-      const orderNumber = String(order.number || order.id);
+      const displayNumber = meta.find((m: { key: string; value: string }) => m.key === '_display_number')?.value;
+      const orderNumber = displayNumber || String(order.number || order.id);
       const lineItems = (order.line_items || []) as Record<string, unknown>[];
 
       const items = lineItems.map((li) => {

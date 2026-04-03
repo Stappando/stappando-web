@@ -173,6 +173,28 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
   const shippingAddr = `${customer.firstName} ${customer.lastName}, ${customer.address}, ${customer.zip} ${customer.city} (${customer.province})`;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stappando.it';
 
+  // ── Split into vendor sub-orders FIRST (so we can use display numbers in emails) ──
+  let subResults: { subOrderId: number; vendorId: string; vendorName: string; total: string; displayNumber: string }[] = [];
+  try {
+    subResults = await splitOrderIntoSubOrders(parentOrderFull as Parameters<typeof splitOrderIntoSubOrders>[0]);
+    if (subResults.length > 0) {
+      console.log(`Order #${order.id} split into ${subResults.length} sub-orders: ${subResults.map(r => `#${r.displayNumber}`).join(', ')}`);
+    }
+  } catch (err) {
+    console.error(`Failed to split order #${order.id} into sub-orders:`, err);
+  }
+
+  // Use first sub-order display number for customer email (e.g. "78397-1")
+  // If split produced results, show sub-order number(s); otherwise fall back to parent
+  const customerOrderNumber = subResults.length === 1
+    ? subResults[0].displayNumber
+    : subResults.length > 1
+      ? subResults.map(r => r.displayNumber).join(', ')
+      : String(order.number || order.id);
+
+  // For admin email, always reference the parent for internal tracking
+  const adminOrderNumber = String(order.number || order.id);
+
   // ── MAIL 1: Send order confirmation email to customer ──
   dispatchEmail({
     type: 'order.confirmed',
@@ -180,7 +202,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     name: `${customer.firstName} ${customer.lastName}`,
     data: {
       customerName: customer.firstName,
-      orderNumber: String(order.id),
+      orderNumber: customerOrderNumber,
       items: emailItems,
       shipping: shippingCost > 0 ? `${shippingCost.toFixed(2)}` : 'Gratuita',
       total: `${total.toFixed(2)}`,
@@ -207,11 +229,17 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
     email: 'ordini@stappando.it',
     name: 'Stappando Ordini',
     data: {
-      orderNumber: String(order.id),
+      orderNumber: adminOrderNumber,
       customerName: `${customer.firstName} ${customer.lastName}`,
       customerEmail: customer.email,
       customerPhone: customer.phone || '',
-      vendorGroups: [{ vendorName: 'Tutti i prodotti', items: emailItems.map(i => ({ name: i.name, quantity: i.quantity, total: i.total })), subtotal: subtotal.toFixed(2) }],
+      vendorGroups: subResults.length > 0
+        ? subResults.map(r => ({
+            vendorName: r.vendorName,
+            items: emailItems.filter(() => true), // TODO: group items by vendor when needed
+            subtotal: r.total,
+          }))
+        : [{ vendorName: 'Tutti i prodotti', items: emailItems.map(i => ({ name: i.name, quantity: i.quantity, total: i.total })), subtotal: subtotal.toFixed(2) }],
       carrierName,
       shippingAddress: shippingAddr,
       billingAddress: shippingAddr,
@@ -232,16 +260,6 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       } : undefined,
     },
   }).catch(err => console.error('Failed to send admin order email:', err));
-
-  // ── Split into vendor sub-orders ──
-  try {
-    const subResults = await splitOrderIntoSubOrders(parentOrderFull as Parameters<typeof splitOrderIntoSubOrders>[0]);
-    if (subResults.length > 0) {
-      console.log(`Order #${order.id} split into ${subResults.length} sub-orders: ${subResults.map(r => `#${r.subOrderId}`).join(', ')}`);
-    }
-  } catch (err) {
-    console.error(`Failed to split order #${order.id} into sub-orders:`, err);
-  }
 
   return { id: order.id };
 }
