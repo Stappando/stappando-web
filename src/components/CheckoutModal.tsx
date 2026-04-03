@@ -269,23 +269,42 @@ function Step1Cart() {
             {/* Items */}
             <div className="px-6 py-4 space-y-4">
               {items.map((item) => (
-                <div key={item.id} className="flex gap-3.5">
-                  <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
-                    {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="36px" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[#1a1a1a] leading-[1.4]">{item.name}</p>
-                    <p className="text-[11px] text-[#bbb] mt-0.5">{item.vendorName}</p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-[18px] text-[#005667] leading-none font-light">−</button>
-                      <span className="text-[13px] font-medium min-w-[14px] text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-[18px] text-[#005667] leading-none font-light">+</button>
-                      <span className="text-[13px] font-semibold text-[#1a1a1a] ml-auto">{formatPrice(item.price * item.quantity)} €</span>
+                <div key={item.id}>
+                  <div className="flex gap-3.5">
+                    <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
+                      {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="36px" />}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-[#1a1a1a] leading-[1.4]">{item.name}</p>
+                      <p className="text-[11px] text-[#bbb] mt-0.5">{item.vendorName}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-[18px] text-[#005667] leading-none font-light">−</button>
+                        <span className="text-[13px] font-medium min-w-[14px] text-center">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-[18px] text-[#005667] leading-none font-light">+</button>
+                        <span className="text-[13px] font-semibold text-[#1a1a1a] ml-auto">{formatPrice(item.price * item.quantity)} €</span>
+                      </div>
+                    </div>
+                    <button onClick={() => removeItem(item.id)} className="self-start p-1 text-[#ddd] hover:text-[#999]">
+                      <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                   </div>
-                  <button onClick={() => removeItem(item.id)} className="self-start p-1 text-[#ddd] hover:text-[#999]">
-                    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  </button>
+                  {/* Editable dedication under greeting card items */}
+                  {item.vendorId === 'giftcard' && (
+                    <div className="ml-[52px] mt-2">
+                      <label className="text-[10px] font-semibold text-[#8b6914] uppercase tracking-wider block mb-1">Dedica</label>
+                      <textarea
+                        value={giftMessage}
+                        onChange={e => { setGiftMessage(e.target.value); if (e.target.value.trim()) setDedicaError(false); }}
+                        placeholder="Scrivi la tua dedica..."
+                        rows={2}
+                        maxLength={200}
+                        className={`w-full px-3 py-2 text-[12px] border rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-[#fdf8f0] ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b]' : 'border-[#e8dcc8]'}`}
+                      />
+                      {dedicaError && !giftMessage.trim() && (
+                        <p className="text-[10px] text-[#c0392b] mt-0.5">Obbligatoria con il biglietto</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
