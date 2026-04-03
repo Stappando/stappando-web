@@ -152,6 +152,10 @@ export const useCartStore = create<CartState>()(
           },
           items: [],
         });
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('stappando_dedica');
+          localStorage.removeItem('stappando_carrier');
+        }
       },
 
       trackView: (id: number, slug: string) => {

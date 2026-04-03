@@ -148,7 +148,14 @@ function Step1Cart() {
     }
     setCouponLoading(false);
   };
-  const [giftMessage, setGiftMessage] = useState('');
+  const [giftMessage, setGiftMessageRaw] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('stappando_dedica') || '';
+    return '';
+  });
+  const setGiftMessage = (msg: string) => {
+    setGiftMessageRaw(msg);
+    if (typeof window !== 'undefined') localStorage.setItem('stappando_dedica', msg);
+  };
   const [selectedCard, setSelectedCard] = useState<GiftProduct | null>(null);
   const [giftProducts, setGiftProducts] = useState<GiftProduct[]>([]);
   const [giftCards, setGiftCards] = useState<GiftProduct[]>([]);
@@ -925,6 +932,11 @@ function Step3Payment() {
 
   const getCustomerData = useCallback(() => {
     const sd = shippingData;
+    const dedica = typeof window !== 'undefined' ? localStorage.getItem('stappando_dedica') || '' : '';
+    const baseNotes = sd?.notes || '';
+    const notes = dedica.trim()
+      ? [baseNotes, `DEDICA BIGLIETTO: ${dedica.trim()}`].filter(Boolean).join(' — ')
+      : baseNotes;
     return {
       email: sd?.email || user?.email || '',
       firstName: sd?.firstName || user?.firstName || '',
@@ -934,7 +946,7 @@ function Step3Payment() {
       city: sd?.city || '',
       province: sd?.province || '',
       zip: sd?.zip || '',
-      notes: sd?.notes || '',
+      notes,
       needsInvoice: sd?.needsInvoice || false,
       ragioneSociale: sd?.ragioneSociale || '',
       piva: sd?.piva || '',
