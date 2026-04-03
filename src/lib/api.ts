@@ -144,21 +144,24 @@ async function getVendorMap(
   }
 }
 
-/** If vendor_name looks like an email, fetch the real cantina name from WC customer meta */
+/**
+ * Resolve proper business/store names for all non-Stappando vendors.
+ * Priority: _vendor_cantina → wcfmmp_store_name → store_name → first+last name
+ */
 async function resolveVendorNames(
   vendors: Record<string, { vendor_id: string | number; vendor_name: string }>,
 ) {
+  // Resolve all vendors that aren't the default Stappando account
   const toResolve = Object.values(vendors).filter(
-    v => typeof v.vendor_name === 'string' && v.vendor_name.includes('@'),
+    v => v.vendor_name !== DEFAULT_VENDOR_NAME,
   );
   if (toResolve.length === 0) return;
 
-  // Only run server-side (needs WC secrets)
   let wc: { baseUrl: string; consumerKey: string; consumerSecret: string };
   try {
     wc = getWCSecrets();
   } catch {
-    return; // client-side or missing env — skip
+    return;
   }
 
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
@@ -170,11 +173,14 @@ async function resolveVendorNames(
         if (!res.ok) return;
         const customer = await res.json();
         const meta = (customer.meta_data || []) as { key: string; value: string }[];
-        const cantina = meta.find(m => m.key === '_vendor_cantina')?.value;
-        if (cantina) {
-          v.vendor_name = cantina;
-        } else if (customer.first_name || customer.last_name) {
-          v.vendor_name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+        // Priority: our custom cantina → WCFM store name → first+last
+        const name =
+          meta.find(m => m.key === '_vendor_cantina')?.value ||
+          meta.find(m => m.key === 'wcfmmp_store_name')?.value ||
+          meta.find(m => m.key === 'store_name')?.value ||
+          null;
+        if (name) {
+          v.vendor_name = name;
         }
       } catch { /* skip */ }
     }),
