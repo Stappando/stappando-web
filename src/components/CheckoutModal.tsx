@@ -185,6 +185,21 @@ function Step1Cart() {
 
   // Count gift items already in cart
   const giftItemsInCart = items.filter(i => i.vendorId === 'default' && (giftProducts.some(g => g.id === i.id) || giftCards.some(g => g.id === i.id))).length;
+  const cardsInCart = items.filter(i => i.vendorId === 'default' && giftCards.some(g => g.id === i.id)).reduce((sum, i) => sum + i.quantity, 0);
+  const needsDedica = cardsInCart >= 1;
+  const dedicaValid = !needsDedica || giftMessage.trim().length > 0;
+  const [dedicaError, setDedicaError] = useState(false);
+
+  const handleContinue = () => {
+    if (!dedicaValid) {
+      setTab('gifts');
+      setWantCard(true);
+      setDedicaError(true);
+      return;
+    }
+    setDedicaError(false);
+    setCheckoutStep(2);
+  };
 
   const handleAddGift = (p: GiftProduct) => {
     addItem({
@@ -226,9 +241,11 @@ function Step1Cart() {
               <span className="inline-flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
                 Regali
-                {giftItemsInCart > 0 && (
+                {dedicaError && !dedicaValid ? (
+                  <span className="w-2 h-2 rounded-full bg-[#c0392b] animate-pulse" />
+                ) : giftItemsInCart > 0 ? (
                   <span className="text-[10px] font-bold text-white bg-[#8b6914] w-4 h-4 rounded-full flex items-center justify-center">{giftItemsInCart}</span>
-                )}
+                ) : null}
               </span>
             </button>
           )}
@@ -333,7 +350,7 @@ function Step1Cart() {
                 )}
                 <div className="flex justify-between text-[16px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
               </div>
-              <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-4 hover:bg-[#004555] transition-colors hidden sm:block">
+              <button onClick={handleContinue} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-4 hover:bg-[#004555] transition-colors hidden sm:block">
                 Continua →
               </button>
             </div>
@@ -396,21 +413,34 @@ function Step1Cart() {
                         ))}
                       </div>
                     )}
-                    <div>
-                      <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
-                      <textarea
-                        value={giftMessage}
-                        onChange={e => setGiftMessage(e.target.value)}
-                        placeholder="Scrivi la tua dedica..."
-                        rows={2}
-                        maxLength={200}
-                        className="w-full px-3 py-2 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white"
-                      />
-                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
-                    </div>
                   </div>
                 )}
               </div>
+
+              {/* Dedica — shown only when card items are in cart */}
+              {needsDedica && (
+                <div className={`border rounded-xl p-4 ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b] bg-red-50/50' : 'border-[#e8dcc8] bg-[#fdf8f0]'}`}>
+                  <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">
+                    Dedica <span className="text-[#c0392b]">*</span>
+                  </label>
+                  <textarea
+                    value={giftMessage}
+                    onChange={e => { setGiftMessage(e.target.value); if (e.target.value.trim()) setDedicaError(false); }}
+                    placeholder="Scrivi la tua dedica per il biglietto..."
+                    rows={2}
+                    maxLength={200}
+                    className={`w-full px-3 py-2 text-[13px] border rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white ${dedicaError && !giftMessage.trim() ? 'border-[#c0392b]' : 'border-[#e5e5e5]'}`}
+                  />
+                  <div className="flex justify-between mt-0.5">
+                    {dedicaError && !giftMessage.trim() ? (
+                      <p className="text-[11px] text-[#c0392b] font-medium">Scrivi una dedica per il biglietto di auguri</p>
+                    ) : (
+                      <span />
+                    )}
+                    <p className="text-[10px] text-[#aaa]">{giftMessage.length}/200</p>
+                  </div>
+                </div>
+              )}
 
               <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
                 ← Torna al carrello
@@ -422,7 +452,7 @@ function Step1Cart() {
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+        <button onClick={() => tab === 'gifts' ? setTab('cart') : handleContinue()} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
           {tab === 'gifts' ? '← Torna al carrello' : `${formatPrice(total)} € · Continua →`}
         </button>
       </div>
