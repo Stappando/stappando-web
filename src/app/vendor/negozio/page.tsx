@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore, useStoreHydrated } from '@/store/auth';
 
 const REGIONI = [
   '', 'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna',
@@ -24,9 +24,7 @@ export default function VendorNegozioPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => { setHydrated(true); }, []);
+  const hydrated = useStoreHydrated();
 
   useEffect(() => {
     if (!hydrated || !user?.id) return;

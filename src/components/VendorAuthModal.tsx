@@ -30,7 +30,7 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPw, setLoginPw] = useState('');
 
-  const { login: authLogin } = useAuthStore();
+  const authLogin = useAuthStore(s => s.login);
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
@@ -55,6 +55,7 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
     if (!terms) { setError('Devi accettare i termini'); return; }
     setLoading(true); setError('');
     try {
+      // 1. Create vendor account in WooCommerce
       const res = await fetch('/api/vendor/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,9 +63,12 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Errore registrazione');
-      // Auto-login after register
+
+      // 2. Login to get JWT token and populate store
       await authLogin(email, password);
+
       setSuccess(true);
+      // 3. Redirect to contract page (not dashboard)
       setTimeout(() => { onClose(); window.location.href = '/vendor/contratto'; }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');

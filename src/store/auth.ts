@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useState, useEffect } from 'react';
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -139,7 +140,8 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(data.message || 'Credenziali non valide');
           }
 
-          set({ user: data.user, token: data.token, role: data.role || 'customer', vendorStatus: data.vendorStatus || null, isLoading: false, error: null });
+          const vs = data.vendorStatus || null;
+          set({ user: data.user, token: data.token, role: data.role || 'customer', vendorStatus: vs, isLoading: false, error: null });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Errore durante il login';
           set({ isLoading: false, error: message });
@@ -171,18 +173,15 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         set({ user: null, token: null, role: 'customer', vendorStatus: null, error: null });
-        // Clean vendor flags from localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('stappando-is-vendor');
-          localStorage.removeItem('stappando-vendor-status');
-        }
       },
 
       clearError: () => set({ error: null }),
 
       isAuthenticated: () => !!get().token && !!get().user,
       isVendor: () => { const r = get().role; return r === 'vendor' || r === 'wcfm_vendor' || r === 'dc_vendor'; },
-      setVendorStatus: (status: string) => set({ vendorStatus: status }),
+      setVendorStatus: (status: string) => {
+        set({ vendorStatus: status });
+      },
     }),
     {
       name: 'stappando-auth',
@@ -191,6 +190,17 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+/** Wait for Zustand persist to load from localStorage before rendering */
+export function useStoreHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, []);
+  return hydrated;
+}
 
 /* ── API helpers (call our proxy routes, not WC directly) ─ */
 

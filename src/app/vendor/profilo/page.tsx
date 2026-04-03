@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore, useStoreHydrated } from '@/store/auth';
 
 const REGIONI = [
   'Abruzzo', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna',
@@ -55,9 +55,7 @@ export default function VendorProfiloPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveAlert, setSaveAlert] = useState<{ type: 'success' | 'progress'; message: string } | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => { setHydrated(true); }, []);
+  const hydrated = useStoreHydrated();
 
   useEffect(() => {
     if (!hydrated || !user?.id) return;
@@ -86,8 +84,8 @@ export default function VendorProfiloPage() {
           localStorage.setItem('stappando-vendor-cantina', profile.cantina);
         }
         if (missingFields.length === 0) {
-          setSaveAlert({ type: 'success', message: 'Profilo completato al 100% — Sei LIVE! Redirect alla dashboard...' });
-          setTimeout(() => router.push('/vendor/dashboard'), 2000);
+          setSaveAlert({ type: 'success', message: 'Profilo completato al 100%! Ora completa il negozio...' });
+          setTimeout(() => router.push('/vendor/negozio'), 2000);
         } else if (missingFields.length <= 3) {
           setSaveAlert({ type: 'progress', message: `Salvato! Ancora ${missingFields.length} camp${missingFields.length === 1 ? 'o' : 'i'} e sei live: ${missingFields.map(f => f.label).join(', ')}` });
         } else {
