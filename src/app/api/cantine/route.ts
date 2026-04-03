@@ -15,22 +15,30 @@ export async function GET(req: NextRequest) {
   const perPage = 24;
 
   try {
-    // ── 1. Fetch pa_produttore terms (single source of truth) ────────
-    // term.image.src = logo (set by vendor/admin)
-    // term.description = description
-    // count = number of products
-    const termsRes = await fetch(
-      `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&orderby=count&order=desc&${auth}`,
-    );
-    if (!termsRes.ok) {
-      console.error('[Cantine] Failed to fetch pa_produttore terms:', termsRes.status);
-      return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
-    }
-
-    const terms: {
+    // ── 1. Fetch ALL pa_produttore terms (WC max per_page=100, so paginate) ──
+    type WCTerm = {
       id: number; name: string; slug: string; description: string;
       count: number; image?: { src?: string };
-    }[] = await termsRes.json();
+    };
+    const terms: WCTerm[] = [];
+    let wcPage = 1;
+    while (true) {
+      const termsRes = await fetch(
+        `${wc.baseUrl}/wp-json/wc/v3/products/attributes/10/terms?per_page=100&orderby=count&order=desc&page=${wcPage}&${auth}`,
+      );
+      if (!termsRes.ok) {
+        if (wcPage === 1) {
+          console.error('[Cantine] Failed to fetch pa_produttore terms:', termsRes.status);
+          return NextResponse.json({ cantine: [], total: 0, page: 1, hasMore: false });
+        }
+        break;
+      }
+      const batch: WCTerm[] = await termsRes.json();
+      terms.push(...batch);
+      const totalPages = parseInt(termsRes.headers.get('X-WP-TotalPages') || '1');
+      if (wcPage >= totalPages) break;
+      wcPage++;
+    }
 
     // ── 2. producer-logos endpoint for region / banner ───────────────
     // Updated when vendor saves /vendor/negozio or admin saves /admin/vendors.
