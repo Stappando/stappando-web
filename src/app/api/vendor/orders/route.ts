@@ -69,9 +69,11 @@ export async function GET(req: NextRequest) {
       const net = gross - commission;
 
       const vendorNameMeta = o.meta_data?.find((m) => m.key === '_vendor_name');
+      const displayNumberMeta = o.meta_data?.find((m) => m.key === '_display_number');
 
       return {
         id: o.id,
+        display_number: displayNumberMeta?.value || o.number,
         parent_order_id: o.parent_id,
         status: o.status,
         date_created: o.date_created,

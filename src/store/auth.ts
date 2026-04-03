@@ -67,6 +67,7 @@ export interface WCSubOrder {
   meta_data?: { key: string; value: string }[];
   shipping?: Address;
   _vendor_name?: string;
+  _display_number?: string;
 }
 
 export interface WCOrder {

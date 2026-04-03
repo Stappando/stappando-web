@@ -863,11 +863,20 @@ function OrdersSection({ userId }: { userId: number }) {
 
   const getZipCode = (order: WCOrder): string => order.shipping?.postcode || '';
 
-  const trackingSteps = ['Ordinato', 'In lavorazione', 'Spedito', 'Consegnato'];
+  const trackingSteps = ['Confermato', 'In preparazione', 'Spedito', 'Consegnato'];
   const getStep = (order: WCOrder): number => {
-    if (order.status === 'completed') return 3;
-    if (getTrackingNumber(order)) return 2;
+    const delivered = order.meta_data?.find(m => m.key === '_delivered')?.value === 'true';
+    if (delivered) return 3;
+    if (order.status === 'completed' || getTrackingNumber(order)) return 2;
     if (['processing', 'on-hold'].includes(order.status)) return 1;
+    return 0;
+  };
+
+  const getSubStep = (sub: WCSubOrder): number => {
+    const delivered = sub.meta_data?.find(m => m.key === '_delivered')?.value === 'true';
+    if (delivered) return 3;
+    if (sub.status === 'completed' || getTrackingNumber(sub)) return 2;
+    if (['processing', 'on-hold'].includes(sub.status)) return 1;
     return 0;
   };
 
@@ -988,8 +997,8 @@ function OrdersSection({ userId }: { userId: number }) {
                     {/* Expanded detail */}
                     {isOpen && (
                       <div className="border-t border-[#f0f0f0] bg-[#fafaf8]">
-                        {/* Timeline */}
-                        {['processing', 'on-hold', 'completed'].includes(order.status) && (
+                        {/* Timeline — only for orders WITHOUT sub-orders */}
+                        {!hasSubOrders && ['processing', 'on-hold', 'completed'].includes(order.status) && (
                           <div className="px-6 py-5">
                             <div className="relative flex items-start justify-between">
                               <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-[#e8e4dc]" />
@@ -1018,7 +1027,7 @@ function OrdersSection({ userId }: { userId: number }) {
                                   <div className="px-4 py-2.5 bg-[#f5f1ea] flex items-center justify-between gap-2">
                                     <div>
                                       <span className="text-[11px] font-bold text-[#005667]">{sub._vendor_name || 'Stappando Enoteca'}</span>
-                                      <span className="text-[10px] text-[#aaa] ml-2">#{sub.number}</span>
+                                      <span className="text-[10px] text-[#aaa] ml-2">#{sub._display_number || sub.number}</span>
                                     </div>
                                     <button
                                       onClick={() => subTrackNum
@@ -1029,6 +1038,25 @@ function OrdersSection({ userId }: { userId: number }) {
                                       Traccia
                                     </button>
                                   </div>
+                                  {/* Mini-timeline per sub-ordine */}
+                                  {['processing', 'on-hold', 'completed'].includes(sub.status) && (
+                                    <div className="px-4 py-3 border-b border-[#f0f0f0]">
+                                      <div className="relative flex items-start justify-between">
+                                        <div className="absolute top-3 left-[12%] right-[12%] h-[2px] bg-[#e8e4dc]" />
+                                        <div className="absolute top-3 left-[12%] h-[2px] bg-[#005667] transition-all" style={{ width: `${Math.min((getSubStep(sub) / 3) * 76, 76)}%` }} />
+                                        {trackingSteps.map((s, i) => (
+                                          <div key={s} className="flex flex-col items-center relative z-10" style={{ width: '25%' }}>
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold ${
+                                              i < getSubStep(sub) ? 'bg-[#005667] text-white' : i === getSubStep(sub) ? 'bg-[#005667] text-white animate-pulse' : 'bg-white border-2 border-[#e8e4dc] text-[#bbb]'
+                                            }`}>
+                                              {i < getSubStep(sub) ? <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : i + 1}
+                                            </div>
+                                            <p className={`text-[7px] mt-1 text-center leading-tight ${i <= getSubStep(sub) ? 'text-[#005667] font-semibold' : 'text-[#bbb]'}`}>{s}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                   <div className="p-4 space-y-2.5">
                                     {sub.line_items.map((item, idx) => (
                                       <div key={idx} className="flex items-center gap-3">

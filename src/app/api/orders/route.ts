@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
                 _sub_orders: subOrders.map(sub => ({
                   ...sub,
                   _vendor_name: sub.meta_data?.find(m => m.key === '_vendor_name')?.value || 'Stappando Enoteca',
+                  _display_number: sub.meta_data?.find(m => m.key === '_display_number')?.value || sub.number,
                 })),
               });
               continue;

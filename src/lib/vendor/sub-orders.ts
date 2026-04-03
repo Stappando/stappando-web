@@ -28,7 +28,7 @@ interface WCLineItem {
 
 interface ParentOrder {
   id: number;
-  number: string;
+  number: string; // WC order number (used to derive display numbers like "10000-1")
   status: string;
   billing: {
     first_name: string;
@@ -70,6 +70,7 @@ export interface SubOrderResult {
   vendorId: string;
   vendorName: string;
   total: string;
+  displayNumber: string;
 }
 
 /* ── Constants ─────────────────────────────────────────── */
@@ -101,19 +102,16 @@ export async function splitOrderIntoSubOrders(parentOrder: ParentOrder): Promise
   // 2. Group line items by vendor
   const groups = groupByVendor(parentOrder.line_items, vendorMap);
 
-  // Skip if only one vendor (or all from Stappando) — no split needed
-  if (groups.length <= 1) {
-    console.log(`Order #${parentOrder.id}: single vendor, no split needed`);
-    return [];
-  }
-
-  console.log(`Order #${parentOrder.id}: splitting into ${groups.length} sub-orders`);
+  console.log(`Order #${parentOrder.id}: splitting into ${groups.length} sub-order(s)`);
 
   // 3. Create sub-orders
+  const parentNumber = parentOrder.number || String(parentOrder.id);
   const results: SubOrderResult[] = [];
-  for (const group of groups) {
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
+    const displayNumber = `${parentNumber}-${i + 1}`;
     try {
-      const result = await createSubOrder(parentOrder, group);
+      const result = await createSubOrder(parentOrder, group, displayNumber);
       results.push(result);
     } catch (err) {
       console.error(`Failed to create sub-order for vendor ${group.vendorId}:`, err);
@@ -205,6 +203,7 @@ function calculateCommissions(grossTotal: number) {
 async function createSubOrder(
   parent: ParentOrder,
   group: VendorGroup,
+  displayNumber: string,
 ): Promise<SubOrderResult> {
   const wc = getWCSecrets();
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
@@ -249,6 +248,7 @@ async function createSubOrder(
       { key: '_commission_platform', value: String(commissions.platformAmount) },
       { key: '_commission_vendor_rate', value: String(commissions.vendorRate) },
       { key: '_commission_platform_rate', value: String(commissions.platformRate) },
+      { key: '_display_number', value: displayNumber },
     ],
   };
 
@@ -264,13 +264,14 @@ async function createSubOrder(
   }
 
   const subOrder = await res.json();
-  console.log(`Sub-order #${subOrder.id} created for vendor ${group.vendorName} (parent #${parent.id})`);
+  console.log(`Sub-order #${subOrder.id} (${displayNumber}) created for vendor ${group.vendorName} (parent #${parent.id})`);
 
   return {
     subOrderId: subOrder.id,
     vendorId: group.vendorId,
     vendorName: group.vendorName,
     total: String(subTotal),
+    displayNumber,
   };
 }
 
@@ -287,8 +288,10 @@ async function tagParentOrder(parentId: number, results: SubOrderResult[]) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        status: 'on-hold',
         meta_data: [
           { key: '_has_sub_orders', value: 'true' },
+          { key: '_is_parent_only', value: 'true' },
           { key: '_sub_orders', value: JSON.stringify(subOrderIds) },
         ],
       }),
@@ -299,12 +302,12 @@ async function tagParentOrder(parentId: number, results: SubOrderResult[]) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        note: `Ordine suddiviso in ${results.length} sub-ordini: ${results.map(r => `#${r.subOrderId} (${r.vendorName})`).join(', ')}`,
+        note: `Ordine suddiviso in ${results.length} sub-ordini: ${results.map(r => `#${r.subOrderId} (${r.vendorName})`).join(', ')}. Gestito tramite sub-ordini — non evadere direttamente.`,
         customer_note: false,
       }),
     });
 
-    console.log(`Parent order #${parentId} tagged with ${subOrderIds.length} sub-orders`);
+    console.log(`Parent order #${parentId} → on-hold, tagged with ${subOrderIds.length} sub-order(s)`);
   } catch (err) {
     console.error(`Failed to tag parent order #${parentId}:`, err);
   }
@@ -339,7 +342,7 @@ async function notifyVendor(
 
   const { subject, html } = vendorSubOrder({
     vendorName: group.vendorName,
-    subOrderNumber: String(result.subOrderId),
+    subOrderNumber: result.displayNumber,
     parentOrderNumber: String(parent.number || parent.id),
     items,
     grossTotal: String(commissions.gross),

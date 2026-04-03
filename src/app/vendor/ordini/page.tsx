@@ -18,6 +18,7 @@ interface OrderItem {
 
 interface VendorOrder {
   id: number;
+  display_number?: string;
   parent_order_id: number;
   status: string;
   date_created: string;
@@ -210,7 +211,7 @@ export default function VendorOrdiniPage() {
                 {/* Top row: ID + date + status */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[15px] font-bold text-[#1a1a1a]">#{order.id}</span>
+                    <span className="text-[15px] font-bold text-[#1a1a1a]">#{order.display_number || order.id}</span>
                     <span className="text-[12px] text-[#888]">{formatDate(order.date_created)}</span>
                   </div>
                   {statusBadge(order.status)}
