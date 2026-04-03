@@ -167,7 +167,7 @@ function Step1Cart() {
       setLoadingGifts(true);
       Promise.all([
         fetch('/api/products?category=scatole-regalo&limit=8').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('/api/products?category=biglietti&limit=4').then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch('/api/products?category=Biglietti&limit=4').then(r => r.ok ? r.json() : []).catch(() => []),
       ])
         .then(([boxes, cards]) => {
           setGiftProducts(boxes.map((p: { id: number; slug: string; name: string; price: string; image: string | null }) => ({
