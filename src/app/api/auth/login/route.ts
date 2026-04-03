@@ -65,9 +65,12 @@ export async function POST(req: NextRequest) {
         custLastName = customer.last_name || custLastName;
         custId = customer.id || custId;
         const isVendorMeta = customer.meta_data?.some((m: { key: string; value: string }) => m.key === '_is_vendor' && m.value === 'true');
-        custRole = isVendorMeta || customer.role === 'wcfm_vendor' || ['vendor', 'wcfm_vendor', 'dc_vendor', 'seller'].includes(customer.role) ? 'vendor' : (customer.role || 'customer');
+        const isWPVendorRole = ['wcfm_vendor', 'dc_vendor', 'seller'].includes(customer.role);
+        custRole = isVendorMeta || isWPVendorRole || customer.role === 'vendor' ? 'vendor' : (customer.role || 'customer');
         const vendorStatusMeta = customer.meta_data?.find((m: { key: string; value: string }) => m.key === '_vendor_status');
         if (vendorStatusMeta) vendorStatus = vendorStatusMeta.value;
+        // WP vendor role assigned by admin = approved regardless of meta
+        if (isWPVendorRole && vendorStatus !== 'approved') vendorStatus = 'approved';
       }
     } catch { /* use JWT data */ }
 
