@@ -10,6 +10,7 @@ interface Cantina {
   count: number;
   image: string | null;
   region: string;
+  address: string;
 }
 
 export default function CantineClient() {
@@ -104,16 +105,25 @@ export default function CantineClient() {
                   <h3 className="text-[14px] font-semibold text-[#1a1a1a] group-hover:text-[#005667] transition-colors line-clamp-1">
                     {cantina.name}
                   </h3>
-                  <div className="flex items-center justify-between mt-1">
-                    {cantina.region ? (
-                      <span className="text-[11px] text-[#005667] font-medium">{cantina.region}</span>
-                    ) : <span />}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                    {cantina.region && (
+                      <span className="text-[10px] text-[#005667] font-medium bg-[#005667]/5 px-1.5 py-0.5 rounded-full">{cantina.region}</span>
+                    )}
                     {cantina.count > 0 && (
-                      <span className="text-[10px] text-[#888]">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
+                      <span className="text-[10px] text-[#888] bg-gray-50 px-1.5 py-0.5 rounded-full">{cantina.count} {cantina.count === 1 ? 'vino' : 'vini'}</span>
                     )}
                   </div>
+                  {cantina.address && (
+                    <p className="text-[10px] text-gray-400 mt-1.5 line-clamp-1 flex items-center gap-1">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {cantina.address}
+                    </p>
+                  )}
                   {cantina.description && (
-                    <p className="text-[11px] text-gray-500 leading-relaxed mt-2 line-clamp-2">{cantina.description}</p>
+                    <p className="text-[11px] text-gray-500 leading-relaxed mt-1.5 line-clamp-2">{cantina.description}</p>
                   )}
                 </div>
               </Link>

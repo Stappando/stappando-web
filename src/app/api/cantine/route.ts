@@ -35,17 +35,18 @@ export async function GET(req: NextRequest) {
     // ── 2. producer-logos endpoint for region / banner ───────────────
     // Updated when vendor saves /vendor/negozio or admin saves /admin/vendors.
     // Map: term slug → { region, banner }
-    const extraMap = new Map<string, { region: string; banner: string }>();
+    const extraMap = new Map<string, { region: string; banner: string; image: string; address: string }>();
     try {
       const logosRes = await fetch(
         `${wc.baseUrl}/wp-json/stp-app/v1/producer-logos`,
         { cache: 'no-store' },
       );
       if (logosRes.ok) {
-        const logos: { name: string; slug: string; region?: string; banner?: string }[] = await logosRes.json();
+        const logos: { name: string; slug: string; image?: string; region?: string; banner?: string; address?: string }[] = await logosRes.json();
         for (const l of logos) {
-          if (l.slug) extraMap.set(l.slug, { region: l.region || '', banner: l.banner || '' });
-          if (l.name) extraMap.set(l.name.toLowerCase(), { region: l.region || '', banner: l.banner || '' });
+          const entry = { region: l.region || '', banner: l.banner || '', image: l.image || '', address: l.address || '' };
+          if (l.slug) extraMap.set(l.slug, entry);
+          if (l.name) extraMap.set(l.name.toLowerCase(), entry);
         }
       }
     } catch { /* non-fatal */ }
@@ -60,8 +61,9 @@ export async function GET(req: NextRequest) {
           slug: t.slug,
           description: stripHtml(t.description || '').slice(0, 160),
           count: t.count,
-          image: t.image?.src || null,   // logo from WC term (set via our API)
+          image: t.image?.src || extra?.image || null,
           region: extra?.region || '',
+          address: extra?.address || '',
           banner: extra?.banner || null,
         };
       });
