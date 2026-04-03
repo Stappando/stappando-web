@@ -84,10 +84,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ignored', reason: 'no email text' });
     }
 
-    // Only process Vivino order emails
-    if (!emailText.includes('ordine') && !emailText.includes('Vivino')) {
-      console.log('[vivino/email-webhook] Not a Vivino order email, skipping');
-      return NextResponse.json({ status: 'ignored', reason: 'not a Vivino email' });
+    // Only process Vivino order notification emails — must contain BOTH
+    // "Vivino" and the specific Vivino order pattern "N. ordine:"
+    const isVivinoOrder = /vivino/i.test(emailText) && /N\.\s*ordine:/i.test(emailText);
+    if (!isVivinoOrder) {
+      return NextResponse.json({ status: 'ignored', reason: 'not a Vivino order email' });
     }
 
     const parsed = parseVivinoEmail(emailText);
