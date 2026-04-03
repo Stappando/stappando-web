@@ -76,7 +76,7 @@ export default function VendorContractPage() {
     if (useCanvas && !hasDrawn) { setError('Disegna la tua firma'); return; }
 
     if (!user?.id || !user?.email) {
-      setError('Sessione scaduta. Ricarica la pagina e riprova.');
+      setError('Errore: dati account non disponibili. Ricarica la pagina e riprova.');
       return;
     }
 

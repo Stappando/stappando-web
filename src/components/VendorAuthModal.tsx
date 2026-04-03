@@ -67,8 +67,14 @@ export default function VendorAuthModal({ isOpen, onClose }: VendorAuthModalProp
       // 2. Login to get JWT token and populate store
       await authLogin(email, password);
 
+      // 3. Ensure user.id is set (JWT may not return WP user ID, use register's vendorId)
+      const state = useAuthStore.getState();
+      if (state.user && (!state.user.id || state.user.id === 0) && data.vendorId) {
+        useAuthStore.setState({ user: { ...state.user, id: data.vendorId } });
+      }
+
       setSuccess(true);
-      // 3. Redirect to contract page (not dashboard)
+      // 4. Redirect to contract page
       setTimeout(() => { onClose(); window.location.href = '/vendor/contratto'; }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');
