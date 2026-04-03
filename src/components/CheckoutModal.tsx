@@ -121,7 +121,7 @@ function Step1Cart() {
   const { items, removeItem, updateQuantity, getSubtotal, getVendorShipping, getTotalShipping, getTotal, setCheckoutStep, addItem, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
   const { user } = useAuthStore();
   const hasStappandoProducts = items.some(i => !i.vendorId || i.vendorId === 'default' || i.vendorName === 'Stappando Enoteca');
-  const [giftOpen, setGiftOpen] = useState(false);
+  const [tab, setTab] = useState<'cart' | 'gifts'>('cart');
   const [coupon, setCoupon] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
@@ -162,9 +162,9 @@ function Step1Cart() {
   const popPoints = Math.round(total);
   const freeShippingThreshold = API_CONFIG.freeShippingThreshold;
 
-  // Fetch gift products when opening gift section
+  // Fetch gift products when switching to gifts tab
   useEffect(() => {
-    if (giftOpen && giftProducts.length === 0 && !loadingGifts) {
+    if (tab === 'gifts' && giftProducts.length === 0 && !loadingGifts) {
       setLoadingGifts(true);
       Promise.all([
         fetch('/api/products?category=scatole-regalo&limit=8').then(r => r.ok ? r.json() : []).catch(() => []),
@@ -181,7 +181,7 @@ function Step1Cart() {
         .catch(() => {})
         .finally(() => setLoadingGifts(false));
     }
-  }, [giftOpen, giftProducts.length, loadingGifts]);
+  }, [tab, giftProducts.length, loadingGifts]);
 
   // Count gift items already in cart
   const giftItemsInCart = items.filter(i => i.vendorId === 'default' && (giftProducts.some(g => g.id === i.id) || giftCards.some(g => g.id === i.id))).length;
@@ -210,8 +210,35 @@ function Step1Cart() {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
-        {/* Items */}
-        <div className="px-6 py-4 space-y-4">
+        {/* Tab bar: Carrello / Regali — gift tab styled prominently */}
+        <div className="flex border-b border-[#f0f0f0] px-6">
+          <button
+            onClick={() => setTab('cart')}
+            className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'cart' ? 'border-[#005667] text-[#005667]' : 'border-transparent text-[#aaa] hover:text-[#666]'}`}
+          >
+            Carrello ({items.length})
+          </button>
+          {hasStappandoProducts && (
+            <button
+              onClick={() => setTab('gifts')}
+              className={`px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors ${tab === 'gifts' ? 'border-[#8b6914] text-[#8b6914] bg-[#fdf8f0]' : 'border-transparent text-[#8b6914] bg-[#fdf8f0]/60 hover:bg-[#fdf8f0]'} rounded-t-lg`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                Regali
+                {giftItemsInCart > 0 && (
+                  <span className="text-[10px] font-bold text-white bg-[#8b6914] w-4 h-4 rounded-full flex items-center justify-center">{giftItemsInCart}</span>
+                )}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* TAB: CART */}
+        {tab === 'cart' && (
+          <>
+            {/* Items */}
+            <div className="px-6 py-4 space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3.5">
                   <div className="relative w-9 h-[50px] rounded-md bg-[#f0ece4] overflow-hidden shrink-0">
@@ -234,7 +261,7 @@ function Step1Cart() {
               ))}
             </div>
 
-            {/* Shipping progress — one bar per vendor */}
+            {/* Shipping progress */}
             <div className="mx-6 p-3 bg-[#f8f6f1] rounded-lg mb-5 space-y-3">
               {vendorShipping.map((vs) => (
                 <div key={vs.vendorId}>
@@ -288,88 +315,6 @@ function Step1Cart() {
               )}
             </div>
 
-            {/* Gift banner — inline accordion */}
-            {hasStappandoProducts && (
-              <div className="mx-6 mb-5">
-                <button
-                  onClick={() => setGiftOpen(!giftOpen)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${giftOpen ? 'bg-[#fdf8f0] border-[#e8dcc8]' : 'bg-[#fdf8f0] border-[#e8dcc8] hover:border-[#d4c4a0]'}`}
-                >
-                  <div className="w-8 h-8 rounded-full bg-[#f0e6d0] flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4 text-[#8b6914]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-[13px] font-semibold text-[#1a1a1a]">Confezione regalo e dedica</p>
-                    <p className="text-[11px] text-[#999]">Scatola, biglietto di auguri e messaggio personalizzato</p>
-                  </div>
-                  {giftItemsInCart > 0 && !giftOpen && (
-                    <span className="text-[10px] font-bold text-white bg-[#005667] px-2 py-0.5 rounded-full">{giftItemsInCart} aggiunt{giftItemsInCart === 1 ? 'o' : 'i'}</span>
-                  )}
-                  <svg className={`w-4 h-4 text-[#999] transition-transform ${giftOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-
-                {giftOpen && (
-                  <div className="mt-2 border border-[#e8dcc8] rounded-xl bg-[#fdf8f0] px-4 py-4 space-y-4">
-                    {loadingGifts && (
-                      <div className="py-3 text-center text-[12px] text-[#888]">Caricamento...</div>
-                    )}
-
-                    {/* Scatole regalo */}
-                    {!loadingGifts && giftProducts.length > 0 && (
-                      <div>
-                        <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-2">Scatole regalo</p>
-                        <div className="space-y-2">
-                          {giftProducts.map(p => (
-                            <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
-                              {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
-                                <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
-                              </div>
-                              <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Biglietti auguri */}
-                    {!loadingGifts && giftCards.length > 0 && (
-                      <div>
-                        <p className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-2">Biglietti di auguri</p>
-                        <div className="space-y-2">
-                          {giftCards.map(p => (
-                            <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
-                              {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
-                                <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
-                              </div>
-                              <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dedica */}
-                    <div>
-                      <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
-                      <textarea
-                        value={giftMessage}
-                        onChange={e => setGiftMessage(e.target.value)}
-                        placeholder="Scrivi la tua dedica..."
-                        rows={2}
-                        maxLength={200}
-                        className="w-full px-3 py-2 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white"
-                      />
-                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* POP points */}
             <div className="mx-6 flex items-center gap-2 bg-[#dff0f5] text-[#005667] rounded-lg px-3.5 py-2.5 mb-5">
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -392,12 +337,93 @@ function Step1Cart() {
                 Continua →
               </button>
             </div>
+          </>
+        )}
+
+        {/* TAB: GIFTS */}
+        {tab === 'gifts' && (
+          <div className="px-6 py-5">
+            <div className="space-y-4">
+              {/* Scatola regalo */}
+              <div className="border border-[#e8dcc8] rounded-xl overflow-hidden bg-[#fdf8f0]">
+                <button onClick={() => setWantBox(!wantBox)} className="w-full flex items-center justify-between px-4 py-3.5">
+                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi una scatola regalo?</span>
+                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantBox ? 'bg-[#8b6914] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantBox ? 'SI' : 'NO'}</span>
+                </button>
+                {wantBox && (
+                  <div className="px-4 pb-4 border-t border-[#e8dcc8]">
+                    {loadingGifts ? (
+                      <div className="py-4 text-center text-[12px] text-[#888]">Caricamento...</div>
+                    ) : giftProducts.length > 0 ? (
+                      <div className="space-y-2 mt-3">
+                        {giftProducts.map(p => (
+                          <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
+                            {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                              <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                            </div>
+                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-[#888] py-3">Scatole regalo in arrivo</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Biglietto auguri */}
+              <div className="border border-[#e8dcc8] rounded-xl overflow-hidden bg-[#fdf8f0]">
+                <button onClick={() => setWantCard(!wantCard)} className="w-full flex items-center justify-between px-4 py-3.5">
+                  <span className="text-[14px] font-semibold text-[#1a1a1a]">Vuoi il biglietto di auguri?</span>
+                  <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${wantCard ? 'bg-[#8b6914] text-white' : 'bg-[#f0f0f0] text-[#888]'}`}>{wantCard ? 'SI' : 'NO'}</span>
+                </button>
+                {wantCard && (
+                  <div className="px-4 pb-4 border-t border-[#e8dcc8]">
+                    {giftCards.length > 0 && (
+                      <div className="space-y-2 mt-3 mb-3">
+                        {giftCards.map(p => (
+                          <div key={p.id} className="flex items-center gap-3 bg-white border border-[#eae6e0] rounded-lg p-2.5">
+                            {p.image && <div className="relative w-10 h-10 bg-white rounded shrink-0"><Image src={p.image} alt={p.name} fill className="object-contain" sizes="40px" /></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-[#1a1a1a] line-clamp-1">{p.name}</p>
+                              <p className="text-[13px] font-bold text-[#005667]">{formatPrice(p.price)} €</p>
+                            </div>
+                            <button onClick={() => handleAddGift(p)} className="shrink-0 text-[11px] font-semibold text-white bg-[#005667] px-3 py-1.5 rounded-lg hover:bg-[#004555] transition-colors">+</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#888] uppercase tracking-wider block mb-1.5">Dedica</label>
+                      <textarea
+                        value={giftMessage}
+                        onChange={e => setGiftMessage(e.target.value)}
+                        placeholder="Scrivi la tua dedica..."
+                        rows={2}
+                        maxLength={200}
+                        className="w-full px-3 py-2 text-[13px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20 bg-white"
+                      />
+                      <p className="text-[10px] text-[#aaa] mt-0.5 text-right">{giftMessage.length}/200</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => setTab('cart')} className="w-full text-center text-[13px] text-[#005667] font-medium hover:underline mt-2">
+                ← Torna al carrello
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile footer */}
       <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
-          {formatPrice(total)} € · Continua →
+        <button onClick={() => tab === 'gifts' ? setTab('cart') : setCheckoutStep(2)} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors">
+          {tab === 'gifts' ? '← Torna al carrello' : `${formatPrice(total)} € · Continua →`}
         </button>
       </div>
     </>
@@ -426,6 +452,7 @@ function Step2Shipping() {
   const [prefilled, setPrefilled] = useState(!!savedShipping);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [addressOpen, setAddressOpen] = useState(true); // open by default, closed when addresses load
 
   // Pre-fill from logged user + WC customer address
   useEffect(() => {
@@ -447,6 +474,7 @@ function Step2Shipping() {
           const addrList: SavedAddress[] = addrData.addresses || [];
           if (addrList.length > 0) {
             setSavedAddresses(addrList);
+            setAddressOpen(false); // close accordion — default address pre-selected
             const def = addrList.find(a => a.isDefault) || addrList[0];
             setSelectedAddressId(def.id);
             setForm(f => ({
@@ -492,13 +520,22 @@ function Step2Shipping() {
 
   const inputClass = "h-11 px-4 text-[14px] border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20";
 
+  const selectedAddr = savedAddresses.find(a => a.id === selectedAddressId);
+  const isReadOnly = savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null;
+
+  const handleSubmit = () => {
+    if (!isValid) return;
+    setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, province: form.province, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi });
+    setCheckoutStep(3);
+  };
+
   return (
     <>
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-7">
           {/* Form */}
           <div className="space-y-3.5">
-            {/* Guest: login prompt at top — visible */}
+            {/* Guest: login prompt */}
             {!isLogged && (
               <div className="flex items-center justify-between border-2 border-[#005667]/20 bg-[#f5fafa] rounded-xl px-5 py-3.5 mb-3">
                 <span className="text-[14px] text-[#333]">Hai già un account?</span>
@@ -521,105 +558,129 @@ function Step2Shipping() {
               <span className="text-[12px] font-semibold text-green-700">Spediamo solo in Italia</span>
             </div>
 
-            {savedAddresses.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[13px] font-semibold text-[#333] mb-1">I tuoi indirizzi salvati</p>
-                {savedAddresses.map(addr => (
-                  <label key={addr.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
-                    <input type="radio" className="sr-only" checked={selectedAddressId === addr.id}
-                      onChange={() => {
-                        setSelectedAddressId(addr.id);
-                        setForm(f => ({
-                          ...f,
-                          firstName: addr.first_name || f.firstName,
-                          lastName: addr.last_name || f.lastName,
-                          address: addr.address_1,
-                          city: addr.city,
-                          province: addr.state,
-                          zip: addr.postcode,
-                          phone: addr.phone || f.phone,
-                        }));
-                      }}
-                    />
-                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center ${selectedAddressId === addr.id ? 'border-[#005667]' : 'border-[#ccc]'}`}>
-                      {selectedAddressId === addr.id && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+            {/* === ADDRESS ACCORDION === */}
+            {/* Closed state: show selected address summary */}
+            {savedAddresses.length > 0 && !addressOpen && selectedAddr && (
+              <div className="border border-[#e8e4dc] rounded-xl p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-[#005667] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                    <div className="text-[13px]">
+                      <p className="font-semibold text-[#333]">{selectedAddr.first_name} {selectedAddr.last_name}</p>
+                      <p className="text-[#888]">{selectedAddr.address_1}, {selectedAddr.postcode} {selectedAddr.city}{selectedAddr.state ? ` (${selectedAddr.state})` : ''}</p>
                     </div>
-                    <div className="text-[13px] min-w-0">
-                      {addr.label && <p className="text-[11px] font-bold text-[#888] uppercase mb-0.5">{addr.label}</p>}
-                      <p className="font-medium text-[#333]">{addr.first_name} {addr.last_name}</p>
-                      <p className="text-[#888]">{addr.address_1}, {addr.postcode} {addr.city}{addr.state ? ` (${addr.state})` : ''}</p>
-                    </div>
-                    {addr.isDefault && <span className="ml-auto shrink-0 text-[10px] font-bold text-[#005667] bg-[#005667]/10 px-2 py-0.5 rounded-full self-start">Default</span>}
-                  </label>
-                ))}
-                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === '__new__' || !selectedAddressId ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
-                  <input type="radio" className="sr-only" checked={selectedAddressId === '__new__' || !selectedAddressId}
-                    onChange={() => {
-                      setSelectedAddressId('__new__');
-                      setForm(f => ({ ...f, address: '', city: '', province: '', zip: '' }));
-                    }}
-                  />
-                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedAddressId === '__new__' || !selectedAddressId ? 'border-[#005667]' : 'border-[#ccc]'}`}>
-                    {(selectedAddressId === '__new__' || !selectedAddressId) && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
                   </div>
-                  <span className="text-[13px] text-[#888]">Inserisci nuovo indirizzo</span>
-                </label>
-                <hr className="border-[#e5e5e5] my-1" />
+                  {selectedAddr.isDefault && <span className="shrink-0 text-[10px] font-bold text-[#005667] bg-[#005667]/10 px-2 py-0.5 rounded-full">Default</span>}
+                </div>
+                <button onClick={() => setAddressOpen(true)} className="mt-3 text-[12px] text-[#005667] font-semibold hover:underline">
+                  Cambia indirizzo →
+                </button>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3.5">
-              <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Nome *" className={`${inputClass}`} />
-              <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Cognome *" className={`${inputClass}`} />
-            </div>
-            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email *" className={`w-full ${inputClass}`} />
-            <input name="address" value={form.address} onChange={handleChange} placeholder="Indirizzo *" readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`w-full ${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
-            <div className="grid grid-cols-[90px_1fr_80px] gap-3.5">
-              <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
-              <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass}${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
-              <input name="province" value={form.province} onChange={e => setForm({ ...form, province: e.target.value.toUpperCase().slice(0, 2) })} placeholder="Prov." maxLength={2} readOnly={savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null} className={`${inputClass} text-center uppercase${savedAddresses.length > 0 && selectedAddressId !== '__new__' && selectedAddressId !== null ? ' bg-gray-50' : ''}`} />
-            </div>
-            <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
-
-            {/* Invoice section — prominent container */}
-            <div className="mt-2 border border-[#e8e4dc] bg-[#fafaf8] rounded-xl p-4 space-y-3.5">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input type="checkbox" name="needsInvoice" checked={form.needsInvoice} onChange={handleChange} className="mt-0.5 w-[18px] h-[18px] rounded border-[1.5px] border-[#d0cdc8] text-[#005667] focus:ring-[#005667]" />
-                <div>
-                  <span className="text-[13px] font-semibold text-[#333]">Fattura elettronica</span>
-                  <p className="text-[11px] text-[#aaa] mt-0.5">La fattura viene inviata via email, non è inclusa nel pacco</p>
-                </div>
-              </label>
-
-              {form.needsInvoice && (
-                <div className="space-y-3.5 pt-3 border-t border-[#e8e4dc]">
-                  <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass}`} />
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`${inputClass}`} />
-                    <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Codice fiscale *" required maxLength={16} className={`${inputClass} uppercase`} />
+            {/* Open state: address list + form */}
+            {addressOpen && (
+              <>
+                {savedAddresses.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[13px] font-semibold text-[#333] mb-1">I tuoi indirizzi salvati</p>
+                    {savedAddresses.map(addr => (
+                      <label key={addr.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
+                        <input type="radio" className="sr-only" checked={selectedAddressId === addr.id}
+                          onChange={() => {
+                            setSelectedAddressId(addr.id);
+                            setAddressOpen(false);
+                            setForm(f => ({
+                              ...f,
+                              firstName: addr.first_name || f.firstName,
+                              lastName: addr.last_name || f.lastName,
+                              address: addr.address_1,
+                              city: addr.city,
+                              province: addr.state,
+                              zip: addr.postcode,
+                              phone: addr.phone || f.phone,
+                            }));
+                          }}
+                        />
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center ${selectedAddressId === addr.id ? 'border-[#005667]' : 'border-[#ccc]'}`}>
+                          {selectedAddressId === addr.id && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+                        </div>
+                        <div className="text-[13px] min-w-0">
+                          {addr.label && <p className="text-[11px] font-bold text-[#888] uppercase mb-0.5">{addr.label}</p>}
+                          <p className="font-medium text-[#333]">{addr.first_name} {addr.last_name}</p>
+                          <p className="text-[#888]">{addr.address_1}, {addr.postcode} {addr.city}{addr.state ? ` (${addr.state})` : ''}</p>
+                        </div>
+                        {addr.isDefault && <span className="ml-auto shrink-0 text-[10px] font-bold text-[#005667] bg-[#005667]/10 px-2 py-0.5 rounded-full self-start">Default</span>}
+                      </label>
+                    ))}
+                    <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAddressId === '__new__' ? 'border-[#005667] bg-[#005667]/5' : 'border-[#e5e5e5] hover:border-[#005667]/40'}`}>
+                      <input type="radio" className="sr-only" checked={selectedAddressId === '__new__'}
+                        onChange={() => {
+                          setSelectedAddressId('__new__');
+                          setForm(f => ({ ...f, address: '', city: '', province: '', zip: '' }));
+                        }}
+                      />
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${selectedAddressId === '__new__' ? 'border-[#005667]' : 'border-[#ccc]'}`}>
+                        {selectedAddressId === '__new__' && <div className="w-2 h-2 rounded-full bg-[#005667]" />}
+                      </div>
+                      <span className="text-[13px] text-[#888]">Inserisci nuovo indirizzo</span>
+                    </label>
+                    <hr className="border-[#e5e5e5] my-1" />
                   </div>
-                  <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} uppercase`} />
+                )}
+
+                <div className="grid grid-cols-2 gap-3.5">
+                  <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Nome *" className={`${inputClass}`} />
+                  <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Cognome *" className={`${inputClass}`} />
+                </div>
+                <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email *" className={`w-full ${inputClass}`} />
+                <input name="address" value={form.address} onChange={handleChange} placeholder="Indirizzo *" readOnly={isReadOnly} className={`w-full ${inputClass}${isReadOnly ? ' bg-gray-50' : ''}`} />
+                <div className="grid grid-cols-[90px_1fr_80px] gap-3.5">
+                  <input name="zip" value={form.zip} onChange={handleChange} placeholder="CAP *" maxLength={5} readOnly={isReadOnly} className={`${inputClass}${isReadOnly ? ' bg-gray-50' : ''}`} />
+                  <input name="city" value={form.city} onChange={handleChange} placeholder="Città *" readOnly={isReadOnly} className={`${inputClass}${isReadOnly ? ' bg-gray-50' : ''}`} />
+                  <input name="province" value={form.province} onChange={e => setForm({ ...form, province: e.target.value.toUpperCase().slice(0, 2) })} placeholder="Prov." maxLength={2} readOnly={isReadOnly} className={`${inputClass} text-center uppercase${isReadOnly ? ' bg-gray-50' : ''}`} />
+                </div>
+                <input name="phone" value={form.phone} onChange={handleChange} placeholder="Telefono *" type="tel" className={`w-full ${inputClass}`} />
+              </>
+            )}
+
+            {/* Notes — single line input */}
+            <input
+              name="notes" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Note per l'ordine (opzionale)"
+              className={`w-full ${inputClass}`}
+            />
+          </div>
+
+          {/* Desktop sidebar */}
+          <div className="hidden sm:block">
+            <div className="space-y-2.5">
+              <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-2.5">Riepilogo</p>
+              <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
+              <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
+            </div>
+
+            {/* Desktop invoice toggle */}
+            <div className="mt-4 border border-[#e8e4dc] bg-[#fafaf8] rounded-xl p-3.5 space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-[13px] font-semibold text-[#333]">Fattura elettronica</span>
+                <button type="button" role="switch" aria-checked={form.needsInvoice} onClick={() => setForm({ ...form, needsInvoice: !form.needsInvoice })}
+                  className={`relative w-10 h-[22px] rounded-full transition-colors ${form.needsInvoice ? 'bg-[#005667]' : 'bg-[#d0cdc8]'}`}>
+                  <span className={`absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform ${form.needsInvoice ? 'translate-x-[18px]' : ''}`} />
+                </button>
+              </label>
+              {form.needsInvoice && (
+                <div className="space-y-3 pt-3 border-t border-[#e8e4dc]">
+                  <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass} !h-9 text-[12px]`} />
+                  <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`w-full ${inputClass} !h-9 text-[12px]`} />
+                  <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Cod. Fiscale *" required maxLength={16} className={`w-full ${inputClass} !h-9 text-[12px] uppercase`} />
+                  <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="SDI (7 car.)" maxLength={7} className={`w-full ${inputClass} !h-9 text-[12px] uppercase`} />
                 </div>
               )}
             </div>
 
-            {/* Notes — last, optional */}
-            <textarea
-              name="notes" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="Note per l'ordine (opzionale)"
-              rows={2}
-              className="w-full px-4 py-3 text-[14px] border border-[#e5e5e5] rounded-lg resize-none focus:outline-none focus:border-[#005667] focus:ring-1 focus:ring-[#005667]/20"
-            />
-
-          </div>
-
-          {/* Desktop sidebar */}
-          <div className="hidden sm:block space-y-2.5">
-            <p className="text-[12px] font-semibold text-[#888] uppercase tracking-wider mb-2.5">Riepilogo</p>
-            <div className="flex justify-between text-[12px]"><span className="text-[#888]">{items.length} prodott{items.length === 1 ? 'o' : 'i'}</span><span>{formatPrice(getSubtotal())} €</span></div>
-            <div className="flex justify-between text-[12px]"><span className="text-[#888]">Spedizione</span><span>{getTotalShipping() === 0 ? 'Gratuita' : `${formatPrice(getTotalShipping())} €`}</span></div>
-            <div className="flex justify-between text-[15px] font-semibold text-[#005667] pt-2 border-t border-[#f0f0f0]"><span>Totale</span><span>{formatPrice(total)} €</span></div>
-            <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, province: form.province, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSubmit} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold mt-3 hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Continua →
             </button>
             <button onClick={() => setCheckoutStep(1)} className="w-full text-center text-[12px] text-[#aaa] hover:text-[#666] mt-1.5">← Torna al carrello</button>
@@ -627,11 +688,34 @@ function Step2Shipping() {
         </div>
       </div>
 
-      {/* Mobile footer */}
-      <div className="sm:hidden border-t border-[#f0f0f0] px-5 py-3 shrink-0 bg-white">
-        <button onClick={() => isValid && (() => { setShippingData({ firstName: form.firstName, lastName: form.lastName, email: form.email, address: form.address, zip: form.zip, city: form.city, province: form.province, phone: form.phone, notes: form.notes || '', needsInvoice: form.needsInvoice, ragioneSociale: form.ragioneSociale, piva: form.piva, codFiscale: form.codFiscale, sdi: form.sdi }); setCheckoutStep(3); })()} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          Continua →
-        </button>
+      {/* Mobile footer — fixed bottom with invoice toggle */}
+      <div className="sm:hidden border-t border-[#f0f0f0] shrink-0 bg-white">
+        {/* Invoice toggle row */}
+        <div className="px-5 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-semibold text-[#333]">Fattura elettronica?</span>
+            <button type="button" role="switch" aria-checked={form.needsInvoice} onClick={() => setForm({ ...form, needsInvoice: !form.needsInvoice })}
+              className={`relative w-10 h-[22px] rounded-full transition-colors ${form.needsInvoice ? 'bg-[#005667]' : 'bg-[#d0cdc8]'}`}>
+              <span className={`absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform ${form.needsInvoice ? 'translate-x-[18px]' : ''}`} />
+            </button>
+          </div>
+          {form.needsInvoice && (
+            <div className="space-y-2.5 mt-3 pb-1">
+              <input name="ragioneSociale" value={form.ragioneSociale} onChange={handleChange} placeholder="Ragione sociale *" required className={`w-full ${inputClass} !h-9 text-[13px]`} />
+              <div className="grid grid-cols-2 gap-2.5">
+                <input name="piva" value={form.piva} onChange={handleChange} placeholder="P.IVA *" required maxLength={11} className={`${inputClass} !h-9 text-[13px]`} />
+                <input name="codFiscale" value={form.codFiscale} onChange={handleChange} placeholder="Cod. Fiscale *" required maxLength={16} className={`${inputClass} !h-9 text-[13px] uppercase`} />
+              </div>
+              <input name="sdi" value={form.sdi} onChange={handleChange} placeholder="Codice SDI (7 caratteri)" maxLength={7} className={`w-full ${inputClass} !h-9 text-[13px] uppercase`} />
+            </div>
+          )}
+        </div>
+        {/* Continue button */}
+        <div className="px-5 py-3">
+          <button onClick={handleSubmit} disabled={!isValid} className="w-full py-3.5 bg-[#005667] text-white rounded-lg text-[14px] font-semibold hover:bg-[#004555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            Continua →
+          </button>
+        </div>
       </div>
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
