@@ -194,6 +194,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       invoiceData: (params.needsInvoice || customer.needsInvoice) ? {
         companyName: params.invoiceData?.ragioneSociale || customer.ragioneSociale,
         vatNumber: params.invoiceData?.piva || customer.piva,
+        codFiscale: params.invoiceData?.codFiscale || customer.codFiscale,
         pec: undefined,
         sdi: params.invoiceData?.sdi || customer.sdi,
       } : undefined,
@@ -226,6 +227,7 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
       invoiceData: (params.needsInvoice || customer.needsInvoice) ? {
         companyName: params.invoiceData?.ragioneSociale || customer.ragioneSociale,
         vatNumber: params.invoiceData?.piva || customer.piva,
+        codFiscale: params.invoiceData?.codFiscale || customer.codFiscale,
         sdi: params.invoiceData?.sdi || customer.sdi,
       } : undefined,
     },

@@ -69,6 +69,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
         invoiceData: {
           companyName: 'Bianchi Srl',
           vatNumber: 'IT12345678901',
+          codFiscale: 'BNCMRA85A01H501Z',
           pec: 'bianchi@pec.it',
           sdi: 'USAL8PV',
         },
@@ -121,6 +122,7 @@ function generatePreviews(): { id: string; title: string; html: string }[] {
         invoiceData: {
           companyName: 'Bianchi Srl',
           vatNumber: 'IT12345678901',
+          codFiscale: 'BNCMRA85A01H501Z',
           pec: 'bianchi@pec.it',
           sdi: 'USAL8PV',
         },

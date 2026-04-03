@@ -215,7 +215,7 @@ export interface OrderConfirmedData {
   couponCode?: string;
   pointsEarned?: number;
   totalPoints?: number;
-  invoiceData?: { vatNumber?: string; companyName?: string; pec?: string; sdi?: string };
+  invoiceData?: { vatNumber?: string; codFiscale?: string; companyName?: string; pec?: string; sdi?: string };
   circuitoProducts?: CircuitoProduct[];
 }
 
@@ -248,7 +248,8 @@ export function orderConfirmed(data: OrderConfirmedData): { subject: string; htm
       ${infoBox(`
         ${sectionLabel('Dati fatturazione')}
         ${data.invoiceData.companyName ? `<p style="margin:0 0 4px;font-size:14px;color:#1a1a1a;font-weight:600;">${data.invoiceData.companyName}</p>` : ''}
-        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">P.IVA / CF: ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">P.IVA: ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.codFiscale ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">Codice Fiscale: ${data.invoiceData.codFiscale}</p>` : ''}
         ${data.invoiceData.pec ? `<p style="margin:0 0 2px;font-size:13px;color:#444;">PEC: ${data.invoiceData.pec}</p>` : ''}
         ${data.invoiceData.sdi ? `<p style="margin:0;font-size:13px;color:#444;">SDI: ${data.invoiceData.sdi}</p>` : ''}
       `)}` : ''}
@@ -290,7 +291,7 @@ export interface AdminNewOrderData {
   carrierName: string;
   shippingAddress: string;
   billingAddress: string;
-  invoiceData?: { vatNumber?: string; companyName?: string; pec?: string; sdi?: string };
+  invoiceData?: { vatNumber?: string; codFiscale?: string; companyName?: string; pec?: string; sdi?: string };
   paymentMethod: string;
   transactionId: string;
   subtotal: string;
@@ -343,7 +344,8 @@ export function adminNewOrder(data: AdminNewOrderData): { subject: string; html:
       ${data.invoiceData ? `${infoBox(`
         ${sectionLabel('Fatturazione')}
         ${data.invoiceData.companyName ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>Ragione sociale:</strong> ${data.invoiceData.companyName}</p>` : ''}
-        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>P.IVA / CF:</strong> ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.vatNumber ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>P.IVA:</strong> ${data.invoiceData.vatNumber}</p>` : ''}
+        ${data.invoiceData.codFiscale ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>Codice Fiscale:</strong> ${data.invoiceData.codFiscale}</p>` : ''}
         ${data.invoiceData.pec ? `<p style="margin:0 0 2px;font-size:13px;color:#444;"><strong>PEC:</strong> ${data.invoiceData.pec}</p>` : ''}
         ${data.invoiceData.sdi ? `<p style="margin:0;font-size:13px;color:#444;"><strong>SDI:</strong> ${data.invoiceData.sdi}</p>` : ''}
       `)}` : ''}
