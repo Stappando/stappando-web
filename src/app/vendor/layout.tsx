@@ -33,15 +33,12 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
   const isAuth = !!token && !!user;
   const isVendorRole = role === 'vendor' || role === 'wcfm_vendor' || role === 'dc_vendor';
   const isApproved = vendorStatus === 'approved';
-
-  // Skip layout for contratto page — it has its own full-page layout
-  if (pathname === '/vendor/contratto') {
-    return <>{children}</>;
-  }
+  const isContrattoPage = pathname === '/vendor/contratto';
 
   // Check profile + shop completeness for approved vendors
+  // NOTE: all hooks MUST be above any early return
   useEffect(() => {
-    if (!hydrated || !isAuth || !isApproved || !user?.id) {
+    if (isContrattoPage || !hydrated || !isAuth || !isApproved || !user?.id) {
       setCheckingSetup(false);
       return;
     }
@@ -67,7 +64,12 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
     });
 
     return () => { cancelled = true; };
-  }, [hydrated, isAuth, isApproved, user?.id]);
+  }, [isContrattoPage, hydrated, isAuth, isApproved, user?.id]);
+
+  // Contratto page has its own full-page layout — skip vendor chrome
+  if (isContrattoPage) {
+    return <>{children}</>;
+  }
 
   // SSR + hydration: spinner
   if (!hydrated || (isApproved && checkingSetup)) {
@@ -96,17 +98,18 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  // Pending contract — redirect to contratto
+  // Pending contract
   if (vendorStatus === 'pending_contract' || !vendorStatus) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-[#f59e0b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+          <div className="w-20 h-20 rounded-full bg-[#e8f4f1] flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-[#005667]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
           </div>
-          <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Firma il contratto</h1>
-          <p className="text-[14px] text-[#888] mb-6">Per attivare il tuo negozio devi prima leggere e firmare il contratto di adesione.</p>
-          <Link href="/vendor/contratto" className="inline-block bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Vai al contratto →</Link>
+          <h1 className="text-[22px] font-bold text-[#1a1a1a] mb-3">Ancora un passo!</h1>
+          <p className="text-[14px] text-[#888] mb-2">Per pubblicare i tuoi vini su Stappando, completa la firma del contratto di adesione.</p>
+          <p className="text-[13px] text-[#aaa] mb-6">Ci vogliono solo 2 minuti.</p>
+          <Link href="/vendor/contratto" className="inline-block bg-[#005667] text-white rounded-xl px-8 py-3 text-[15px] font-semibold hover:bg-[#004555] transition-colors">Firma il contratto →</Link>
         </div>
       </div>
     );
