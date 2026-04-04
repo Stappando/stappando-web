@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   description:
     'Scopri la selezione di vini italiani d\'eccellenza su Stappando. Spedizione rapida, pagamento sicuro e assistenza dedicata. Marketplace con i migliori produttori italiani.',
   keywords: 'vino italiano, ecommerce vino, vini online, vini italiani, wine marketplace',
-  metadataBase: new URL('https://stappando.it'),
+  metadataBase: new URL('https://shop.stappando.it'),
   openGraph: {
     title: 'Stappando — Vini Italiani d\'Eccellenza',
     description: 'Scopri la selezione di vini italiani d\'eccellenza su Stappando.',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://stappando.it',
+    canonical: 'https://shop.stappando.it',
   },
 };
 

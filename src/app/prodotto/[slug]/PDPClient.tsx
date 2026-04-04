@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
 import { useAnalyticsStore } from '@/store/analytics';
 import { getAbbinamentoIcon } from '@/lib/abbinamenti-icons';
+import { gtmViewItem, gtmAddToCart } from '@/lib/gtm';
 
 interface GalleryImage { id: number; src: string; alt: string; }
 interface Spec { key: string; value: string; }
@@ -56,7 +57,8 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
   useEffect(() => {
     trackView(p.id, p.slug);
     useAnalyticsStore.getState().trackProductView(p.id, p.name, 'direct');
-  }, [p.id, p.slug, p.name, trackView]);
+    gtmViewItem({ item_id: p.id, item_name: p.name, price: parseFloat(p.price), item_brand: p.produttore });
+  }, [p.id, p.slug, p.name, p.price, p.produttore, trackView]);
 
   // Close lightbox on ESC
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
@@ -75,6 +77,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
     for (let i = 0; i < qty; i++) {
       addItem({ id: p.id, name: p.name, price: parseFloat(p.price), image: p.mainImage, vendorId: p.vendorId, vendorName: p.vendorName });
     }
+    gtmAddToCart({ item_id: p.id, item_name: p.name, price: parseFloat(p.price), quantity: qty, item_brand: p.produttore });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

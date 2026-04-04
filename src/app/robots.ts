@@ -62,6 +62,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://stappando.it/sitemap.xml',
+    sitemap: 'https://shop.stappando.it/sitemap.xml',
   };
 }

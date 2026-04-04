@@ -1,6 +1,6 @@
 /* ── Schema.org structured data helpers ─────────────────── */
 
-const SITE_URL = 'https://stappando.it';
+const SITE_URL = 'https://shop.stappando.it';
 
 export function getOrganizationSchema() {
   return {

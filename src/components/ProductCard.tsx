@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart';
 import { type WCProduct, getProduttore, formatPrice, getDiscount, decodeHtml } from '@/lib/api';
 import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
 import { useAnalyticsStore } from '@/store/analytics';
+import { gtmAddToCart } from '@/lib/gtm';
 
 interface Props {
   product: WCProduct;
@@ -51,6 +52,7 @@ export default function ProductCard({ product }: Props) {
       vendorName,
     });
     useAnalyticsStore.getState().trackAddToCart(product.id, product.name, parseFloat(product.price));
+    gtmAddToCart({ item_id: product.id, item_name: product.name, price: parseFloat(product.price), quantity: 1 });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

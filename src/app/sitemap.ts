@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = 'https://stappando.it';
+const SITE_URL = 'https://shop.stappando.it';
 
 /**
  * Fetch all paginated results from a WC/WP REST API endpoint.

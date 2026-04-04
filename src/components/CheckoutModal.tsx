@@ -10,6 +10,7 @@ import { formatPrice } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
 import { useAnalyticsStore } from '@/store/analytics';
+import { gtmBeginCheckout, gtmPurchase } from '@/lib/gtm';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
 const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
@@ -50,6 +51,12 @@ export default function CheckoutModal() {
     if (checkoutOpen) {
       document.body.style.overflow = 'hidden';
       useAnalyticsStore.getState().trackCheckoutStart();
+      const cartItems = useCartStore.getState().items;
+      const total = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+      gtmBeginCheckout(
+        cartItems.map(i => ({ item_id: i.id, item_name: i.name, price: i.price, quantity: i.qty })),
+        total,
+      );
     } else {
       document.body.style.overflow = '';
     }
@@ -1047,6 +1054,13 @@ function Step3Payment() {
 
           completeOrder();
           useAnalyticsStore.getState().trackPurchase(total, items.length);
+          gtmPurchase(
+            data.orderID || `pp-${Date.now()}`,
+            total,
+            items.map(i => ({ item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity })),
+            getTotalShipping(),
+            useCartStore.getState().appliedCoupon?.code,
+          );
           setCheckoutStep(5);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Errore pagamento');
@@ -1204,7 +1218,15 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
-        useAnalyticsStore.getState().trackPurchase(total, useCartStore.getState().items.length);
+        const cartState = useCartStore.getState();
+        useAnalyticsStore.getState().trackPurchase(total, cartState.items.length);
+        gtmPurchase(
+          result.paymentIntent.id,
+          total,
+          cartState.items.map(i => ({ item_id: i.id, item_name: i.name, price: i.price, quantity: i.qty })),
+          cartState.getTotalShipping(),
+          cartState.appliedCoupon?.code,
+        );
         setCheckoutStep(5);
       }
     } else {
@@ -1218,7 +1240,15 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         setPaying(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         completeOrder();
-        useAnalyticsStore.getState().trackPurchase(total, useCartStore.getState().items.length);
+        const cartState = useCartStore.getState();
+        useAnalyticsStore.getState().trackPurchase(total, cartState.items.length);
+        gtmPurchase(
+          result.paymentIntent.id,
+          total,
+          cartState.items.map(i => ({ item_id: i.id, item_name: i.name, price: i.price, quantity: i.qty })),
+          cartState.getTotalShipping(),
+          cartState.appliedCoupon?.code,
+        );
         setCheckoutStep(5);
       }
     }
