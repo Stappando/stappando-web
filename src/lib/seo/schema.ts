@@ -89,6 +89,78 @@ export function getProductSchema(product: ProductSchemaInput) {
   return schema;
 }
 
+interface ArticleSchemaInput {
+  title: string;
+  slug: string;
+  excerpt: string;
+  date: string;
+  featuredImage?: string;
+}
+
+export function getArticleSchema(post: ArticleSchemaInput) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    url: `${SITE_URL}/blog/${post.slug}`,
+    description: post.excerpt.replace(/<[^>]*>/g, '').slice(0, 300),
+    datePublished: post.date,
+    dateModified: post.date,
+    ...(post.featuredImage ? { image: post.featuredImage } : {}),
+    author: {
+      '@type': 'Organization',
+      name: 'Stappando',
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Stappando',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${SITE_URL}/blog/${post.slug}`,
+    },
+  };
+}
+
+interface WinerySchemaInput {
+  name: string;
+  slug: string;
+  description?: string;
+  region?: string | null;
+  address?: string | null;
+  image?: string | null;
+}
+
+export function getWinerySchema(winery: WinerySchemaInput) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Winery',
+    name: winery.name,
+    url: `${SITE_URL}/cantine/${winery.slug}`,
+    ...(winery.description ? { description: winery.description.replace(/<[^>]*>/g, '').slice(0, 500) } : {}),
+    ...(winery.image ? { image: winery.image } : {}),
+    ...(winery.address ? {
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: winery.address,
+        ...(winery.region ? { addressRegion: winery.region } : {}),
+        addressCountry: 'IT',
+      },
+    } : winery.region ? {
+      address: {
+        '@type': 'PostalAddress',
+        addressRegion: winery.region,
+        addressCountry: 'IT',
+      },
+    } : {}),
+  };
+}
+
 interface BreadcrumbItem {
   name: string;
   url?: string;

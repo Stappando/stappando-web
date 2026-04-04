@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import { api, decodeHtml, formatPrice, getDiscount, getProduttore } from '@/lib/api';
 import { DEFAULT_VENDOR_NAME, API_CONFIG } from '@/lib/config';
+import { getProductSchema, getBreadcrumbSchema } from '@/lib/seo/schema';
+import JsonLd from '@/components/JsonLd';
 import PDPClient from './PDPClient';
 import RelatedProducts from './RelatedProducts';
 
@@ -19,9 +21,22 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const product = await getCachedProduct(slug);
   if (!product) return { title: 'Prodotto non trovato' };
+  const title = `${decodeHtml(product.name)} — Stappando`;
+  const description = decodeHtml(product.short_description || '').replace(/<[^>]*>/g, '').slice(0, 160);
+  const ogImage = product.images?.[0]?.src;
+
   return {
-    title: `${decodeHtml(product.name)} — Stappando`,
-    description: decodeHtml(product.short_description || '').replace(/<[^>]*>/g, '').slice(0, 160),
+    title,
+    description,
+    alternates: {
+      canonical: `https://stappando.it/prodotto/${slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      ...(ogImage ? { images: [{ url: ogImage, alt: decodeHtml(product.name) }] } : {}),
+    },
   };
 }
 
@@ -87,8 +102,33 @@ export default async function ProductPage({ params }: Props) {
   // POP points
   const popPoints = Math.round(parseFloat(product.price));
 
+  // Structured data
+  const productSchema = getProductSchema({
+    name: decodeHtml(product.name),
+    slug: product.slug,
+    description: product.short_description || product.description,
+    price: product.price,
+    regular_price: product.regular_price,
+    images: product.images,
+    stock_status: product.stock_status,
+    average_rating: product.average_rating,
+    rating_count: product.rating_count,
+    brand: produttore,
+    sku: String(product.id),
+  });
+
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    ...(product.categories?.[0]
+      ? [{ name: product.categories[0].name, url: `/categoria/${product.categories[0].slug}` }]
+      : []),
+    { name: decodeHtml(product.name) },
+  ];
+
   return (
     <div className="bg-[#f8f6f1] min-h-screen">
+      <JsonLd data={productSchema} />
+      <JsonLd data={getBreadcrumbSchema(breadcrumbItems)} />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Breadcrumb */}
         <nav className="text-[14px] text-[#999] mb-5">
@@ -139,6 +179,7 @@ export default async function ProductPage({ params }: Props) {
               alt: img.alt || product.name,
             })),
             mainImage: galleryImages[0]?.src || '',
+            dateCreated: product.date_created || '',
           }}
         />
         {/* Related products */}
