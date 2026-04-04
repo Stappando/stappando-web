@@ -40,6 +40,7 @@ interface PDPProduct {
   popPoints: number;
   galleryImages: GalleryImage[];
   mainImage: string;
+  dateCreated: string;
 }
 
 export default function PDPClient({ product: p }: { product: PDPProduct }) {
@@ -87,7 +88,14 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
   const nextImg = () => setActiveImg(i => (i + 1) % p.galleryImages.length);
 
   const inStock = p.stockStatus === 'instock';
+  const maxQty = p.stockQuantity !== null && p.stockQuantity > 0 ? p.stockQuantity : 99;
   const lowStock = p.stockQuantity !== null && p.stockQuantity > 0 && p.stockQuantity <= 3;
+
+  const isNew = (() => {
+    if (!p.dateCreated) return false;
+    const created = new Date(p.dateCreated).getTime();
+    return !isNaN(created) && Date.now() - created < 14 * 24 * 60 * 60 * 1000;
+  })();
 
   return (
     <>
@@ -253,7 +261,12 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           )}
 
           {/* Title */}
-          <h1 className="text-[24px] font-bold text-[#1a1a1a] leading-[1.3] mb-4">{p.name}</h1>
+          <div className="flex items-start gap-2 mb-4">
+            <h1 className="text-[24px] font-bold text-[#1a1a1a] leading-[1.3]">{p.name}</h1>
+            {isNew && (
+              <span className="shrink-0 mt-1 bg-[#00b341] text-white text-[11px] font-bold px-2 py-0.5 rounded-md tracking-wide uppercase">Novità</span>
+            )}
+          </div>
 
           {/* Price */}
           <div className="flex items-center flex-wrap gap-2 mb-2">
@@ -287,7 +300,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
                 <div className="flex items-center border-[1.5px] border-[#e5e5e5] rounded-lg overflow-hidden">
                   <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-10 h-11 flex items-center justify-center text-[#888] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors text-lg">−</button>
                   <span className="w-9 text-center font-semibold text-[#1a1a1a] text-[14px]">{qty}</span>
-                  <button onClick={() => setQty(qty + 1)} className="w-10 h-11 flex items-center justify-center text-[#888] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors text-lg">+</button>
+                  <button onClick={() => setQty(Math.min(maxQty, qty + 1))} disabled={qty >= maxQty} className="w-10 h-11 flex items-center justify-center text-[#888] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors text-lg disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                 </div>
                 <button onClick={handleAdd} className="flex-1 h-11 bg-[#005667] text-white font-semibold text-[15px] rounded-lg hover:bg-[#004555] transition-colors flex items-center justify-center gap-2">
                   {added ? (
@@ -395,7 +408,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
           <div className="flex items-center border-[1.5px] border-white/30 rounded-lg overflow-hidden">
             <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-11 flex items-center justify-center text-white text-lg">−</button>
             <span className="w-7 text-center text-white font-semibold text-[14px]">{qty}</span>
-            <button onClick={() => setQty(qty + 1)} className="w-9 h-11 flex items-center justify-center text-white text-lg">+</button>
+            <button onClick={() => setQty(Math.min(maxQty, qty + 1))} disabled={qty >= maxQty} className="w-9 h-11 flex items-center justify-center text-white text-lg disabled:opacity-30 disabled:cursor-not-allowed">+</button>
           </div>
           <button onClick={handleBuyNow} className="flex-1 h-11 bg-transparent border-2 border-white/60 text-white font-bold text-[14px] rounded-lg tracking-wide uppercase">
             Acquista ora
