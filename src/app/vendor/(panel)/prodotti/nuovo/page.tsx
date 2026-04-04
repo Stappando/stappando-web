@@ -141,6 +141,11 @@ function NuovoProdottoInner() {
   const [hydrated, setHydrated] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(false);
 
+  const [mainImage, setMainImage] = useState<{ id: number; src: string } | null>(null);
+  const [galleryImages, setGalleryImages] = useState<{ id: number; src: string }[]>([]);
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
   const [newUvaggio, setNewUvaggio] = useState('');
   const [wcCategories, setWcCategories] = useState<{ id: number; name: string; children: { id: number; name: string }[] }[]>([]);
 
@@ -203,6 +208,14 @@ function NuovoProdottoInner() {
           gtin: data.gtin || '',
           esposizione: data.esposizione || '',
         }));
+        // Load existing images
+        if (data.images && Array.isArray(data.images)) {
+          const imgs = data.images.map((img: { id: number; src: string }) => ({ id: img.id, src: img.src }));
+          if (imgs.length > 0) {
+            setMainImage(imgs[0]);
+            setGalleryImages(imgs.slice(1));
+          }
+        }
         // Normalize taxonomy fields after taxTerms may have loaded
         setForm(f => normalizeForm({ ...f }));
       })
@@ -292,6 +305,37 @@ function NuovoProdottoInner() {
     [],
   );
 
+  const uploadImage = async (file: File): Promise<{ id: number; src: string } | null> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/vendor/media', { method: 'POST', body: fd });
+      if (res.ok) return res.json();
+      console.error('Upload failed:', res.status);
+    } catch (e) { console.error('Upload error:', e); }
+    return null;
+  };
+
+  const handleMainImageUpload = async (file: File) => {
+    setUploadingMain(true);
+    const img = await uploadImage(file);
+    if (img) setMainImage(img);
+    setUploadingMain(false);
+  };
+
+  const handleGalleryUpload = async (files: FileList) => {
+    setUploadingGallery(true);
+    for (const file of Array.from(files)) {
+      const img = await uploadImage(file);
+      if (img) setGalleryImages(prev => [...prev, img]);
+    }
+    setUploadingGallery(false);
+  };
+
+  const removeGalleryImage = (id: number) => {
+    setGalleryImages(prev => prev.filter(img => img.id !== id));
+  };
+
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
   // Fuzzy-match a raw value against a list of taxonomy terms
@@ -374,7 +418,10 @@ function NuovoProdottoInner() {
       short_description: stripHtml(form.descBreve),
       description: stripHtml(form.descLunga) || stripHtml(form.descBreve),
       categories: form.categoria ? [parseInt(form.categoria)] : [],
-      images: [],
+      images: [
+        ...(mainImage ? [{ id: mainImage.id, src: mainImage.src }] : []),
+        ...galleryImages.map(img => ({ id: img.id, src: img.src })),
+      ],
       attributes: (() => {
         // Safe split helper — handles undefined, arrays, and strings
         const st = (v: string | undefined) => String(v || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -576,7 +623,7 @@ function NuovoProdottoInner() {
           </div>
 
           {/* ── Step 1: Base ──────────────────────────── */}
-          {subStep === 1 && (
+          {subStep === 1 && (<>
             <div className={sectionClass}>
               <h3 className="text-sm font-bold text-[#005667] mb-2">Base</h3>
 
@@ -653,7 +700,71 @@ function NuovoProdottoInner() {
                 </div>
               </div>
             </div>
-          )}
+
+            {/* ── Immagini ── */}
+            <div className={sectionClass}>
+              <h3 className="text-sm font-bold text-[#005667] mb-2">Immagini</h3>
+
+              {/* Main image */}
+              <div>
+                <label className={labelClass}>Foto principale</label>
+                <div className="flex items-start gap-4">
+                  <div className="relative w-28 h-28 bg-gray-50 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 group shrink-0">
+                    {mainImage ? (
+                      <>
+                        <img src={mainImage.src} alt="Principale" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <label className="cursor-pointer text-white text-[11px] font-semibold bg-black/30 rounded px-2 py-1">
+                            Cambia
+                            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => e.target.files?.[0] && handleMainImageUpload(e.target.files[0])} />
+                          </label>
+                          <button type="button" onClick={() => setMainImage(null)} className="text-white text-[11px] font-semibold bg-red-500/70 rounded px-2 py-1">Rimuovi</button>
+                        </div>
+                      </>
+                    ) : (
+                      <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
+                        {uploadingMain ? (
+                          <div className="w-5 h-5 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <svg className="w-7 h-7 text-gray-300 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 6v12.75A2.25 2.25 0 003.75 21z" /></svg>
+                            <span className="text-[10px] text-gray-400">Carica foto</span>
+                          </>
+                        )}
+                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => e.target.files?.[0] && handleMainImageUpload(e.target.files[0])} />
+                      </label>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed mt-1">La foto principale del prodotto. JPG, PNG o WebP, max 5MB.</p>
+                </div>
+              </div>
+
+              {/* Gallery */}
+              <div>
+                <label className={labelClass}>Galleria (opzionale)</label>
+                <div className="flex flex-wrap gap-3">
+                  {galleryImages.map(img => (
+                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
+                      <img src={img.src} alt="Gallery" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeGalleryImage(img.id)} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">&times;</button>
+                    </div>
+                  ))}
+                  <label className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    {uploadingGallery ? (
+                      <div className="w-4 h-4 border-2 border-[#005667] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        <span className="text-[9px] text-gray-400 mt-0.5">Aggiungi</span>
+                      </>
+                    )}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={e => e.target.files && handleGalleryUpload(e.target.files)} />
+                  </label>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">Aggiungi fino a 10 foto extra. Le foto appariranno nella scheda prodotto.</p>
+              </div>
+            </div>
+          </>)}
 
           {/* ── Step 2: Classificazione ──────────────── */}
           {subStep === 2 && (
