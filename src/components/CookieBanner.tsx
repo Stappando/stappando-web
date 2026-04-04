@@ -2,10 +2,28 @@
 
 import { useState, useEffect } from 'react';
 
+/* Re-apply consent on page load if user already chose */
+function restoreConsent() {
+  try {
+    const w = window as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any;
+    if (!w.gtag) return;
+    const consent = localStorage.getItem('cookie_consent');
+    if (consent === 'all') {
+      w.gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+      });
+    }
+  } catch { /* noop */ }
+}
+
 export default function CookieBanner() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    restoreConsent();
     const consent = localStorage.getItem('cookie_consent');
     if (!consent) setShow(true);
   }, []);
@@ -13,10 +31,8 @@ export default function CookieBanner() {
   const accept = () => {
     localStorage.setItem('cookie_consent', 'all');
     setShow(false);
-    // Enable Google consent mode v2
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const w = window as any;
+      const w = window as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any;
       if (w.gtag) {
         w.gtag('consent', 'update', {
           analytics_storage: 'granted',

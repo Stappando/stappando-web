@@ -69,6 +69,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="it">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer=window.dataLayer||[];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('consent','default',{
+                analytics_storage:'denied',
+                ad_storage:'denied',
+                ad_user_data:'denied',
+                ad_personalization:'denied',
+                wait_for_update:500
+              });
+              gtag('js',new Date());
+              gtag('config','GTM-PGP8KV7');
+            `,
+          }}
+        />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=GTM-PGP8KV7" />
         {/* Preconnect to image CDN origins — eliminates DNS+TLS latency for LCP images */}
         <link rel="preconnect" href="https://stappando.it" />
         <link rel="preconnect" href="https://i0.wp.com" />
