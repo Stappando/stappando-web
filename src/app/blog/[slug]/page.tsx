@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { decodeHtml } from '@/lib/api';
 import { getCachedPost } from '@/lib/cached';
+import { getArticleSchema, getBreadcrumbSchema } from '@/lib/seo/schema';
+import JsonLd from '@/components/JsonLd';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -12,9 +14,23 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const post = await getCachedPost(slug);
   if (!post) return { title: 'Articolo non trovato' };
+  const title = `${decodeHtml(post.title.rendered)} — Stappando Blog`;
+  const description = decodeHtml(post.excerpt.rendered).slice(0, 160);
+  const featuredImg = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+
   return {
-    title: `${decodeHtml(post.title.rendered)} — Stappando Blog`,
-    description: decodeHtml(post.excerpt.rendered).slice(0, 160),
+    title,
+    description,
+    alternates: {
+      canonical: `https://stappando.it/blog/${slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      publishedTime: post.date,
+      ...(featuredImg ? { images: [{ url: featuredImg, alt: decodeHtml(post.title.rendered) }] } : {}),
+    },
   };
 }
 
@@ -25,8 +41,24 @@ export default async function BlogPostPage({ params }: Props) {
 
   const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
+  const articleSchema = getArticleSchema({
+    title: decodeHtml(post.title.rendered),
+    slug: post.slug,
+    excerpt: post.excerpt.rendered,
+    date: post.date,
+    featuredImage,
+  });
+
+  const breadcrumbData = getBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Blog', url: '/blog' },
+    { name: decodeHtml(post.title.rendered) },
+  ]);
+
   return (
     <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <JsonLd data={articleSchema} />
+      <JsonLd data={breadcrumbData} />
       {/* Breadcrumb */}
       <nav className="text-sm text-brand-muted mb-6">
         <Link href="/" className="hover:text-brand-primary">Home</Link>

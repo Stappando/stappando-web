@@ -8,10 +8,15 @@ interface Props {
 }
 
 export async function generateMetadata({ searchParams }: Props) {
-  const { cat } = await searchParams;
+  const { cat, page: pageStr } = await searchParams;
+  const page = parseInt(pageStr || '1', 10);
   return {
     title: cat ? `Blog: ${cat} — Stappando` : 'Blog — Stappando',
     description: 'Articoli, guide e consigli sul mondo del vino italiano. Il blog di Stappando.',
+    alternates: {
+      canonical: 'https://stappando.it/blog',
+    },
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

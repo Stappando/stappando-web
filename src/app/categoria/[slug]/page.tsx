@@ -9,13 +9,27 @@ interface Props {
   searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { page: pageStr } = await searchParams;
+  const page = parseInt(pageStr || '1', 10);
   const category = await getCachedCategory(slug);
   if (!category) return { title: 'Categoria non trovata' };
+  const title = `${decodeHtml(category.name)} — Stappando`;
+  const description = `Scopri i vini della categoria ${decodeHtml(category.name)} su Stappando. ${category.count} prodotti disponibili.`;
+
   return {
-    title: `${decodeHtml(category.name)} — Stappando`,
-    description: `Scopri i vini della categoria ${decodeHtml(category.name)} su Stappando. ${category.count} prodotti disponibili.`,
+    title,
+    description,
+    alternates: {
+      canonical: `https://stappando.it/categoria/${slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+    },
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

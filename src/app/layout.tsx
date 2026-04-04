@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import JsonLd from '@/components/JsonLd';
+import { getOrganizationSchema } from '@/lib/seo/schema';
 
 /* Lazy-load non-critical client components — code-split from main bundle */
 const CartDrawer = dynamic(() => import('@/components/CartDrawer'));
@@ -50,6 +52,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
   alternates: {
     canonical: 'https://stappando.it',
@@ -67,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://i2.wp.com" />
       </head>
       <body className="min-h-screen flex flex-col">
+        <JsonLd data={getOrganizationSchema()} />
         <Header />
         <main className="flex-1 overflow-x-hidden">{children}</main>
         <Footer />

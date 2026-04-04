@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,6 +8,15 @@ import { getCachedProducts, getCachedCategories } from '@/lib/cached';
 import ProductCard from '@/components/ProductCard';
 import HeroSection from '@/components/HeroSection';
 import IncentiveBlock from '@/components/IncentiveBlock';
+
+export const metadata: Metadata = {
+  title: 'Stappando — Enoteca Online di Vini Italiani d\'Eccellenza',
+  description:
+    'Scopri oltre 200 vini italiani selezionati dai migliori produttori. Spedizione rapida, pagamento sicuro e Punti POP su ogni acquisto. Stappando, il marketplace del vino italiano.',
+  alternates: {
+    canonical: 'https://stappando.it',
+  },
+};
 
 const EXCLUDED_SLUGS = new Set(['uncategorized', 'altri-prodotti']);
 

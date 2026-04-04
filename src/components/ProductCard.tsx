@@ -91,7 +91,7 @@ export default function ProductCard({ product }: Props) {
 
         {/* Novità pill — top-right, visible for 14 days after publication */}
         {isNew && (
-          <span className="absolute top-2 right-2 bg-[#005667] text-white text-[9px] font-bold px-2 py-1 rounded-md tracking-wide uppercase">
+          <span className="absolute top-2 right-2 bg-[#00b341] text-white text-[9px] font-bold px-2 py-1 rounded-md tracking-wide uppercase">
             Novità
           </span>
         )}
@@ -101,7 +101,7 @@ export default function ProductCard({ product }: Props) {
       <div className={`p-4 flex flex-col flex-1 ${circuito ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
         {/* Vendor/Cantina — crema always */}
         {produttore && (
-          <Link href={`/cantine/${produttore.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} className="text-[11px] font-bold uppercase tracking-[0.05em] mb-1.5 line-clamp-1 text-[#d9c39a] hover:text-[#005667] transition-colors block">
+          <Link href={`/cantine/${encodeURIComponent(produttore.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}`} className="text-[11px] font-bold uppercase tracking-[0.05em] mb-1.5 line-clamp-1 text-[#d9c39a] hover:text-[#005667] transition-colors block">
             {produttore}
           </Link>
         )}
