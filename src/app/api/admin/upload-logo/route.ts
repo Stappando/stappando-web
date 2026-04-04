@@ -7,10 +7,18 @@
  * the producer term meta with the new logo URL.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getWCSecrets, getWPAdminAuth } from '@/lib/config';
+import { getWCSecrets } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+function getWPAuth(): { authHeader: string; baseUrl: string } | null {
+  const user = process.env.WP_ADMIN_USER || process.env.WP_USER;
+  const pass = process.env.WP_ADMIN_APP_PASSWORD || process.env.WP_APP_PASSWORD;
+  const wc = getWCSecrets();
+  if (!user || !pass) return null;
+  return { authHeader: `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`, baseUrl: wc.baseUrl };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'slug and imageUrl required' }, { status: 400 });
     }
 
-    const wp = getWPAdminAuth();
+    const wp = getWPAuth();
     if (!wp) return NextResponse.json({ error: 'WP credentials not set' }, { status: 500 });
 
     const wc = getWCSecrets();
@@ -114,7 +122,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
   }
 
-  const wp = getWPAdminAuth();
+  const wp = getWPAuth();
   if (!wp) return NextResponse.json({ error: 'WP credentials not set' }, { status: 500 });
 
   const wc = getWCSecrets();
