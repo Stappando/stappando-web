@@ -8,6 +8,7 @@ import { type WCProduct, getProduttore, formatPrice, getDiscount, decodeHtml } f
 import { API_CONFIG, DEFAULT_VENDOR_NAME } from '@/lib/config';
 import { useAnalyticsStore } from '@/store/analytics';
 import { gtmAddToCart } from '@/lib/gtm';
+import { trackFbEvent } from '@/lib/meta-pixel';
 
 interface Props {
   product: WCProduct;
@@ -53,6 +54,7 @@ export default function ProductCard({ product }: Props) {
     });
     useAnalyticsStore.getState().trackAddToCart(product.id, product.name, parseFloat(product.price));
     gtmAddToCart({ item_id: product.id, item_name: product.name, price: parseFloat(product.price), quantity: 1 });
+    trackFbEvent('AddToCart', { content_name: product.name, content_ids: [String(product.id)], content_type: 'product', value: parseFloat(product.price), currency: 'EUR' });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

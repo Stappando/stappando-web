@@ -8,6 +8,7 @@ import { formatPrice } from '@/lib/api';
 import { useAnalyticsStore } from '@/store/analytics';
 import { getAbbinamentoIcon } from '@/lib/abbinamenti-icons';
 import { gtmViewItem, gtmAddToCart } from '@/lib/gtm';
+import { trackFbEvent } from '@/lib/meta-pixel';
 
 interface GalleryImage { id: number; src: string; alt: string; }
 interface Spec { key: string; value: string; }
@@ -58,6 +59,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
     trackView(p.id, p.slug);
     useAnalyticsStore.getState().trackProductView(p.id, p.name, 'direct');
     gtmViewItem({ item_id: p.id, item_name: p.name, price: parseFloat(p.price), item_brand: p.produttore });
+    trackFbEvent('ViewContent', { content_name: p.name, content_ids: [String(p.id)], content_type: 'product', value: parseFloat(p.price), currency: 'EUR' });
   }, [p.id, p.slug, p.name, p.price, p.produttore, trackView]);
 
   // Close lightbox on ESC
@@ -78,6 +80,7 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
       addItem({ id: p.id, name: p.name, price: parseFloat(p.price), image: p.mainImage, vendorId: p.vendorId, vendorName: p.vendorName });
     }
     gtmAddToCart({ item_id: p.id, item_name: p.name, price: parseFloat(p.price), quantity: qty, item_brand: p.produttore });
+    trackFbEvent('AddToCart', { content_name: p.name, content_ids: [String(p.id)], content_type: 'product', value: parseFloat(p.price) * qty, currency: 'EUR' });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

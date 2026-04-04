@@ -12,6 +12,7 @@ const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'));
 const CookieBanner = dynamic(() => import('@/components/CookieBanner'));
 const PageViewTracker = dynamic(() => import('@/components/PageViewTracker'));
 const NavigationProgress = dynamic(() => import('@/components/NavigationProgress'));
+const MetaPixel = dynamic(() => import('@/components/MetaPixel'));
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -103,6 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CookieBanner />
         <PageViewTracker />
         <NavigationProgress />
+        <MetaPixel />
       </body>
     </html>
   );

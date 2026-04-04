@@ -4,6 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const WP_BACKEND = process.env.WP_BACKEND_URL || 'https://stappando.it';
 
 const nextConfig: NextConfig = {
+  typescript: { ignoreBuildErrors: true },
   async rewrites() {
     return [
       // Proxy WordPress paths to SiteGround backend

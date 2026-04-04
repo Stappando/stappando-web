@@ -11,6 +11,7 @@ import { API_CONFIG } from '@/lib/config';
 import AuthModal from '@/components/AuthModal';
 import { useAnalyticsStore } from '@/store/analytics';
 import { gtmBeginCheckout, gtmPurchase } from '@/lib/gtm';
+import { trackFbEvent } from '@/lib/meta-pixel';
 
 const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY || '';
 const STRIPE_VALID = STRIPE_KEY.startsWith('pk_') && !STRIPE_KEY.includes('placeholder');
@@ -53,6 +54,7 @@ export default function CheckoutModal() {
       useAnalyticsStore.getState().trackCheckoutStart();
       const cartItems = useCartStore.getState().items;
       const total = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+      trackFbEvent('InitiateCheckout', { content_ids: cartItems.map(i => String(i.id)), content_type: 'product', num_items: cartItems.length, value: total, currency: 'EUR' });
       gtmBeginCheckout(
         cartItems.map(i => ({ item_id: i.id, item_name: i.name, price: i.price, quantity: i.qty })),
         total,
@@ -1054,6 +1056,7 @@ function Step3Payment() {
 
           completeOrder();
           useAnalyticsStore.getState().trackPurchase(total, items.length);
+          trackFbEvent('Purchase', { content_ids: items.map(i => String(i.id)), content_type: 'product', num_items: items.length, value: total, currency: 'EUR' });
           gtmPurchase(
             data.orderID || `pp-${Date.now()}`,
             total,
@@ -1220,6 +1223,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         completeOrder();
         const cartState = useCartStore.getState();
         useAnalyticsStore.getState().trackPurchase(total, cartState.items.length);
+        trackFbEvent('Purchase', { content_ids: cartState.items.map(i => String(i.id)), content_type: 'product', num_items: cartState.items.length, value: total, currency: 'EUR' });
         gtmPurchase(
           result.paymentIntent.id,
           total,
@@ -1242,6 +1246,7 @@ function StripeForm({ total, popPoints, clientSecret }: { total: number; popPoin
         completeOrder();
         const cartState = useCartStore.getState();
         useAnalyticsStore.getState().trackPurchase(total, cartState.items.length);
+        trackFbEvent('Purchase', { content_ids: cartState.items.map(i => String(i.id)), content_type: 'product', num_items: cartState.items.length, value: total, currency: 'EUR' });
         gtmPurchase(
           result.paymentIntent.id,
           total,
