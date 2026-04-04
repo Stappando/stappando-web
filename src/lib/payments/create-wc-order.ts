@@ -58,6 +58,24 @@ export async function createWCOrder(params: CreateWCOrderParams): Promise<{ id: 
   const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
   const url = `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}`;
 
+  // ── Idempotency guard: skip if an order with this transaction_id already exists ──
+  try {
+    const since = new Date(Date.now() - 48 * 3600000).toISOString(); // last 48h
+    const checkUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}&after=${encodeURIComponent(since)}&per_page=20&_fields=id,transaction_id&status=processing,on-hold,completed`;
+    const checkRes = await fetch(checkUrl);
+    if (checkRes.ok) {
+      const recent: { id: number; transaction_id: string }[] = await checkRes.json();
+      const existing = recent.find(o => o.transaction_id === transactionId);
+      if (existing) {
+        console.log(`[createWCOrder] Order #${existing.id} already exists for tx ${transactionId} (${provider}) — skipping duplicate`);
+        return { id: existing.id };
+      }
+    }
+  } catch (err) {
+    // Fail-open: if check fails, proceed with order creation
+    console.error('[createWCOrder] Idempotency check failed, proceeding:', err);
+  }
+
   // Build customer note with carrier preference
   const noteParts: string[] = [];
   if (customer.notes) noteParts.push(customer.notes);
