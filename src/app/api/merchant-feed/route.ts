@@ -4,10 +4,32 @@ const SITE_URL = 'https://shop.stappando.it';
 
 export const revalidate = 3600;
 
+interface WCProduct {
+  id: number;
+  slug: string;
+  name: string;
+  price: string;
+  sale_price: string;
+  regular_price: string;
+  description: string;
+  short_description: string;
+  images: { src: string }[];
+  stock_status: string;
+  categories: { name: string }[];
+  attributes: { name: string; options: string[] }[];
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function escTsv(val: string): string {
+  return val.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+}
+
 /**
  * GET /api/merchant-feed
- * Generates a TSV supplemental feed for Google Merchant Center.
- * Only overrides the `link` field with correct shop.stappando.it URLs.
+ * Full product feed for Google Merchant Center with correct shop.stappando.it URLs.
  */
 export async function GET() {
   const wcBase = process.env.WC_BASE_URL || 'https://stappando.it';
@@ -15,26 +37,61 @@ export async function GET() {
   const cs = process.env.WC_CONSUMER_SECRET || '';
   const auth = `consumer_key=${ck}&consumer_secret=${cs}`;
 
-  const products: { id: number; slug: string }[] = [];
+  const products: WCProduct[] = [];
   let page = 1;
 
   while (true) {
     const res = await fetch(
-      `${wcBase}/wp-json/wc/v3/products?status=publish&_fields=id,slug&per_page=100&page=${page}&${auth}`,
+      `${wcBase}/wp-json/wc/v3/products?status=publish&per_page=100&page=${page}&${auth}`,
       { next: { revalidate: 3600 } },
     );
     if (!res.ok) break;
-    const items: { id: number; slug: string }[] = await res.json();
+    const items: WCProduct[] = await res.json();
     if (items.length === 0) break;
     products.push(...items);
     if (items.length < 100) break;
     page++;
   }
 
-  const header = 'id\tlink';
-  const rows = products.map(
-    (p) => `gla_${p.id}\t${SITE_URL}/prodotto/${p.slug}`,
-  );
+  const header = [
+    'id',
+    'title',
+    'description',
+    'link',
+    'image_link',
+    'price',
+    'sale_price',
+    'availability',
+    'condition',
+    'brand',
+    'product_type',
+  ].join('\t');
+
+  const rows = products.map((p) => {
+    const desc = escTsv(stripHtml(p.short_description || p.description || p.name));
+    const availability = p.stock_status === 'instock' ? 'in_stock'
+      : p.stock_status === 'onbackorder' ? 'preorder' : 'out_of_stock';
+    const image = p.images?.[0]?.src || '';
+    const price = p.price ? `${p.price} EUR` : '';
+    const salePrice = p.sale_price ? `${p.sale_price} EUR` : '';
+    const brand = p.attributes?.find((a) => a.name.toLowerCase() === 'produttore')?.options?.[0] || 'Stappando';
+    const productType = p.categories?.map((c) => c.name).join(' > ') || 'Vini';
+
+    return [
+      `gla_${p.id}`,
+      escTsv(p.name),
+      desc.slice(0, 5000),
+      `${SITE_URL}/prodotto/${p.slug}`,
+      image,
+      price,
+      salePrice,
+      availability,
+      'new',
+      escTsv(brand),
+      escTsv(productType),
+    ].join('\t');
+  });
+
   const tsv = [header, ...rows].join('\n');
 
   return new NextResponse(tsv, {
