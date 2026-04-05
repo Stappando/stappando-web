@@ -5,9 +5,14 @@ import { subscribeToMailchimp } from '@/lib/mail/mailchimp';
 import { generateCoupon } from '@/lib/coupons/generate';
 import { sendEmail } from '@/lib/mail/mandrill';
 import { welcomeTemplate } from '@/lib/mail/templates';
+import limiters from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { ok } = limiters.register.check(ip);
+    if (!ok) return NextResponse.json({ message: 'Troppi tentativi. Riprova tra un minuto.' }, { status: 429 });
+
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ message: 'Body JSON non valido' }, { status: 400 });

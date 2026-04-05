@@ -58,11 +58,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Determine filename from the uploaded file
-    const fileName =
-      file instanceof File && file.name
-        ? file.name
-        : `upload-${Date.now()}.${file.type.split('/')[1] || 'jpg'}`;
+    // Determine filename — sanitize to prevent path traversal
+    const ext = file.type.split('/')[1] || 'jpg';
+    let fileName = `upload-${Date.now()}.${ext}`;
+    if (file instanceof File && file.name) {
+      // Strip path separators, keep only alphanumeric, dash, underscore, dot
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.{2,}/g, '.');
+      fileName = safe || fileName;
+    }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 

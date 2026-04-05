@@ -84,6 +84,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: stockCheck.error }, { status: 409 });
     }
 
+    // Price validation — verify client prices match WooCommerce
+    const wc = getWCSecrets();
+    const wcAuth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
+    const productIds = body.items.map((i) => i.id).join(',');
+    const priceRes = await fetch(
+      `${wc.baseUrl}/wp-json/wc/v3/products?include=${productIds}&_fields=id,price,sale_price&per_page=100&${wcAuth}`,
+    );
+    if (priceRes.ok) {
+      const wcProducts: { id: number; price: string; sale_price: string }[] = await priceRes.json();
+      const priceMap = new Map(wcProducts.map((p) => [p.id, parseFloat(p.price)]));
+      for (const item of body.items) {
+        const realPrice = priceMap.get(item.id);
+        if (realPrice !== undefined && Math.abs(realPrice - item.price) > 0.01) {
+          return NextResponse.json(
+            { error: `Il prezzo di "${item.name}" è cambiato. Ricarica la pagina e riprova.` },
+            { status: 409 },
+          );
+        }
+      }
+    }
+
     // Calculate total in cents (subtract coupon discount if any)
     const itemsTotal = body.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const shipping = typeof body.shipping === 'number' && body.shipping >= 0 ? body.shipping : 0;
@@ -153,9 +174,6 @@ export async function POST(req: NextRequest) {
     const errMsg = err instanceof Error ? err.message : String(err);
     const errStack = err instanceof Error ? err.stack : '';
     console.error('Stripe create-intent error:', errMsg);
-    console.error('Stripe create-intent stack:', errStack);
-    console.error('STRIPE_SECRET_KEY present:', !!process.env.STRIPE_SECRET_KEY);
-    console.error('STRIPE_SECRET_KEY prefix:', process.env.STRIPE_SECRET_KEY?.slice(0, 7) || 'MISSING');
     return NextResponse.json(
       { error: `Errore pagamento: ${errMsg}` },
       { status: 500 },

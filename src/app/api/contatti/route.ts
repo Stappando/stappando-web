@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/lib/config';
 import { isValidEmail, isNonEmptyString, sanitize } from '@/lib/validation';
+import limiters from '@/lib/rate-limit';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { ok } = limiters.contact.check(ip);
+    if (!ok) return NextResponse.json({ success: false, message: 'Troppi messaggi. Riprova tra un minuto.' }, { status: 429 });
+
     const body = await request.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ success: false, message: 'Body JSON non valido' }, { status: 400 });
