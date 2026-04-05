@@ -15,8 +15,10 @@ interface WCProduct {
   short_description: string;
   images: { src: string }[];
   stock_status: string;
+  stock_quantity: number | null;
   categories: { name: string }[];
   attributes: { name: string; options: string[] }[];
+  weight: string;
 }
 
 function stripHtml(html: string): string {
@@ -65,6 +67,9 @@ export async function GET() {
     'condition',
     'brand',
     'product_type',
+    'quantity',
+    'unit_pricing_measure',
+    'unit_pricing_base_measure',
   ].join('\t');
 
   const rows = products.map((p) => {
@@ -76,6 +81,16 @@ export async function GET() {
     const salePrice = p.sale_price ? `${p.sale_price} EUR` : '';
     const brand = p.attributes?.find((a) => a.name.toLowerCase() === 'produttore')?.options?.[0] || 'Stappando';
     const productType = p.categories?.map((c) => c.name).join(' > ') || 'Vini';
+
+    // Detect bottle size from name or weight (default 750ml for wine)
+    const nameLower = p.name.toLowerCase();
+    let mlSize = 750;
+    if (nameLower.includes('magnum') || nameLower.includes('1,5') || nameLower.includes('1.5')) mlSize = 1500;
+    else if (nameLower.includes('375') || nameLower.includes('mezza')) mlSize = 375;
+    else if (nameLower.includes('500 ml') || nameLower.includes('500ml')) mlSize = 500;
+    else if (nameLower.includes('1 litro') || nameLower.includes('1000')) mlSize = 1000;
+
+    const quantity = p.stock_quantity !== null && p.stock_quantity >= 0 ? String(p.stock_quantity) : '';
 
     return [
       `gla_${p.id}`,
@@ -89,6 +104,9 @@ export async function GET() {
       'new',
       escTsv(brand),
       escTsv(productType),
+      quantity,
+      `${mlSize} ml`,
+      '100 cl',
     ].join('\t');
   });
 
