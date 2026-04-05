@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { formatPrice } from '@/lib/api';
 import { useAnalyticsStore } from '@/store/analytics';
-import { getAbbinamentoIcon } from '@/lib/abbinamenti-icons';
 import { gtmViewItem, gtmAddToCart } from '@/lib/gtm';
 import { trackFbEvent } from '@/lib/meta-pixel';
 
@@ -186,15 +185,11 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             <div className="hidden lg:block mb-6">
               <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
-                {p.abbinamenti.map((a, i) => {
-                  const icon = getAbbinamentoIcon(a);
-                  return (
-                    <span key={i} className="inline-flex items-center gap-1.5 bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full pl-1.5 pr-3 py-1 text-[13px] font-medium">
-                      {icon && <img src={icon} alt="" aria-hidden="true" className="w-5 h-5 object-contain rounded-full shrink-0" />}
+                {p.abbinamenti.map((a, i) => (
+                    <span key={i} className="inline-flex items-center bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full px-3 py-1 text-[13px] font-medium">
                       {a}
                     </span>
-                  );
-                })}
+                ))}
               </div>
             </div>
           )}
@@ -367,15 +362,11 @@ export default function PDPClient({ product: p }: { product: PDPProduct }) {
             <div className="lg:hidden mb-5">
               <p className="text-[14px] text-[#888] font-semibold uppercase tracking-wider mb-2">Abbinamenti</p>
               <div className="flex flex-wrap gap-2">
-                {p.abbinamenti.map((a, i) => {
-                  const icon = getAbbinamentoIcon(a);
-                  return (
-                    <span key={i} className="inline-flex items-center gap-1.5 bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full pl-1.5 pr-3 py-1 text-[13px] font-medium">
-                      {icon && <img src={icon} alt="" aria-hidden="true" className="w-5 h-5 object-contain rounded-full shrink-0" />}
+                {p.abbinamenti.map((a, i) => (
+                    <span key={i} className="inline-flex items-center bg-[#f0f7f5] text-[#005667] border border-[#005667]/30 rounded-full px-3 py-1 text-[13px] font-medium">
                       {a}
                     </span>
-                  );
-                })}
+                ))}
               </div>
             </div>
           )}
