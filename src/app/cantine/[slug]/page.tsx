@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props) {
     title,
     description,
     alternates: {
-      canonical: `https://stappando.it/cantine/${slug}`,
+      canonical: `https://shop.stappando.it/cantine/${slug}`,
     },
     openGraph: {
       title,

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         const wc = getWCSecrets();
         const auth = `consumer_key=${wc.consumerKey}&consumer_secret=${wc.consumerSecret}`;
         const after = new Date(Date.now() - 300000).toISOString(); // last 5 minutes
-        const checkUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}&after=${after}&per_page=10&_fields=id,transaction_id&status=processing`;
+        const checkUrl = `${wc.baseUrl}/wp-json/wc/v3/orders?${auth}&after=${after}&per_page=10&_fields=id,transaction_id&status=processing,on-hold`;
         try {
           const checkRes = await fetch(checkUrl);
           if (checkRes.ok) {

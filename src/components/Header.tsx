@@ -86,11 +86,13 @@ function CartIcon() {
    ══════════════════════════════════════════════════════════ */
 function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [mounted, setMounted] = useState(false);
-  const isAuth = useAuthStore(s => s.isAuthenticated());
-  const isVendorStore = useAuthStore(s => s.isVendor());
-  const isVendorUser = isVendorStore || (typeof window !== 'undefined' && localStorage.getItem('stappando-is-vendor') === 'true');
+  const token = useAuthStore(s => s.token);
   const user = useAuthStore(s => s.user);
+  const role = useAuthStore(s => s.role);
   useEffect(() => setMounted(true), []);
+
+  const isAuth = !!token && !!user;
+  const isVendorUser = role === 'vendor' || role === 'wcfm_vendor' || role === 'dc_vendor';
 
   if (!mounted) {
     return (
@@ -127,8 +129,9 @@ function AccountIcon({ onOpenAuth }: { onOpenAuth: () => void }) {
    5 voci nav, account in fondo
    ══════════════════════════════════════════════════════════ */
 function MobileDrawer({ isOpen, onClose, onOpenAuth, onOpenVendorAuth }: { isOpen: boolean; onClose: () => void; onOpenAuth: () => void; onOpenVendorAuth: () => void }) {
-  const isAuth = useAuthStore(s => s.isAuthenticated());
+  const token = useAuthStore(s => s.token);
   const user = useAuthStore(s => s.user);
+  const isAuth = !!token && !!user;
   const pathname = usePathname();
   const searchRef = useRef<HTMLInputElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -264,7 +267,9 @@ export default function Header() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authVendorMode, setAuthVendorMode] = useState(false);
-  const isAuth = useAuthStore(s => s.isAuthenticated());
+  const token = useAuthStore(s => s.token);
+  const authUser = useAuthStore(s => s.user);
+  const isAuth = !!token && !!authUser;
   const [scrolled, setScrolled] = useState(false);
   const [topBarVisible, setTopBarVisible] = useState(true);
   const pathname = usePathname();

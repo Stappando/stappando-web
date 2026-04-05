@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description:
     'Scopri oltre 200 vini italiani selezionati dai migliori produttori. Spedizione rapida, pagamento sicuro e Punti POP su ogni acquisto. Stappando, il marketplace del vino italiano.',
   alternates: {
-    canonical: 'https://stappando.it',
+    canonical: 'https://shop.stappando.it',
   },
 };
 

@@ -23,6 +23,23 @@ export function getOrganizationSchema() {
   };
 }
 
+export function getWebSiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Stappando',
+    url: SITE_URL,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE_URL}/cerca?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+}
+
 interface ProductSchemaInput {
   name: string;
   slug: string;
@@ -158,6 +175,21 @@ export function getWinerySchema(winery: WinerySchemaInput) {
         addressCountry: 'IT',
       },
     } : {}),
+  };
+}
+
+export function getFAQSchema(faqs: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
   };
 }
 

@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props) {
     title,
     description,
     alternates: {
-      canonical: `https://stappando.it/blog/${slug}`,
+      canonical: `https://shop.stappando.it/blog/${slug}`,
     },
     openGraph: {
       title,

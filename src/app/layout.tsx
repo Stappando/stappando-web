@@ -4,7 +4,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import JsonLd from '@/components/JsonLd';
-import { getOrganizationSchema } from '@/lib/seo/schema';
+import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seo/schema';
 
 /* Lazy-load non-critical client components — code-split from main bundle */
 const CartDrawer = dynamic(() => import('@/components/CartDrawer'));
@@ -13,6 +13,7 @@ const CookieBanner = dynamic(() => import('@/components/CookieBanner'));
 const PageViewTracker = dynamic(() => import('@/components/PageViewTracker'));
 const NavigationProgress = dynamic(() => import('@/components/NavigationProgress'));
 const MetaPixel = dynamic(() => import('@/components/MetaPixel'));
+const WebVitals = dynamic(() => import('@/components/WebVitals'));
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen flex flex-col">
         <JsonLd data={getOrganizationSchema()} />
+        <JsonLd data={getWebSiteSchema()} />
         <Header />
         <main className="flex-1 overflow-x-hidden">{children}</main>
         <Footer />
@@ -105,6 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PageViewTracker />
         <NavigationProgress />
         <MetaPixel />
+        <WebVitals />
       </body>
     </html>
   );

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import JsonLd from '@/components/JsonLd';
+import { getFAQSchema } from '@/lib/seo/schema';
 
 export const metadata: Metadata = {
   title: 'Costi di Spedizione — Stappando',
@@ -17,6 +19,12 @@ export const metadata: Metadata = {
 export default function SpedizioniPage() {
   return (
     <div className="bg-brand-bg min-h-screen">
+      <JsonLd data={getFAQSchema([
+        { question: 'Quanto costa la spedizione?', answer: 'La spedizione costa 6,50\u20AC per ordini fino a 69\u20AC. Per ordini superiori a 69\u20AC la spedizione è gratuita, in tutta Italia.' },
+        { question: 'Quali sono i tempi di consegna?', answer: 'La consegna avviene in 24/48 ore per l\'Italia continentale e in 72/96 ore per Sicilia e Sardegna.' },
+        { question: 'Come vengono confezionate le bottiglie?', answer: 'I prodotti vengono spediti in scatole omologate Anbrekabol, realizzate con materiali riciclati per garantire massima protezione durante il trasporto e sostenibilità ambientale.' },
+        { question: 'Le spedizioni sono tracciabili?', answer: 'Sì, tutte le spedizioni sono assicurate e tracciabili. Riceverai un\'email con il codice di tracking non appena il tuo ordine verrà affidato al corriere.' },
+      ])} />
       {/* Hero */}
       <div className="bg-brand-primary text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">

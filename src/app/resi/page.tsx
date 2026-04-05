@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import JsonLd from '@/components/JsonLd';
+import { getFAQSchema } from '@/lib/seo/schema';
 
 export const metadata: Metadata = {
   title: 'Resi e Rimborsi — Stappando',
@@ -17,6 +19,12 @@ export const metadata: Metadata = {
 export default function ResiPage() {
   return (
     <div className="bg-brand-bg min-h-screen">
+      <JsonLd data={getFAQSchema([
+        { question: 'Entro quanto tempo posso fare un reso?', answer: 'Puoi recedere dal contratto di acquisto entro 14 giorni dalla conclusione dell\'accordo, senza dover fornire alcuna motivazione.' },
+        { question: 'Come faccio a richiedere un reso?', answer: 'Contatta l\'assistenza a assistenza@stappando.it specificando il motivo del reso. Riceverai una bolla di reso e avrai 7 giorni per rispedire la merce.' },
+        { question: 'Quando riceverò il rimborso?', answer: 'I rimborsi vengono elaborati entro 14 giorni dal ricevimento della comunicazione di recesso e accreditati sullo stesso metodo di pagamento utilizzato per l\'acquisto.' },
+        { question: 'Cosa faccio se il pacco arriva danneggiato?', answer: 'Scatta foto del pacco e dei prodotti danneggiati e contatta l\'assistenza entro 48 ore. Hai diritto al rimborso per merce danneggiata durante il trasporto.' },
+      ])} />
       {/* Hero */}
       <div className="bg-brand-primary text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">

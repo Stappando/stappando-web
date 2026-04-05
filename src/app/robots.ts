@@ -13,6 +13,8 @@ export default function robots(): MetadataRoute.Robots {
           '/account/',
           '/admin/',
           '/checkout/',
+          '/homepage-v2',
+          '/mockup-pdp',
 
           // Old WordPress/WooCommerce junk URLs — thousands of crawl-wasting pages
           '/shop/',

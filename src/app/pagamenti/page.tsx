@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import JsonLd from '@/components/JsonLd';
+import { getFAQSchema } from '@/lib/seo/schema';
 
 export const metadata: Metadata = {
   title: 'Metodi di Pagamento — Stappando',
@@ -103,6 +105,13 @@ const payments = [
 export default function PagamentiPage() {
   return (
     <div className="bg-brand-bg min-h-screen">
+      <JsonLd data={getFAQSchema([
+        { question: 'Quando viene addebitato il pagamento?', answer: 'Il pagamento viene addebitato al momento della conferma dell\'ordine. Con PayPal a rate o Klarna, la prima rata viene addebitata subito e le successive automaticamente nelle scadenze indicate.' },
+        { question: 'Posso pagare a rate?', answer: 'Sì! Con Klarna e PayPal puoi dividere il pagamento in 3 rate senza interessi e senza costi aggiuntivi.' },
+        { question: 'I miei dati sono al sicuro?', answer: 'Assolutamente. I pagamenti sono processati da Stripe con crittografia end-to-end. I dati della tua carta non vengono mai memorizzati sui nostri server. Tutte le transazioni sono protette da autenticazione 3D Secure.' },
+        { question: 'Posso usare Apple Pay o Google Pay?', answer: 'Sì, se hai configurato Apple Pay o Google Pay sul tuo dispositivo, li vedrai automaticamente come opzione di pagamento al checkout.' },
+        { question: 'Come funziona il rimborso?', answer: 'In caso di reso, il rimborso viene accreditato sullo stesso metodo di pagamento utilizzato per l\'acquisto entro 5-7 giorni lavorativi dalla ricezione del reso.' },
+      ])} />
       {/* Hero */}
       <div className="bg-brand-primary text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">

@@ -14,7 +14,7 @@ export async function generateMetadata({ searchParams }: Props) {
     title: cat ? `Blog: ${cat} — Stappando` : 'Blog — Stappando',
     description: 'Articoli, guide e consigli sul mondo del vino italiano. Il blog di Stappando.',
     alternates: {
-      canonical: 'https://stappando.it/blog',
+      canonical: 'https://shop.stappando.it/blog',
     },
     ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
   };
