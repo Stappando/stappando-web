@@ -407,11 +407,12 @@ export async function POST(req: NextRequest) {
   for (const item of plan) {
     try {
       const res = await fetch(
-        `${wc.baseUrl}/wp-json/wc/v3/products/${item.productId}/reviews?${auth}`,
+        `${wc.baseUrl}/wp-json/wc/v3/products/reviews?${auth}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            product_id: item.productId,
             review: item.review,
             reviewer: item.reviewer,
             reviewer_email: item.reviewerEmail,
@@ -429,7 +430,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Small delay to avoid hammering the API
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (err) {
       results.push({ productId: item.productId, error: String(err) });
     }
