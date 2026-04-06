@@ -16,12 +16,9 @@ export default function robots(): MetadataRoute.Robots {
           '/homepage-v2',
           '/mockup-pdp',
 
-          // Old WordPress/WooCommerce junk URLs — thousands of crawl-wasting pages
-          '/shop/',
-          '/product/',
+          // Old WordPress/WooCommerce junk URLs (redirect via middleware, allow crawl to follow 301)
           '/product-category/',
           '/product-tag/',
-          '/produttore/',
           '/confezione/',
           '/filosofia/',
 
